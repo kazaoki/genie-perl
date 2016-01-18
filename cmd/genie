@@ -7,18 +7,22 @@ use Encode 'encode';
 # -- Windows環境か否か
 my $is_win = $^O =~ /MSWin/;
 
-# -- Windows向けにShift-JIS出力関数を通すように
-sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF8', shift) }
+# -- Windows向けにShift-JIS出力関数を通す関数を先に用意
+sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 
 # -- 第一引数により関数にジャンプ
-if( grep{$ARGV[0]eq$_}qw|init| ){
+if( grep{$ARGV[0]eq$_}qw|
+	init
+	demo
+| ){
 	no strict;
 	$ARGV[0]->();
 
 	# -- 終了処理
-	echo "\x1b[31m";
-	echo "\n".('- 'x30)."\n";
-	echo "\x1b[39m";
+	style(color=>'black');
+	echo "\n  finished.\n";
+	style(color=>'clear');
+
 	exit;
 }
 
@@ -67,6 +71,92 @@ HELP
 
 exit;
 
+# メッセージ表示ヘルパー
+# ----------------------
+sub message {
+	my ($type, $message) = @_;
+	my %style;
+	my %clear = (color=>'clear', bgcolor=>'clear', weight=>'clear', decoration=>'clear');
+	if($type eq 'on') {
+		%style = (color=>'cyan');
+	} elsif($type eq 'off') {
+		%style = (color=>'black');
+	} elsif($type eq 'error') {
+		%style = (color=>'red');
+	}
+	my $width = length Encode::encode('cp932', $message);
+	style(%style);
+	echo '  +' . ('-' x ($width+2)) . "+\n";
+	echo '  | ' . $message . " |\n";
+	echo '  +' . ('-' x ($width+2)) . "+\n";
+	style(%clear);
+}
+
+# カラーセットヘルパー
+# --------------------
+# style(
+# 	color      => 'red',
+# 	bgcolor    => 'blue',
+# 	weight     => 'bold',
+# 	decoration => 'undeline',
+# );
+sub style {
+	my %style = @_;
+	my($color, $bgcolor) = @_;
+	my %colors = (
+		black        => "\x1b[90m",
+		red          => "\x1b[91m",
+		green        => "\x1b[92m",
+		yellow       => "\x1b[93m",
+		blue         => "\x1b[94m",
+		magenta      => "\x1b[95m",
+		cyan         => "\x1b[96m",
+		white        => "\x1b[97m",
+		dark_black   => "\x1b[30m",
+		dark_red     => "\x1b[31m",
+		dark_green   => "\x1b[32m",
+		dark_yellow  => "\x1b[33m",
+		dark_blue    => "\x1b[34m",
+		dark_magenta => "\x1b[35m",
+		dark_cyan    => "\x1b[36m",
+		dark_white   => "\x1b[37m",
+		clear        => "\x1b[39m",
+	);
+	my %bgcolors = (
+		black        => "\x1b[100m",
+		red          => "\x1b[101m",
+		green        => "\x1b[102m",
+		yellow       => "\x1b[103m",
+		blue         => "\x1b[104m",
+		magenta      => "\x1b[105m",
+		cyan         => "\x1b[106m",
+		white        => "\x1b[107m",
+		dark_black   => "\x1b[40m",
+		dark_red     => "\x1b[41m",
+		dark_green   => "\x1b[42m",
+		dark_yellow  => "\x1b[43m",
+		dark_blue    => "\x1b[44m",
+		dark_magenta => "\x1b[45m",
+		dark_cyan    => "\x1b[46m",
+		dark_white   => "\x1b[47m",
+		clear        => "\x1b[49m",
+	);
+	my %weight = (
+		bold    => "\x1b[1m",
+		clear   => "\x1b[0m",
+	);
+	my %decoration = (
+		underline => "\x1b[4m",
+		clear     => "\x1b[0m",
+	);
+	my $set = '';
+	$set .= $colors{$style{color}} ? $colors{$style{color}} : '';
+	$set .= $bgcolors{$style{bgcolor}} ? $bgcolors{$style{bgcolor}} : '';
+	$set .= $weight{$style{weight}} ? $weight{$style{weight}} : '';
+	$set .= $decoration{$style{decoration}} ? $decoration{$style{decoration}} : '';
+	print $set if $set;
+}
+
 # ====================================================================
 # genie init                                                    初期化
 # ====================================================================
@@ -77,7 +167,18 @@ sub init {
 		`attrib +h .genie` if $is_win; # Windowsなら隠しフォルダにする
 	}
 
-echo "INIT !?";
+	message(error=>'initしたかも！');
 
 	# -- 初期設定ファイルの作成
+}
+
+# ====================================================================
+# genie demo                                                      デモ
+# ====================================================================
+sub demo {
+
+	message(off=>'offデモです');
+	message(on=>'onデモです');
+	message(error=>'errorデモです');
+
 }
