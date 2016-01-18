@@ -2,6 +2,13 @@
 
 use strict;
 use utf8;
+use Encode 'encode';
+
+# -- Windows環境か否か
+my $is_win = $^O =~ /MSWin/;
+
+# -- Windows向けにShift-JIS出力関数を通すように
+sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF8', shift) }
 
 # -- 第一引数により関数にジャンプ
 if( grep{$ARGV[0]eq$_}qw|init| ){
@@ -9,35 +16,53 @@ if( grep{$ARGV[0]eq$_}qw|init| ){
 	$ARGV[0]->();
 
 	# -- 終了処理
-	print "\x1b[31m";
-	print "\n".('- 'x30)."\n";
-	print "\x1b[39m";
+	echo "\x1b[31m";
+	echo "\n".('- 'x30)."\n";
+	echo "\x1b[39m";
 	exit;
 }
 
 # -- コマンド引数ヘルプ表示
-print "\n";
-print "  Usage: genie COMMAND [arg...]\n";
-print "  Commands:";
-print "    up             - \n";
-print "    down           - \n";
-print "    cli            - \n";
-print "    psql/pgsql     - \n";
-print "    mysql          - \n";
-print "    dump           - \n";
-print "    restore        - \n";
-print "    logs           - \n";
-print "    port           - \n";
-print "    stats          - \n";
-print "    share          - \n";
-print "    config         - \n";
-print "    perl-list      - \n";
-print "    php-list       - \n";
-print "    clear          - \n";
-print "    init           - \n";
-print "    spec           - \n";
-print "    sync           - \n";
-print "    cmd [COMMAND]  - \n";
+echo "\n";
+echo "Usage: genie COMMAND [arg...] [OPTIONS]\n";
+echo "\n";
+echo <<HELP;
+\x1b[36mGENERAL\x1b[0m  | up                    起動（コンテナ作成）
+         | down                  終了（コンテナ削除）
+         | version               kazaoki/genieのバージョンを表示
+         | info                  詳細を表示
+         | upgrade               kazaoki/genieのアップグレード
+         | config                設定値を表示する
+         | ip                    ホストIPを表示する
+         | cli                   コマンドラインに入る
+         | logs                  主要ログを表示する
+         | htop                  htop実行
+         | ngrok                 ngrokを使って外部に公開
+         | cmd                   コンテナ内でコマンドを実行
+         | build                 独自Dockerfileをビルドする
+         | -m [RUNMODE]          実行モード：product|develop
+         | -c [CONFIG TYPE]      設定タイプ：標準は general
+
+\x1b[36mDATABASE\x1b[0m | mysql                 mysql実行
+         | psql                  psql実行
+         | dump                  ダンプ
+         | restore               リストア
+         | -d [DB CONNECT ID]    DB接続ID
+         | -f [DB DUMP FILE]     対象のDBダンプファイル
+
+\x1b[36mBROWSER\x1b[0m  | open                  ブラウザ起動
+         | -s [URI SCHEMA]       httpかhttpsかを指定（未指定ならhttp）
+         | -p [WEB PORT]         ポートを指定
+         | -u [URL PATH]         パスを指定
+
+\x1b[36mTEST\x1b[0m     | test [FEATURES]       テストを実行
+         | -r [REPORT MAIL TO]   実行後のレポートHTMLの送り先
+
+\x1b[36mOTHER\x1b[0m    | ftpsync               指定のFTPからDL同期
+         | deploy                指定のGitリポジトリからpull同期
+         | clear                 コンテナを削除する
+
+HELP
 
 exit;
 
@@ -48,10 +73,10 @@ sub init {
 	# -- 設定ディレクトリの作成
 	if( ! -d '.genie') {
 		mkdir '.genie';
-		`attrib +h .genie` if $^O=~/MSWIN/; # Windowsなら隠しフォルダにする
+		`attrib +h .genie` if $is_win; # Windowsなら隠しフォルダにする
 	}
 
-print "INIT !?";
+echo "INIT !?";
 
 	# -- 初期設定ファイルの作成
 }
