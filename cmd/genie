@@ -27,8 +27,8 @@ echo "\n";
 echo "Usage: genie COMMAND [arg...] [OPTIONS]\n";
 echo "\n";
 echo <<HELP;
-\x1b[36mGENERAL\x1b[0m  | up                    起動（コンテナ作成）
-         | down                  終了（コンテナ削除）
+\x1b[36mGENERAL\x1b[0m  | up                    起動（コンテナ作成）＆再起動
+\x1b[36mCOMMANDS\x1b[0m | down                  終了（コンテナ削除）
          | version               kazaoki/genieのバージョンを表示
          | info                  詳細を表示
          | upgrade               kazaoki/genieのアップグレード
@@ -40,27 +40,28 @@ echo <<HELP;
          | ngrok                 ngrokを使って外部に公開
          | cmd                   コンテナ内でコマンドを実行
          | build                 独自Dockerfileをビルドする
+         | clear                 genieコンテナ強制rm、all→全dockerコンテナ強制rm
          | -m [RUNMODE]          実行モード：product|develop
          | -c [CONFIG TYPE]      設定タイプ：標準は general
 
 \x1b[36mDATABASE\x1b[0m | mysql                 mysql実行
-         | psql                  psql実行
+\x1b[36mCOMMANDS\x1b[0m | psql                  psql実行
          | dump                  ダンプ
          | restore               リストア
          | -d [DB CONNECT ID]    DB接続ID
          | -f [DB DUMP FILE]     対象のDBダンプファイル
 
 \x1b[36mBROWSER\x1b[0m  | open                  ブラウザ起動
-         | -s [URI SCHEMA]       httpかhttpsかを指定（未指定ならhttp）
+\x1b[36mCOMMANDS\x1b[0m | -s [URI SCHEMA]       httpかhttpsかを指定（未指定ならhttp）
          | -p [WEB PORT]         ポートを指定
          | -u [URL PATH]         パスを指定
 
 \x1b[36mTEST\x1b[0m     | test [FEATURES]       テストを実行
-         | -r [REPORT MAIL TO]   実行後のレポートHTMLの送り先
+\x1b[36mCOMMANDS\x1b[0m | -r [REPORT MAIL TO]   実行後のレポートHTMLの送り先
 
 \x1b[36mOTHER\x1b[0m    | ftpsync               指定のFTPからDL同期
-         | deploy                指定のGitリポジトリからpull同期
-         | clear                 コンテナを削除する
+\x1b[36mCOMMANDS\x1b[0m | deploy                指定のGitリポジトリからpull同期
+         | rmi-none              <none>状態のdockerイメージを全て削除
 
 HELP
 
