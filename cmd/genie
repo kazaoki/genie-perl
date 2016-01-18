@@ -1,20 +1,43 @@
-#!perl --
+#!/usr/bin/env perl
 
 use strict;
 use utf8;
 
-# 第一引数により関数にジャンプ
-{
+# -- 第一引数により関数にジャンプ
+if( grep{$ARGV[0]eq$_}qw|init| ){
 	no strict;
 	$ARGV[0]->();
+
+	# -- 終了処理
+	print "\x1b[31m";
+	print "\n".('- 'x30)."\n";
+	print "\x1b[39m";
+	exit;
 }
 
-print "\x1b[31m";
-print "\n".('- 'x30)."\n";
-print "\x1b[39m";
-
-
-
+# -- コマンド引数ヘルプ表示
+print "\n";
+print "  Usage: genie COMMAND [arg...]\n";
+print "  Commands:";
+print "    up             - \n";
+print "    down           - \n";
+print "    cli            - \n";
+print "    psql/pgsql     - \n";
+print "    mysql          - \n";
+print "    dump           - \n";
+print "    restore        - \n";
+print "    logs           - \n";
+print "    port           - \n";
+print "    stats          - \n";
+print "    share          - \n";
+print "    config         - \n";
+print "    perl-list      - \n";
+print "    php-list       - \n";
+print "    clear          - \n";
+print "    init           - \n";
+print "    spec           - \n";
+print "    sync           - \n";
+print "    cmd [COMMAND]  - \n";
 
 exit;
 
@@ -28,7 +51,7 @@ sub init {
 		`attrib +h .genie` if $^O=~/MSWIN/; # Windowsなら隠しフォルダにする
 	}
 
-print "INIT !";
+print "INIT !?";
 
 	# -- 初期設定ファイルの作成
 }
