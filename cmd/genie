@@ -10,17 +10,30 @@ my $is_win = $^O =~ /MSWin/;
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 
+print "\n";
+
+# -- 設定ファイル読み込み
+my %config;
+# load toml files.
+# $config{DOCKER}->{IMAGE} = 'kazaoki/genie';
+$config{DOCKER}->{IMAGE}   = 'centos';
+$config{DOCKER}->{MACHINE} = 'default';
+$config{DOCKER}->{NAME}    = 'genie-test';
+
 # -- 第一引数により関数にジャンプ
-if( grep{$ARGV[0]eq$_}qw|
+if( grep{$ARGV[0]eq$_} qw /
 	init
 	demo
-| ){
+	up
+	down
+	cli
+/ ){
 	no strict;
 	$ARGV[0]->();
 
 	# -- 終了処理
 	style(color=>'black');
-	echo "\n  finished.\n";
+	echo "\n  EOL\n";
 	style(color=>'clear');
 
 	exit;
@@ -71,10 +84,27 @@ HELP
 
 exit;
 
+# dockerコマンド実行ヘルパー
+# --------------------------
+sub docker {
+	my($args) = @_;
+	my $cmd = qq|docker-machine ssh $config{DOCKER}->{MACHINE} "docker $args"|;
+	my $output = `$cmd`;
+	my $rcode = $? ? $? : undef;
+	if($rcode) {
+		message(error=>"dockerコマンドで失敗しました。\n$cmd");
+	}
+	return(
+		$rcode,
+		$output
+	);
+}
+
 # メッセージ表示ヘルパー
 # ----------------------
 sub message {
 	my ($type, $message) = @_;
+	my @messages = split(/[\r\n]+/, $message);
 	my %style;
 	my %clear = (color=>'clear', bgcolor=>'clear', weight=>'clear', decoration=>'clear');
 	if($type eq 'on') {
@@ -83,11 +113,24 @@ sub message {
 		%style = (color=>'black');
 	} elsif($type eq 'error') {
 		%style = (color=>'red');
+	} elsif($type eq 'notice') {
+		%style = (color=>'yellow');
 	}
-	my $width = length Encode::encode('cp932', $message);
+	# my $width = length Encode::encode('cp932', $message);
+	my $width;
+	foreach(@messages) {
+		my $len = length Encode::encode('cp932', $_);
+		if($width<$len) { $width = $len; }
+	}
 	style(%style);
 	echo '  +' . ('-' x ($width+2)) . "+\n";
-	echo '  | ' . $message . " |\n";
+	foreach(@messages) {
+		my $len = length Encode::encode('cp932', $_);
+		echo '  | ';
+		echo $_;
+		echo ' ' x ($width==$len ? 0 : $width-$len);
+		echo " |\n";
+	}
 	echo '  +' . ('-' x ($width+2)) . "+\n";
 	style(%clear);
 }
@@ -104,41 +147,25 @@ sub style {
 	my %style = @_;
 	my($color, $bgcolor) = @_;
 	my %colors = (
-		black        => "\x1b[90m",
-		red          => "\x1b[91m",
-		green        => "\x1b[92m",
-		yellow       => "\x1b[93m",
-		blue         => "\x1b[94m",
-		magenta      => "\x1b[95m",
-		cyan         => "\x1b[96m",
-		white        => "\x1b[97m",
-		dark_black   => "\x1b[30m",
-		dark_red     => "\x1b[31m",
-		dark_green   => "\x1b[32m",
-		dark_yellow  => "\x1b[33m",
-		dark_blue    => "\x1b[34m",
-		dark_magenta => "\x1b[35m",
-		dark_cyan    => "\x1b[36m",
-		dark_white   => "\x1b[37m",
+		black        => "\x1b[90m", dark_black   => "\x1b[30m",
+		red          => "\x1b[91m", dark_red     => "\x1b[31m",
+		green        => "\x1b[92m", dark_green   => "\x1b[32m",
+		yellow       => "\x1b[93m", dark_yellow  => "\x1b[33m",
+		blue         => "\x1b[94m", dark_blue    => "\x1b[34m",
+		magenta      => "\x1b[95m", dark_magenta => "\x1b[35m",
+		cyan         => "\x1b[96m", dark_cyan    => "\x1b[36m",
+		white        => "\x1b[97m", dark_white   => "\x1b[37m",
 		clear        => "\x1b[39m",
 	);
 	my %bgcolors = (
-		black        => "\x1b[100m",
-		red          => "\x1b[101m",
-		green        => "\x1b[102m",
-		yellow       => "\x1b[103m",
-		blue         => "\x1b[104m",
-		magenta      => "\x1b[105m",
-		cyan         => "\x1b[106m",
-		white        => "\x1b[107m",
-		dark_black   => "\x1b[40m",
-		dark_red     => "\x1b[41m",
-		dark_green   => "\x1b[42m",
-		dark_yellow  => "\x1b[43m",
-		dark_blue    => "\x1b[44m",
-		dark_magenta => "\x1b[45m",
-		dark_cyan    => "\x1b[46m",
-		dark_white   => "\x1b[47m",
+		black        => "\x1b[100m", dark_black   => "\x1b[40m",
+		red          => "\x1b[101m", dark_red     => "\x1b[41m",
+		green        => "\x1b[102m", dark_green   => "\x1b[42m",
+		yellow       => "\x1b[103m", dark_yellow  => "\x1b[43m",
+		blue         => "\x1b[104m", dark_blue    => "\x1b[44m",
+		magenta      => "\x1b[105m", dark_magenta => "\x1b[45m",
+		cyan         => "\x1b[106m", dark_cyan    => "\x1b[46m",
+		white        => "\x1b[107m", dark_white   => "\x1b[47m",
 		clear        => "\x1b[49m",
 	);
 	my %weight = (
@@ -155,6 +182,23 @@ sub style {
 	$set .= $weight{$style{weight}} ? $weight{$style{weight}} : '';
 	$set .= $decoration{$style{decoration}} ? $decoration{$style{decoration}} : '';
 	print $set if $set;
+}
+
+# 起動しているか確認するヘルパー
+# ------------------------------
+sub is_up {
+	my($rcode, $output) = docker('inspect ' . $config{DOCKER}->{NAME}, 1);
+	return $output !~ /^Error\:/;
+}
+
+# 起動してない場合はエラーを表示するヘルパー
+# ------------------------------------------
+sub require_up {
+	if(!is_up()) {
+		message(notice=>'起動してません：' . $config{DOCKER}->{NAME});
+		return;
+	}
+	return 1;
 }
 
 # ====================================================================
@@ -176,9 +220,42 @@ sub init {
 # genie demo                                                      デモ
 # ====================================================================
 sub demo {
-
 	message(off=>'offデモです');
 	message(on=>'onデモです');
 	message(error=>'errorデモです');
+	message(notice=>"複数行も\n可能です!!");
+}
+
+# ====================================================================
+# genie up                                                起動・再起動
+# ====================================================================
+sub up {
+	if(is_up()) {
+		message(error=>'起動中です：'.$config{DOCKER}->{NAME});
+	} else {
+		my($rcode, $output) = docker('run -d --name=' . $config{DOCKER}->{NAME} . ' ' . $config{DOCKER}->{IMAGE});
+		if(!$rcode){
+			message(on=>'起動しました：'.$config{DOCKER}->{NAME}."\n".$output);
+		}
+	}
+}
+
+# ====================================================================
+# genie down                                                      終了
+# ====================================================================
+sub down {
+	return unless require_up(); # 起動必須
+
+	docker('rm -f ' . $config{DOCKER}->{NAME});
+	message(off=>'終了しました：' . $config{DOCKER}->{NAME});
+}
+
+# ====================================================================
+# genie cli                                       コマンドラインに入る
+# ====================================================================
+sub cli {
+	return unless require_up(); # 起動必須
+
+	docker('exec -it ' . $config{DOCKER}->{NAME}) . ' bash';
 
 }
