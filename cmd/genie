@@ -4,8 +4,14 @@ use strict;
 use utf8;
 use Encode 'encode';
 
-# -- Windows環境か否か
-my $is_win = $^O =~ /MSWin/;
+# -- 環境判別
+my $is_win = $^O =~ /MSWin/; # Windows
+my $is_mac = $^O =~ /darwin/; # Mac OSX
+my $is_linux = !($is_win || $is_mac); # Mac Linux
+
+# -- コマンド出力の制御
+my $hide_err = $is_win ? '2>NUL'     : '2>/dev/null';     # エラーのみ非表示
+my $hide_all = $is_win ? '>NUL 2>&1' : '>/dev/null 2>&1'; # エラーと標準出力両方とも非表示
 
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
@@ -16,17 +22,37 @@ print "\n";
 my %config;
 # load toml files.
 # $config{DOCKER}->{IMAGE} = 'kazaoki/genie';
-$config{DOCKER}->{IMAGE}   = 'centos';
-$config{DOCKER}->{MACHINE} = 'default';
-$config{DOCKER}->{NAME}    = 'genie-test';
+	# ※とりあえず設定ファイルまだなんで・・。
+	$config{DOCKER}->{IMAGE}   = 'kazaoki/lamp';
+# 	$config{DOCKER}->{IMAGE}   = 'centos';
+	$config{DOCKER}->{MACHINE} = 'default';
+	$config{DOCKER}->{NAME}    = 'genie-test';
+
+# -- docker-machine起動
+{
+	my $cmd = 'docker-machine start ' . $config{DOCKER}->{MACHINE}. ' ' . $hide_err;
+	`$cmd`
+}
+
+# -- docker-machineの環境切り替え
+{
+	my $cmd = 'docker-machine env ' . $config{DOCKER}->{MACHINE} . ' ' . $hide_err;
+	foreach my $line (split(/[\r\n]+/, `$cmd`)) {
+		if($line =~ /(DOCKER_\w+)\s*\=\s*\"?([^\"]+)\"?/) {
+			$ENV{$1} = $2;
+		}
+	}
+}
 
 # -- 第一引数により関数にジャンプ
-if( grep{$ARGV[0]eq$_} qw /
+if( grep{ $ARGV[0] eq $_ } qw /
 	init
 	demo
 	up
 	down
 	cli
+	cmd
+	list
 / ){
 	no strict;
 	$ARGV[0]->();
@@ -84,38 +110,22 @@ HELP
 
 exit;
 
-# dockerコマンド実行ヘルパー
-# --------------------------
-sub docker {
-	my($args) = @_;
-	my $cmd = qq|docker-machine ssh $config{DOCKER}->{MACHINE} "docker $args"|;
-	my $output = `$cmd`;
-	my $rcode = $? ? $? : undef;
-	if($rcode) {
-		message(error=>"dockerコマンドで失敗しました。\n$cmd");
-	}
-	return(
-		$rcode,
-		$output
-	);
-}
-
 # メッセージ表示ヘルパー
 # ----------------------
 sub message {
 	my ($type, $message) = @_;
 	my @messages = split(/[\r\n]+/, $message);
 	my %style;
-	my %clear = (color=>'clear', bgcolor=>'clear', weight=>'clear', decoration=>'clear');
-	if($type eq 'on') {
-		%style = (color=>'cyan');
-	} elsif($type eq 'off') {
-		%style = (color=>'black');
-	} elsif($type eq 'error') {
-		%style = (color=>'red');
-	} elsif($type eq 'notice') {
-		%style = (color=>'yellow');
-	}
+	my %clear = (color=>'clear', bgcolor=>'clear', weight=>'clear', decoratiinfo=>'clear');
+	
+	   if($type eq 'default' ) { %style = (color=>'dark_white'); }
+	elsif($type eq 'primary' ) { %style = (color=>'blue'); }
+	elsif($type eq 'success' ) { %style = (color=>'green'); }
+	elsif($type eq 'info'    ) { %style = (color=>'cyan'); }
+	elsif($type eq 'warning' ) { %style = (color=>'yellow'); }
+	elsif($type eq 'danger'  ) { %style = (color=>'red'); }
+	elsif($type eq 'disabled') { %style = (color=>'black'); }
+
 	# my $width = length Encode::encode('cp932', $message);
 	my $width;
 	foreach(@messages) {
@@ -187,15 +197,16 @@ sub style {
 # 起動しているか確認するヘルパー
 # ------------------------------
 sub is_up {
-	my($rcode, $output) = docker('inspect ' . $config{DOCKER}->{NAME}, 1);
-	return $output !~ /^Error\:/;
+	my $cmd = 'docker inspect ' . $config{DOCKER}->{NAME};
+	`$cmd $hide_all`;
+	return !$?;
 }
 
 # 起動してない場合はエラーを表示するヘルパー
 # ------------------------------------------
 sub require_up {
 	if(!is_up()) {
-		message(notice=>'起動してません：' . $config{DOCKER}->{NAME});
+		message(warning=>'起動してません：' . $config{DOCKER}->{NAME});
 		return;
 	}
 	return 1;
@@ -208,10 +219,11 @@ sub init {
 	# -- 設定ディレクトリの作成
 	if( ! -d '.genie') {
 		mkdir '.genie';
-		`attrib +h .genie` if $is_win; # Windowsなら隠しフォルダにする
+		# `attrib +h .genie` if $is_win; # Windowsなら隠しフォルダにする
+		# →しない
 	}
 
-	message(error=>'initしたかも！');
+	message(danger=>'initしたかも！');
 
 	# -- 初期設定ファイルの作成
 }
@@ -220,10 +232,10 @@ sub init {
 # genie demo                                                      デモ
 # ====================================================================
 sub demo {
-	message(off=>'offデモです');
-	message(on=>'onデモです');
-	message(error=>'errorデモです');
-	message(notice=>"複数行も\n可能です!!");
+	foreach(qw/default primary success info warning danger disabled/) {
+		message($_=>$_);
+	}
+	message(warning=>"複数行も\n可能です!!");
 }
 
 # ====================================================================
@@ -231,11 +243,12 @@ sub demo {
 # ====================================================================
 sub up {
 	if(is_up()) {
-		message(error=>'起動中です：'.$config{DOCKER}->{NAME});
+		message(danger=>'起動中です：'.$config{DOCKER}->{NAME});
 	} else {
-		my($rcode, $output) = docker('run -d --name=' . $config{DOCKER}->{NAME} . ' ' . $config{DOCKER}->{IMAGE});
-		if(!$rcode){
-			message(on=>'起動しました：'.$config{DOCKER}->{NAME}."\n".$output);
+		my $cmd = 'docker run -d --name=' . $config{DOCKER}->{NAME} . ' ' . $config{DOCKER}->{IMAGE};
+		my $output = `$cmd`;
+		if(!$?){
+			message(info=>'起動しました：'.$config{DOCKER}->{NAME}."\n".$output);
 		}
 	}
 }
@@ -246,8 +259,11 @@ sub up {
 sub down {
 	return unless require_up(); # 起動必須
 
-	docker('rm -f ' . $config{DOCKER}->{NAME});
-	message(off=>'終了しました：' . $config{DOCKER}->{NAME});
+	my $cmd = 'docker rm -f ' . $config{DOCKER}->{NAME};
+	`$cmd`;
+	if(!$?){
+		message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
+	}
 }
 
 # ====================================================================
@@ -256,6 +272,38 @@ sub down {
 sub cli {
 	return unless require_up(); # 起動必須
 
-	docker('exec -it ' . $config{DOCKER}->{NAME}) . ' bash';
+	my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' bash';
+	`$cmd`;
+}
 
+# ====================================================================
+# genie cmd                                         コマンドを実行する
+# ====================================================================
+sub cmd {
+	return unless require_up(); # 起動必須
+
+	my $cmd = 'docker exec ' . $config{DOCKER}->{NAME} . ' ' . join(' ', @ARGV[1..$#ARGV]);
+	`$cmd`;
+}
+
+# ====================================================================
+# genie list                    マシン一覧とACTIVEマシンのコンテナ一覧
+# プロセスの一覧
+# ====================================================================
+sub list {
+	# return unless require_up(); # 起動必須
+
+	# Dockerマシン一覧
+	{
+		echo "Dockerマシン一覧\n";
+		my $result = `docker-machine ls`;
+		message(info=>$result);
+	}
+	print "\n";
+	# ACTIVEマシンのコンテナ一覧
+	{
+		echo "ACTIVEマシンのコンテナ一覧\n";
+		my $result = `docker ps -a`;
+		message(info=>$result);
+	}
 }
