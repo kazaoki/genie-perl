@@ -52,14 +52,15 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	down
 	cli
 	cmd
-	list
+	view
+	clear
 / ){
 	no strict;
 	$ARGV[0]->();
 
 	# -- 終了処理
 	style(color=>'black');
-	echo "\n  EOL\n";
+	echo "  EOL\n\n";
 	style(color=>'clear');
 
 	exit;
@@ -83,7 +84,7 @@ echo <<HELP;
          | ngrok                 ngrokを使って外部に公開
          | cmd                   コンテナ内でコマンドを実行
          | build                 独自Dockerfileをビルドする
-         | clear                 genieコンテナ強制rm、all→全dockerコンテナ強制rm
+         | clear                 '$config{DOCKER}->{NAME}'コンテナ強制rm、all→全dockerコンテナ強制rm、noneimage→<none>イメージrmi
          | -m [RUNMODE]          実行モード：product|develop
          | -c [CONFIG TYPE]      設定タイプ：標準は general
 
@@ -143,6 +144,7 @@ sub message {
 	}
 	echo '  +' . ('-' x ($width+2)) . "+\n";
 	style(%clear);
+	print "\n";
 }
 
 # カラーセットヘルパー
@@ -287,11 +289,9 @@ sub cmd {
 }
 
 # ====================================================================
-# genie list                    マシン一覧とACTIVEマシンのコンテナ一覧
-# プロセスの一覧
+# genie view                          マシン、イメージ、コンテナの一望
 # ====================================================================
-sub list {
-	# return unless require_up(); # 起動必須
+sub view {
 
 	# Dockerマシン一覧
 	{
@@ -300,10 +300,95 @@ sub list {
 		message(info=>$result);
 	}
 	print "\n";
+
+	# ACTIVEマシンのイメージ一覧
+	{
+		echo "ACTIVEマシンのイメージ一覧\n";
+		my $result = `docker images`;
+		message(info=>$result);
+	}
+	print "\n";
+
 	# ACTIVEマシンのコンテナ一覧
 	{
 		echo "ACTIVEマシンのコンテナ一覧\n";
 		my $result = `docker ps -a`;
 		message(info=>$result);
 	}
+	print "\n";
+}
+
+# ====================================================================
+# genie clear                         コンテナやイメージを強制削除する
+# ====================================================================
+sub clear {
+	# return unless require_up(); # 起動必須
+
+	# 規定のgenieコンテナを強制削除する
+	if($ARGV[1] eq '') {
+		`docker inspect -f {{.Name}} $config{DOCKER}->{NAME} $hide_all`;
+		if($?) {
+			message(warning=>"コンテナが見つかりません。：$config{DOCKER}->{NAME}");
+		} else {
+			`docker rm -f $config{DOCKER}->{NAME} $hide_all`;
+			message(success=>"コンテナを強制削除しました。：$config{DOCKER}->{NAME}");
+		}
+		# コンテナ一覧を表示
+		message(info=>`docker ps -a`);
+	}
+
+	# dockerコンテナを全て強制削除する
+	elsif($ARGV[1] eq 'all') {
+		my @list = split(/[\r\n]+/, `docker ps -qa`);
+		if(@list) {
+			my @err;
+			foreach my $id (@list) {
+				echo "  $id - ";
+				`docker rm -f $id`;
+				if($?) {
+					style(color=>'red'); echo "Failed!\n"; style(color=>'clear');
+					push @err;
+				} else {
+					style(color=>'green'); echo "Deleted.\n"; style(color=>'clear');
+				}
+			}
+			if(@err) {
+				message(danger=>'強制削除に失敗したコンテナがあります。\n'.join('',map{"- $_\n"}@err));
+			} else {
+				message(success=>'全てのコンテナを強制削除しました');
+			}
+		} else {
+			message(warning=>'コンテナが１つも見つかりませんでした。');
+		}
+		# コンテナ一覧を表示
+		message(info=>`docker ps -a`);
+	}
+
+	# <none>状態のイメージを削除する
+	if($ARGV[1] eq 'noneimage') {
+		my @list = split(/[\r\n]+/, `docker images --filter "dangling=true" -q`);
+		if(@list) {
+			my @err;
+			foreach my $id (@list) {
+				echo "  $id - ";
+				`docker rmi -f $id`;
+				if($?) {
+					style(color=>'red'); echo "Failed!\n"; style(color=>'clear');
+					push @err;
+				} else {
+					style(color=>'green'); echo "Deleted.\n"; style(color=>'clear');
+				}
+			}
+			if(@err) {
+				message(danger=>'強制削除に失敗した<none>イメージがあります。\n'.join('',map{"- $_\n"}@err));
+			} else {
+				message(success=>'全ての<none>イメージを強制削除しました');
+			}
+		} else {
+			message(warning=>'<none>イメージは見つかりませんでした。');
+		}
+		# イメージ一覧を表示
+		message(info=>`docker images`);
+	}
+
 }
