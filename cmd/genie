@@ -114,7 +114,7 @@ exit;
 # メッセージ表示ヘルパー
 # ----------------------
 sub message {
-	my ($type, $message) = @_;
+	my ($type, $message, $line) = @_;
 	my @messages = split(/[\r\n]+/, $message);
 	my %style;
 	my %clear = (color=>'clear', bgcolor=>'clear', weight=>'clear', decoratiinfo=>'clear');
@@ -127,7 +127,6 @@ sub message {
 	elsif($type eq 'danger'  ) { %style = (color=>'red'); }
 	elsif($type eq 'disabled') { %style = (color=>'black'); }
 
-	# my $width = length Encode::encode('cp932', $message);
 	my $width;
 	foreach(@messages) {
 		my $len = length Encode::encode('cp932', $_);
@@ -135,12 +134,16 @@ sub message {
 	}
 	style(%style);
 	echo '  +' . ('-' x ($width+2)) . "+\n";
+	my $count;
 	foreach(@messages) {
 		my $len = length Encode::encode('cp932', $_);
 		echo '  | ';
 		echo $_;
 		echo ' ' x ($width==$len ? 0 : $width-$len);
 		echo " |\n";
+		if(++$count==$line) {
+			echo '  +' . ('-' x ($width+2)) . "+\n";
+		}
 	}
 	echo '  +' . ('-' x ($width+2)) . "+\n";
 	style(%clear);
@@ -297,7 +300,7 @@ sub view {
 	{
 		echo "Dockerマシン一覧\n";
 		my $result = `docker-machine ls`;
-		message(info=>$result);
+		message(info=>$result, 1);
 	}
 	print "\n";
 
@@ -305,7 +308,7 @@ sub view {
 	{
 		echo "ACTIVEマシンのイメージ一覧\n";
 		my $result = `docker images`;
-		message(info=>$result);
+		message(info=>$result, 1);
 	}
 	print "\n";
 
@@ -313,7 +316,7 @@ sub view {
 	{
 		echo "ACTIVEマシンのコンテナ一覧\n";
 		my $result = `docker ps -a`;
-		message(info=>$result);
+		message(info=>$result, 1);
 	}
 	print "\n";
 }
@@ -334,7 +337,7 @@ sub clear {
 			message(success=>"コンテナを強制削除しました。：$config{DOCKER}->{NAME}");
 		}
 		# コンテナ一覧を表示
-		message(info=>`docker ps -a`);
+		message(info=>`docker ps -a`, 1);
 	}
 
 	# dockerコンテナを全て強制削除する
@@ -361,7 +364,7 @@ sub clear {
 			message(warning=>'コンテナが１つも見つかりませんでした。');
 		}
 		# コンテナ一覧を表示
-		message(info=>`docker ps -a`);
+		message(info=>`docker ps -a`, 1);
 	}
 
 	# <none>状態のイメージを削除する
@@ -388,7 +391,7 @@ sub clear {
 			message(warning=>'<none>イメージは見つかりませんでした。');
 		}
 		# イメージ一覧を表示
-		message(info=>`docker images`);
+		message(info=>`docker images`, 1);
 	}
 
 }
