@@ -296,7 +296,7 @@ sub cmd {
 # ====================================================================
 sub view {
 
-	# Dockerマシン一覧
+	# -- Dockerマシン一覧
 	{
 		echo "Dockerマシン一覧\n";
 		my $result = `docker-machine ls`;
@@ -304,7 +304,7 @@ sub view {
 	}
 	print "\n";
 
-	# ACTIVEマシンのイメージ一覧
+	# -- ACTIVEマシンのイメージ一覧
 	{
 		echo "ACTIVEマシンのイメージ一覧\n";
 		my $result = `docker images`;
@@ -312,7 +312,7 @@ sub view {
 	}
 	print "\n";
 
-	# ACTIVEマシンのコンテナ一覧
+	# -- ACTIVEマシンのコンテナ一覧
 	{
 		echo "ACTIVEマシンのコンテナ一覧\n";
 		my $result = `docker ps -a`;
@@ -325,9 +325,8 @@ sub view {
 # genie clear                         コンテナやイメージを強制削除する
 # ====================================================================
 sub clear {
-	# return unless require_up(); # 起動必須
 
-	# 規定のgenieコンテナを強制削除する
+	# -- 規定のgenieコンテナを強制削除する
 	if($ARGV[1] eq '') {
 		`docker inspect -f {{.Name}} $config{DOCKER}->{NAME} $hide_all`;
 		if($?) {
@@ -340,7 +339,7 @@ sub clear {
 		message(info=>`docker ps -a`, 1);
 	}
 
-	# dockerコンテナを全て強制削除する
+	# -- dockerコンテナを全て強制削除する
 	elsif($ARGV[1] eq 'all') {
 		my @list = split(/[\r\n]+/, `docker ps -qa`);
 		if(@list) {
@@ -367,7 +366,7 @@ sub clear {
 		message(info=>`docker ps -a`, 1);
 	}
 
-	# <none>状態のイメージを削除する
+	# -- <none>状態のイメージを削除する
 	if($ARGV[1] eq 'noneimage') {
 		my @list = split(/[\r\n]+/, `docker images --filter "dangling=true" -q`);
 		if(@list) {
