@@ -3,7 +3,7 @@ return {
 	# Docker設定
 	# ----------
 	DOCKER => {
-		IMAGE   => 'kazaoki/lamp',
+		IMAGE   => 'kazaoki/genie',
 		MACHINE => 'default',
 		NAME    => 'genie-test',
 	},

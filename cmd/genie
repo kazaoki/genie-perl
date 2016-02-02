@@ -113,6 +113,7 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	config view
 	clear
 	httpd
+	build
 / ){
 	no strict;
 	$ARGV[0]->();
@@ -316,7 +317,7 @@ sub up {
 	if(is_up()) {
 		message(danger=>'起動中です：'.$config{DOCKER}->{NAME});
 	} else {
-		my $cmd = 'docker run -d --name=' . $config{DOCKER}->{NAME} . ' ' . $config{DOCKER}->{IMAGE};
+		my $cmd = "docker run -d -v $config{GENERAL}->{home_path}/.genie:/genie --name=$config{DOCKER}->{NAME} $config{DOCKER}->{IMAGE}";
 		my $output = `$cmd`;
 		if(!$?){
 			message(info=>'起動しました：'.$config{DOCKER}->{NAME}."\n".$output);
@@ -472,7 +473,7 @@ sub config {
 }
 
 # --------------------------------------------------------------------
-# genie httpd          簡易ローカルWebサーバ起動（設定ファイル不必要）
+# genie httpd             簡易ローカルWebサーバ起動（設定ファイル不必要）
 # --------------------------------------------------------------------
 sub httpd {
 
@@ -517,3 +518,44 @@ sub httpd {
 		exit;
 	}
 }
+
+# --------------------------------------------------------------------
+# genie build             簡易ローカルWebサーバ起動（設定ファイル不必要）
+# --------------------------------------------------------------------
+sub build {
+
+	# -- .genie/Dockerfileをビルドする
+	my $dockerfile = $config{GENERAL}->{home_path}."/.genie/Dockerfile";
+	if(! -s $dockerfile){
+		message(danger=>"Dockerfileが見つからないか、空ファイルです。\n$dockerfile");
+		exit;
+	}
+
+	# -- 確認
+	echo sprintf(
+		'  %s マシーンに %s イメージをビルドしてもよろしいでしょうか。[y/N]：',
+		$config{DOCKER}->{MACHINE},
+		$config{DOCKER}->{IMAGE},
+	);
+	my $input = <STDIN>;
+	print "\n";
+	if($input =~ /^y$/i ) {
+		# -- ビルド実行
+		my $cmd = "docker build -q -t $config{DOCKER}->{IMAGE} $config{GENERAL}->{home_path}/.genie/";
+		my $result = `$cmd`;
+		if($?) {
+			message(danger=>"ビルドに失敗しました。\n$result");
+			exit;
+		}
+		# -- イメージ一覧表示
+		message(success=>'ビルド完了しました。');
+		$cmd = `docker images`;
+		message(info=>$cmd);
+	}
+}
+
+
+
+
+
+
