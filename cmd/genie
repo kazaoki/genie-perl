@@ -475,7 +475,7 @@ sub config {
 # genie httpd          簡易ローカルWebサーバ起動（設定ファイル不必要）
 # --------------------------------------------------------------------
 sub httpd {
-	
+
 	# -- 公式httpdイメージから起動
 	my $vpath = $is_win ? '/'.lc($drive_letter).$now_path : $now_path;
 	my $cmd = "docker run -it -d -p 80 -v $vpath:/var/www/html/ php:5.5-apache";
@@ -486,6 +486,8 @@ sub httpd {
 		message(warning=>"Webサーバが起動しませんでした。\n$cmd");
 		exit;
 	}
+
+	# -- コンテナの情報からブラウザを起動
 	$cmd = `docker inspect -f {{.NetworkSettings.Ports}} $cid`;
 	my $www_port;
 	my $www_ip;
