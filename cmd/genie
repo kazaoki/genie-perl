@@ -502,10 +502,10 @@ sub httpd {
 		if($is_win) { $open = 'start'; }
 		elsif($is_mac) { $open = 'open'; }
 		elsif($is_linux) { $open = 'xdg-open'; }
-		`$open http://$www_ip:$www_port/"`;
+		`$open http://$www_ip:$www_port/`;
 
 		# -- ログ表示
-		exec("docker logs -f $cid");
+		system("docker logs -f $cid");
 
 		# -- 削除（Ctrl+Cで止めれば自動的にコンテナ削除する）
 		`docker rm -f $cid`;
