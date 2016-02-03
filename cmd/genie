@@ -284,20 +284,89 @@ sub require_up {
 	return 1;
 }
 
+# データ入力ヘルパー
+# ------------------
+sub input {
+	my $string = shift;
+	my $len = (length Encode::encode('cp932', $string)) + 10;
+	style(color=>'white', bgcolor=>'blue');
+	echo ' ' x $len . "\n";
+	echo "  $string        \n";
+	echo ' ' x $len . "\n";
+	style(color=>'white', bgcolor=>'dark_blue');
+	echo ' ' x $len . "\n";
+	style(color=>'white', bgcolor=>'blue');
+	echo "\e[3A\e[".($len-8)."C";
+	my $input = <STDIN>;
+	style(color=>'white', bgcolor=>'clear');
+	return $input;
+}
+
 # --------------------------------------------------------------------
 # genie init                                                    初期化
 # --------------------------------------------------------------------
 sub init {
-	# -- 設定ディレクトリの作成
-	if( ! -d '.genie') {
+
+	# -- カレントに設定ディレクトリ作成
+	if( -d '.genie') {
+		message(warning=>'.genie ディレクトリが既にあるので処理を中止します。');
+		exit;
+	} else {
 		mkdir '.genie';
-		# `attrib +h .genie` if $is_win; # Windowsなら隠しフォルダにする
-		# →しない
+	}
+	if( -d '.genie') {
+		message(success=>'.genie ディレクトリを作成しました。');
+	} else {
+		message(danger=>'.genie ディレクトリが作成できませんでした。');
+		exit;
 	}
 
-	message(danger=>'initしたかも！');
-
 	# -- 初期設定ファイルの作成
+	my $res = open my $fh, ">.genie/config.pl";
+	if(!$res){
+		message(danger=>'設定ファイル `.genie/config.pl` が作成できませんでした。');
+		exit;
+	}
+	print $fh encode('UTF-8', <<'EOL');
+return {
+
+	# Docker設定
+	# ----------
+	DOCKER => {
+		IMAGE   => 'kazaoki/genie',
+		MACHINE => 'default',
+		NAME    => 'genie-test',
+	},
+
+	# ネットワーク設定
+	# ----------------
+	NETWORK => {
+		HOSTS_ME => [
+			'site.com',
+			'www.site.com',
+			'smtp.gmail.com',
+		],
+		HOSTS_ETC => [
+			# {''=>'site.com'},
+		],
+	},
+
+	# Apache設定
+	# ----------
+	APACHE => {
+		PUBLIC_PATH => '../www',
+		BANDWIDTH => '',
+	},
+
+	# Postfix設定
+	# -----------
+	POSTFIX => {
+		FORCE_ENVELOPE => 'xxx@xxx.xxx',
+	},
+
+};
+EOL
+	close $fh;
 }
 
 # --------------------------------------------------------------------
@@ -536,12 +605,14 @@ sub build {
 	}
 
 	# -- 確認
-	echo sprintf(
-		'  %s マシーンに %s イメージをビルドしてもよろしいでしょうか。[y/N]：',
-		$config{DOCKER}->{MACHINE},
-		$config{DOCKER}->{IMAGE},
+	my $input = input(
+		sprintf(
+			'%s マシーンに %s イメージをビルドしてもよろしいでしょうか。[y/N]:',
+			$config{DOCKER}->{MACHINE},
+			$config{DOCKER}->{IMAGE},
+		)
 	);
-	my $input = <STDIN>;
+
 	print "\n";
 	if($input =~ /^y$/i ) {
 		# -- ビルド実行
