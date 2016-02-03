@@ -645,7 +645,6 @@ sub httpd {
 	}
 
 	# -- コンテナの情報からブラウザを起動
-	# $cmd = `docker inspect -f {{.NetworkSettings.Ports}} $cid`;
 	if(`docker port $cid 80` =~ /(\d+)$/) {
 
 		# -- IPとポートを取得
@@ -662,12 +661,15 @@ sub httpd {
 		`$open http://$ip:$port/`;
 
 		# -- Ctrl+C時に自動的にコンテナ削除されるように
-		$SIG{INT} = sub {
+		if($is_win) {
+			# Winの場合
+			$SIG{INT} = sub { `docker rm -f $cid`; };
+			system("docker logs -f $cid");
+		} else {
+			# Mac/Linuxの場合
+			system("docker logs -f $cid");
 			`docker rm -f $cid`;
-		};
-
-		# -- ログ表示
-		system("docker logs -f $cid");
+		}
 
 	} else {
 		throw('サーバは起動しましたが、ポートが取得できませんでした。');
