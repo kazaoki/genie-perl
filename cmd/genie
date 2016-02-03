@@ -24,6 +24,9 @@ my $is_linux = !($is_win || $is_mac); # Mac Linux
 my $hide_err = $is_win ? '2>NUL'     : '2>/dev/null';     # エラーのみ非表示
 my $hide_all = $is_win ? '>NUL 2>&1' : '>/dev/null 2>&1'; # エラーと標準出力両方とも非表示
 
+# -- 設定格納ディレクトリ
+my $genie_dir = $ENV{GENIE_DIR} || '.genie';
+
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 
@@ -45,14 +48,14 @@ $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` と
 $config{GENERAL}->{config_name} ||= 'config'; # 未指定の場合 `.genie/config.pl` を読み込みます。
 
 # -- .genieディレクトリがあるパスを探して移動する
-my $genie_path = './.genie';
+my $genie_path = "./$genie_dir";
 my $now_path = Cwd::getcwd();
 $now_path =~ s/^([A-Za-z])\:\//\//; # ドライブレター削除（for Windows）
 my $drive_letter = $1;
 my @dirs = split('/', $now_path);
 while(@dirs){
 	my $genie_path = join('/', @dirs);
-	if(-d "$genie_path/.genie") {
+	if(-d "$genie_path/$genie_dir") {
 		$config{GENERAL}->{home_path} = $genie_path;
 		chdir $genie_path;
 		last;
@@ -61,7 +64,7 @@ while(@dirs){
 }
 
 # -- 設定ファイルをロード
-my $config_file = '.genie/'.$config{GENERAL}->{config_name}.'.pl';
+my $config_file = "$genie_dir/$config{GENERAL}->{config_name}.pl";
 if(-f $config_file){
 	# -- 設定を読み込み
 	my $r = require $config_file;
@@ -322,21 +325,21 @@ sub throw {
 sub init {
 
 	# -- カレントに設定ディレクトリ作成
-	if( -d '.genie') {
-		throw('.genie ディレクトリが既にあるので処理を中止します。');
+	if( -d $genie_dir) {
+		throw("$genie_dir ディレクトリが既にあるので処理を中止します。");
 	} else {
-		mkdir '.genie';
+		mkdir $genie_dir;
 	}
-	if( -d '.genie') {
-		message(success=>'.genie ディレクトリを作成しました。');
+	if( -d $genie_dir) {
+		message(success=>"$genie_dir ディレクトリを作成しました。");
 	} else {
-		throw('.genie ディレクトリが作成できませんでした。');
+		throw("$genie_dir ディレクトリが作成できませんでした。");
 	}
 
 	# -- config.plの作成
 	{
-		my $result = open my $fh, '>:raw', '.genie/config.pl'
-			or throw('設定ファイル `.genie/config.pl` が作成できませんでした。')
+		my $result = open my $fh, '>:raw', "$genie_dir/config.pl"
+			or throw("設定ファイル `$genie_dir/config.pl` が作成できませんでした。")
 		;
 		print $fh encode('UTF-8', <<'EOL');
 return {
@@ -382,8 +385,8 @@ EOL
 
 	# -- entry.shの作成
 	{
-		my $result = open my $fh, '>:raw', '.genie/entry.sh'
-			or throw('設定ファイル `.genie/entry.sh` が作成できませんでした。')
+		my $result = open my $fh, '>:raw', "$genie_dir/entry.sh"
+			or throw("設定ファイル `$genie_dir/entry.sh` が作成できませんでした。")
 		;
 		print $fh encode('UTF-8', <<'EOL');
 #!/bin/sh
@@ -421,11 +424,11 @@ sub up {
 	if(is_up()) {
 		message(danger=>'起動中です：'.$config{DOCKER}->{NAME});
 	} else {
-		if(!-s $config{GENERAL}->{home_path}.'/.genie/entry.sh'){
-			throw("$config{GENERAL}->{home_path}/.genie/entry.sh が見当たりませんので起動できません。");
+		if(!-s $config{GENERAL}->{home_path}."/$genie_dir/entry.sh"){
+			throw("$config{GENERAL}->{home_path}/$genie_dir/entry.sh が見当たりませんので起動できません。");
 		}
 		my $vpath = $is_win ? '/'.lc($drive_letter).$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
-		my $cmd = "docker run -d -v $vpath/.genie:/genie --name=$config{DOCKER}->{NAME} $config{DOCKER}->{IMAGE}";
+		my $cmd = "docker run -d -v $vpath/$genie_dir:/genie --name=$config{DOCKER}->{NAME} $config{DOCKER}->{IMAGE}";
 		my $output = `$cmd`;
 		if(!$?){
 			message(info=>'起動しました：'.$config{DOCKER}->{NAME}."\n".$output);
@@ -634,7 +637,7 @@ sub httpd {
 sub build {
 
 	# -- .genie/Dockerfileをビルドする
-	my $dockerfile = $config{GENERAL}->{home_path}."/.genie/Dockerfile";
+	my $dockerfile = $config{GENERAL}->{home_path}."/$genie_dir/Dockerfile";
 	if(! -s $dockerfile){
 		throw('Dockerfileが見つからないか、空ファイルです。', $dockerfile);
 	}
@@ -651,7 +654,7 @@ sub build {
 	print "\n";
 	if($input =~ /^y$/i ) {
 		# -- ビルド実行
-		my $cmd = "docker build -q -t $config{DOCKER}->{IMAGE} $config{GENERAL}->{home_path}/.genie/";
+		my $cmd = "docker build -q -t $config{DOCKER}->{IMAGE} $config{GENERAL}->{home_path}/$genie_dir/";
 		my $result = `$cmd`;
 		if($?) {
 			throw('ビルドに失敗しました。', $result);
