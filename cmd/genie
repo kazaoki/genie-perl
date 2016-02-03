@@ -288,16 +288,18 @@ sub require_up {
 # ------------------
 sub input {
 	my $string = shift;
-	my $len = (length Encode::encode('cp932', $string)) + 10;
+	my $tail_space = shift || 20;
+	my $len = (length Encode::encode('cp932', $string)) + 2 + $tail_space;
 	style(color=>'white', bgcolor=>'blue');
 	echo ' ' x $len . "\n";
-	echo "  $string        \n";
+	echo "  $string".(' 'x$tail_space)."\n";
 	echo ' ' x $len . "\n";
 	style(color=>'white', bgcolor=>'dark_blue');
 	echo ' ' x $len . "\n";
 	style(color=>'white', bgcolor=>'blue');
-	echo "\e[3A\e[".($len-8)."C";
+	echo "\e[3A\e[".($len-$tail_space)."C";
 	my $input = <STDIN>;
+	echo "\e[2B";
 	style(color=>'white', bgcolor=>'clear');
 	return $input;
 }
