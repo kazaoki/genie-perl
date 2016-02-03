@@ -317,7 +317,8 @@ sub up {
 	if(is_up()) {
 		message(danger=>'起動中です：'.$config{DOCKER}->{NAME});
 	} else {
-		my $cmd = "docker run -d -v $config{GENERAL}->{home_path}/.genie:/genie --name=$config{DOCKER}->{NAME} $config{DOCKER}->{IMAGE}";
+		my $vpath = $is_win ? '/'.lc($drive_letter).$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
+		my $cmd = "docker run -d -v $vpath/.genie:/genie --name=$config{DOCKER}->{NAME} $config{DOCKER}->{IMAGE}";
 		my $output = `$cmd`;
 		if(!$?){
 			message(info=>'起動しました：'.$config{DOCKER}->{NAME}."\n".$output);
@@ -344,8 +345,11 @@ sub down {
 sub cli {
 	return unless require_up(); # 起動必須
 
-	my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' bash';
-	`$cmd`;
+	my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' sh -c "export TERM=xterm && bash"';
+message(warning=>$cmd);
+
+	system($cmd);
+
 }
 
 # --------------------------------------------------------------------
