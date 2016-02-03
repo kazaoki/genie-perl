@@ -6,9 +6,9 @@
 
 use strict;
 use utf8;
-use Encode 'encode';
+use Encode qw/encode decode/;
 use Data::Dumper;
-use Getopt::Long 'GetOptions';
+use Getopt::Long qw/GetOptions/;
 use Cwd;
 
 # --------------------------------------------------------------------
@@ -67,9 +67,8 @@ if(-f $config_file){
 	my $r = require $config_file;
 	%config = (%config, %$r);
 } else {
-	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/clear init view httpd/){ # ←設定ファイルが無くても実行する引数
-		message(info=>"設定ファイル（$config_file）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？\n");
-		exit;
+	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/clear init view httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
+		throw("設定ファイル（$config_file）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
 	}
 }
 
@@ -85,8 +84,7 @@ $config{DOCKER}->{MACHINE} ||= 'default';
 	my $cmd = 'docker-machine start ' . $config{DOCKER}->{MACHINE}. ' ' . $hide_err;
 	my $result = `$cmd`;
 	if($? && $result !~ /^Starting/) {
-		message(danger=>"Dockerマシンの起動に失敗しました。\n$cmd");
-		exit;
+		throw('Dockerマシンの起動に失敗しました。', $cmd);
 	}
 }
 
@@ -123,7 +121,8 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	echo "  EOL\n\n";
 	style(color=>'clear', bgcolor=>'clear');
 
-	exit;
+	# -- genie正常完了
+	exit 0;
 }
 
 # --------------------------------------------------------------------
@@ -172,7 +171,7 @@ echo <<HELP;
 
 HELP
 
-exit;
+exit 0;
 
 # --------------------------------------------------------------------
 # ヘルパー関数
@@ -302,7 +301,19 @@ sub input {
 	my $input = <STDIN>;
 	echo "\e[2B";
 	style(color=>'clear', bgcolor=>'clear');
-	return $input;
+	return decode('sjis', $input);
+}
+
+# エラー終了ヘルパー
+# ------------------
+sub throw {
+	my($message, $detail) = @_;
+	if($detail) {
+		message(danger=>"$message\n$detail", scalar(split(/\n/, $message)));
+	} else {
+		message(danger=>$message);
+	}
+	exit 1;
 }
 
 # --------------------------------------------------------------------
@@ -312,25 +323,21 @@ sub init {
 
 	# -- カレントに設定ディレクトリ作成
 	if( -d '.genie') {
-		message(warning=>'.genie ディレクトリが既にあるので処理を中止します。');
-		exit;
+		throw('.genie ディレクトリが既にあるので処理を中止します。');
 	} else {
 		mkdir '.genie';
 	}
 	if( -d '.genie') {
 		message(success=>'.genie ディレクトリを作成しました。');
 	} else {
-		message(danger=>'.genie ディレクトリが作成できませんでした。');
-		exit;
+		throw('.genie ディレクトリが作成できませんでした。');
 	}
 
 	# -- config.plの作成
 	{
-		my $result = open my $fh, '>:raw', '.genie/config.pl';
-		if(!$result){
-			message(danger=>'設定ファイル `.genie/config.pl` が作成できませんでした。');
-			exit;
-		}
+		my $result = open my $fh, '>:raw', '.genie/config.pl'
+			or throw('設定ファイル `.genie/config.pl` が作成できませんでした。')
+		;
 		print $fh encode('UTF-8', <<'EOL');
 return {
 
@@ -375,11 +382,9 @@ EOL
 
 	# -- entry.shの作成
 	{
-		my $result = open my $fh, '>:raw', '.genie/entry.sh';
-		if(!$result){
-			message(danger=>'設定ファイル `.genie/entry.sh` が作成できませんでした。');
-			exit;
-		}
+		my $result = open my $fh, '>:raw', '.genie/entry.sh'
+			or throw('設定ファイル `.genie/entry.sh` が作成できませんでした。')
+		;
 		print $fh encode('UTF-8', <<'EOL');
 #!/bin/sh
 
@@ -401,6 +406,12 @@ sub demo {
 		message($_=>$_);
 	}
 	message(warning=>"複数行も\n可能です!!");
+	message(default=>"1箇所なら\nライン入れも\n可能であります。",2);
+	my $input = input('入力BOX：');
+	print "\n";
+	message(default=>"入力された文字：$input");
+	throw('エラーテスト', '（エラー内容）');
+	# 終了ステータス1で終わります
 }
 
 # --------------------------------------------------------------------
@@ -411,8 +422,7 @@ sub up {
 		message(danger=>'起動中です：'.$config{DOCKER}->{NAME});
 	} else {
 		if(!-s $config{GENERAL}->{home_path}.'/.genie/entry.sh'){
-			message(danger=>$config{GENERAL}->{home_path}.'/.genie/entry.sh が見当たりませんので起動できません。');
-			exit;
+			throw("$config{GENERAL}->{home_path}/.genie/entry.sh が見当たりませんので起動できません。");
 		}
 		my $vpath = $is_win ? '/'.lc($drive_letter).$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
 		my $cmd = "docker run -d -v $vpath/.genie:/genie --name=$config{DOCKER}->{NAME} $config{DOCKER}->{IMAGE}";
@@ -583,8 +593,7 @@ sub httpd {
 	# my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:7.0-apache";
 	my $cid = `$cmd`;
 	if($?) {
-		message(warning=>"Webサーバが起動しませんでした。\n$cmd");
-		exit;
+		throw('Webサーバが起動しませんでした。', $cmd);
 	}
 
 	# -- コンテナの情報からブラウザを起動
@@ -615,8 +624,7 @@ sub httpd {
 		system("docker logs -f $cid");
 
 	} else {
-		message(danger=>'サーバは起動しましたが、ポートが取得できませんでした。');
-		exit;
+		throw('サーバは起動しましたが、ポートが取得できませんでした。');
 	}
 }
 
@@ -628,8 +636,7 @@ sub build {
 	# -- .genie/Dockerfileをビルドする
 	my $dockerfile = $config{GENERAL}->{home_path}."/.genie/Dockerfile";
 	if(! -s $dockerfile){
-		message(danger=>"Dockerfileが見つからないか、空ファイルです。\n$dockerfile");
-		exit;
+		throw('Dockerfileが見つからないか、空ファイルです。', $dockerfile);
 	}
 
 	# -- 確認
@@ -647,8 +654,7 @@ sub build {
 		my $cmd = "docker build -q -t $config{DOCKER}->{IMAGE} $config{GENERAL}->{home_path}/.genie/";
 		my $result = `$cmd`;
 		if($?) {
-			message(danger=>"ビルドに失敗しました。\n$result");
-			exit;
+			throw('ビルドに失敗しました。', $result);
 		}
 		# -- イメージ一覧表示
 		message(success=>'ビルド完了しました。');
