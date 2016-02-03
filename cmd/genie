@@ -27,6 +27,16 @@ my $hide_all = $is_win ? '>NUL 2>&1' : '>/dev/null 2>&1'; # エラーと標準�
 # -- 設定格納ディレクトリ
 my $genie_dir = $ENV{GENIE_DIR} || '.genie';
 
+# -- sayコマンドが使えるか否か
+my $can_say;
+if($is_win) {
+	`where wscript $hide_all`;
+	$can_say = !$?;
+} elsif ($is_mac) {
+	`which say $hide_all`;
+	$can_say = !$?;
+}
+
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 
@@ -319,6 +329,18 @@ sub throw {
 	exit 1;
 }
 
+# スピーチヘルパー
+# ----------------
+sub say {
+	return if(!$can_say);
+	my $message = encode($is_win ? 'Shift_JIS' : 'UTF-8', shift);
+	if($is_mac) {
+	    `say -r 300 "$message"`;
+	} elsif ($is_win) {
+		`wscript $drive_letter\:$config{GENERAL}->{home_path}/$genie_dir/say.js "$message"`;
+	}
+}
+
 # --------------------------------------------------------------------
 # genie init                                                    初期化
 # --------------------------------------------------------------------
@@ -399,20 +421,43 @@ done
 EOL
 		close $fh;
 	}
+
+	# -- say.jsの作成（Windowsの場合のみ）
+	if($is_win) {
+		my $result = open my $fh, '>:raw', "$genie_dir/say.js"
+			or throw("`$genie_dir/say.js` が作成できませんでした。")
+		;
+		print $fh encode('UTF-8', <<'EOL');
+var args = [];
+for(var i = 0; i < WScript.Arguments.length; i++) args.push(WScript.Arguments.Item(i));
+WScript.CreateObject('SAPI.SpVoice').Speak('<volume level="100">'+'<rate speed="2">'+'<pitch middle="0">'+args.join(' ')+'</pitch>'+'</rate>'+'</volume>', 8);
+EOL
+		close $fh;
+	}
+
 }
 
 # --------------------------------------------------------------------
 # genie demo                                                      デモ
 # --------------------------------------------------------------------
 sub demo {
+
+	# -- カラーメッセージBOX
 	foreach(qw/default primary success info warning danger disabled/) {
 		message($_=>$_);
 	}
 	message(warning=>"複数行も\n可能です!!");
 	message(default=>"1箇所なら\nライン入れも\n可能であります。",2);
+
+	# -- 入力BOX：
 	my $input = input('入力BOX：');
 	print "\n";
 	message(default=>"入力された文字：$input");
+
+	# -- sayテスト
+	say($input);
+
+	# -- エラー終了
 	throw('エラーテスト', '（エラー内容）');
 	# 終了ステータス1で終わります
 }
@@ -600,23 +645,21 @@ sub httpd {
 	}
 
 	# -- コンテナの情報からブラウザを起動
-	$cmd = `docker inspect -f {{.NetworkSettings.Ports}} $cid`;
-	my $www_port;
-	my $www_ip;
-	if($cmd =~ /(\d+)[^\d]+$/) {
+	# $cmd = `docker inspect -f {{.NetworkSettings.Ports}} $cid`;
+	if(`docker port $cid 80` =~ /(\d+)$/) {
 
 		# -- IPとポートを取得
-		$www_port = $1;
-		$www_ip = `docker-machine ip default`;
-		chomp $www_ip;
-		message(success=>"http://$www_ip:$www_port/");
+		my $port = $1;
+		my $ip = `docker-machine ip default`;
+		chomp $ip;
+		message(success=>"http://$ip:$port/");
 
 		# -- ブラウザ起動
 		my $open;
 		if($is_win) { $open = 'start'; }
 		elsif($is_mac) { $open = 'open'; }
 		elsif($is_linux) { $open = 'xdg-open'; }
-		`$open http://$www_ip:$www_port/`;
+		`$open http://$ip:$port/`;
 
 		# -- Ctrl+C時に自動的にコンテナ削除されるように
 		$SIG{INT} = sub {
