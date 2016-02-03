@@ -119,9 +119,9 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	$ARGV[0]->();
 
 	# -- 終了処理
-	style(color=>'black');
+	style(color=>'black', bgcolor=>'dark_black');
 	echo "  EOL\n\n";
-	style(color=>'clear');
+	style(color=>'clear', bgcolor=>'clear');
 
 	exit;
 }
@@ -200,6 +200,7 @@ sub message {
 		if($width<$len) { $width = $len; }
 	}
 	style(%style);
+
 	echo '  +' . ('-' x ($width+2)) . "+\n";
 	my $count;
 	foreach(@messages) {
@@ -300,7 +301,7 @@ sub input {
 	echo "\e[3A\e[".($len-$tail_space)."C";
 	my $input = <STDIN>;
 	echo "\e[2B";
-	style(color=>'white', bgcolor=>'clear');
+	style(color=>'clear', bgcolor=>'clear');
 	return $input;
 }
 
@@ -323,13 +324,14 @@ sub init {
 		exit;
 	}
 
-	# -- 初期設定ファイルの作成
-	my $res = open my $fh, ">.genie/config.pl";
-	if(!$res){
-		message(danger=>'設定ファイル `.genie/config.pl` が作成できませんでした。');
-		exit;
-	}
-	print $fh encode('UTF-8', <<'EOL');
+	# -- config.plの作成
+	{
+		my $result = open my $fh, '>:raw', '.genie/config.pl';
+		if(!$result){
+			message(danger=>'設定ファイル `.genie/config.pl` が作成できませんでした。');
+			exit;
+		}
+		print $fh encode('UTF-8', <<'EOL');
 return {
 
 	# Docker設定
@@ -368,7 +370,27 @@ return {
 
 };
 EOL
-	close $fh;
+		close $fh;
+	}
+
+	# -- entry.shの作成
+	{
+		my $result = open my $fh, '>:raw', '.genie/entry.sh';
+		if(!$result){
+			message(danger=>'設定ファイル `.genie/entry.sh` が作成できませんでした。');
+			exit;
+		}
+		print $fh encode('UTF-8', <<'EOL');
+#!/bin/sh
+
+# -- daemon loop start
+while true
+do
+    sleep 60
+done
+EOL
+		close $fh;
+	}
 }
 
 # --------------------------------------------------------------------
@@ -388,6 +410,10 @@ sub up {
 	if(is_up()) {
 		message(danger=>'起動中です：'.$config{DOCKER}->{NAME});
 	} else {
+		if(!-s $config{GENERAL}->{home_path}.'/.genie/entry.sh'){
+			message(danger=>$config{GENERAL}->{home_path}.'/.genie/entry.sh が見当たりませんので起動できません。');
+			exit;
+		}
 		my $vpath = $is_win ? '/'.lc($drive_letter).$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
 		my $cmd = "docker run -d -v $vpath/.genie:/genie --name=$config{DOCKER}->{NAME} $config{DOCKER}->{IMAGE}";
 		my $output = `$cmd`;
@@ -417,10 +443,8 @@ sub cli {
 	return unless require_up(); # 起動必須
 
 	my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' sh -c "export TERM=xterm && bash"';
-message(warning=>$cmd);
-
 	system($cmd);
-
+	echo "\n";
 }
 
 # --------------------------------------------------------------------
@@ -554,9 +578,9 @@ sub httpd {
 
 	# -- 公式httpdイメージから起動
 	my $vpath = $is_win ? '/'.lc($drive_letter).$now_path : $now_path;
-	my $cmd = "docker run -it -d -p 80 -v $vpath:/var/www/html/ php:5.5-apache";
-	# my $cmd = "docker run -it -d -p 80 -v $vpath:/var/www/html/ php:5.6-apache";
-	# my $cmd = "docker run -it -d -p 80 -v $vpath:/var/www/html/ php:7.0-apache";
+	my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:5.5-apache";
+	# my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:5.6-apache";
+	# my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:7.0-apache";
 	my $cid = `$cmd`;
 	if($?) {
 		message(warning=>"Webサーバが起動しませんでした。\n$cmd");
@@ -582,11 +606,13 @@ sub httpd {
 		elsif($is_linux) { $open = 'xdg-open'; }
 		`$open http://$www_ip:$www_port/`;
 
+		# -- Ctrl+C時に自動的にコンテナ削除されるように
+		$SIG{INT} = sub {
+			`docker rm -f $cid`;
+		};
+
 		# -- ログ表示
 		system("docker logs -f $cid");
-
-		# -- 削除（Ctrl+Cで止めれば自動的にコンテナ削除する）
-		`docker rm -f $cid`;
 
 	} else {
 		message(danger=>'サーバは起動しましたが、ポートが取得できませんでした。');
@@ -630,9 +656,3 @@ sub build {
 		message(info=>$cmd);
 	}
 }
-
-
-
-
-
-
