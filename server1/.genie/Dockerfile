@@ -27,7 +27,7 @@ RUN apk --update add \
 	openssl-dev \
 	perl \
 	coreutils \
-	libcurl \
+	curl-dev \
 	&& rm -rf /var/cache/apk/*
 
 # Changes shell to bash
