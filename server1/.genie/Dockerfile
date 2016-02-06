@@ -33,23 +33,6 @@ RUN yum update -y && \
         nginx \
     && yum clean all
 
-        # gcc make perl perl-core openssl openssl-libs openssl-devel \
-        # net-tools sudo multitail zip tar bzip2 patch git \
-        # curl curl-devel \
-        # php php-mbstring php-pdo php-mysql php-pgsql php-gd php-xml \
-        # php-soap php-Smarty re2c libxml2-devel bison bison-devel \
-        # libjpeg-devel libpng-devel readline-devel libtidy-devel \
-        # libxslt-devel libmcrypt libmcrypt-devel php-mcrypt \
-        # perl-libwww-perl perl-Crypt-SSLeay \
-        # ImageMagick ImageMagick-perl \
-        # postfix \
-        # mysql mysql-server mysql-devel \
-        # postgresql postgresql-server postgresql-devel \
-        # httpd httpd-devel mod_php mod_ssl \
-        # nginx \
-        # potrace \
-
-
 # RUN echo ">>>>> $SHELL <<<<<"
 
 # RUN echo 1
@@ -60,32 +43,13 @@ RUN yum update -y && \
 RUN git clone https://github.com/riywo/anyenv ~/.anyenv \
     && echo 'export PATH="$HOME/.anyenv/bin:$PATH"' >> ~/.bashrc \
     && echo 'eval "$(anyenv init -)"' >> ~/.bashrc
-
-# RUN source ~/.bashrc
-RUN ~/.anyenv/bin/anyenv install rbenv
-RUN sleep 3
-RUN ~/.anyenv/bin/anyenv install plenv
-RUN sleep 3
-RUN ~/.anyenv/bin/anyenv install phpenv
-RUN sleep 3
-# RUN source ~/.bashrc
-
-# RUN exec /bin/bash -l
-# RUN anyenv
-
-RUN ~/.anyenv/envs/rbenv/bin/rbenv
-#RUN ~/.anyenv/envs/rbenv/bin/plenv
-#RUN ~/.anyenv/envs/rbenv/bin/phpenv
-
-
-# RUN eval "$(anyenv init -)"
-# RUN exec $SHELL -l
-# RUN anyenv install rbenv
-
-# RUN ~/.anyenv/bin/anyenv install rbenv
-# RUN ~/.anyenv/bin/anyenv install plenv
-# RUN ~/.anyenv/bin/anyenv install phpenv
-
+ENV PATH /root/.anyenv/bin:$PATH
+RUN source ~/.bashrc
+RUN anyenv install rbenv
+RUN source ~/.bashrc
+RUN anyenv install plenv
+RUN source ~/.bashrc
+RUN anyenv install phpenv
 
 # # Install Ruby by rbenv
 # # ---------------------
