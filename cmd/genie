@@ -698,6 +698,9 @@ sub httpd {
 # --------------------------------------------------------------------
 sub build {
 
+	# -- nocacheオプション
+	my $nocache = '--no-cache' if ($ARGV[1] eq 'nocache');
+
 	# -- .genie/Dockerfileをビルドする
 	my $dockerfile = $config{GENERAL}->{home_path}."/$genie_dir/Dockerfile";
 	if(! -s $dockerfile){
@@ -716,7 +719,7 @@ sub build {
 	print "\n";
 	if($input =~ /^y$/i ) {
 		# -- ビルド実行
-		my $cmd = "docker build -t $config{DOCKER}->{IMAGE} $config{GENERAL}->{home_path}/$genie_dir/";
+		my $cmd = "docker build -t $config{DOCKER}->{IMAGE} $nocache $config{GENERAL}->{home_path}/$genie_dir/";
 		message(info=>"ビルドを開始します。\n$cmd");
 		my $result = `$cmd`;
 		if($?) {
