@@ -15,6 +15,7 @@ RUN apk --update add \
     bash make patch tar bison \
     htop \
     git \
+    autoconf \
     libxml2 libxml2-dev \
     gcc g++ \
     perl \
@@ -74,13 +75,10 @@ RUN mkdir ~/src \
     && make install \
     && rm -fr ~/src \
     && cd
-
 RUN anyenv install phpenv \
     && . ~/.bashrc
-
 RUN ln -s /genie/tidy_path_overwrite.sh /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
 RUN chmod +x /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
-
 RUN phpenv install 5.4.45 \
     && phpenv global 5.4.45 \
     && phpenv rehash
