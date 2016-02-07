@@ -52,7 +52,7 @@ RUN anyenv install rbenv \
 
 # Install Perl by plenv
 # ---------------------
-RUN anyenv install plenv
+RUN anyenv install plenv \
     && . ~/.bashrc \
     && plenv install 5.20.0 \
     && plenv global 5.20.0 \
