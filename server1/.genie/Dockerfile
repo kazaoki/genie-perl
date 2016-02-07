@@ -1,38 +1,41 @@
-FROM centos:6.7
+FROM alpine:3.3
 MAINTAINER kazaoki lab.
 
 # Set timezone
 # ------------
-RUN cp /etc/localtime /etc/localtime.org \
-    && ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
-    && cp /etc/sysconfig/clock /etc/sysconfig/clock.org \
-    && echo 'ZONE="Asia/Tokyo"' > /etc/sysconfig/clock
+RUN apk --update add tzdata && \
+	cp /usr/share/zoneinfo/Asia/Tokyo  /etc/localtime && \
+	echo "Asia/Tokyo" > /etc/timezone && \
+	apk del tzdata
 
 # Add packages
 # ------------
-RUN yum update -y && \
-    yum install epel-release -y && \
-    yum install -y \
-        gcc make perl perl-core openssl openssl-libs openssl-devel htop \
-        git bzip2 tar patch \
-        readline readline-devel \
-        zlib zlib-devel \
-        curl curl-devel \
-        bison bison-devel re2c libxml2-devel \
-        libjpeg-devel libpng-devel readline-devel libtidy-devel \
-        libxslt-devel libmcrypt libmcrypt-devel php-mcrypt \
-        php php-mbstring php-pdo php-mysql php-pgsql php-gd php-xml \
-        php-soap php-Smarty re2c libxml2-devel bison bison-devel \
-        perl-libwww-perl perl-Crypt-SSLeay \
-        ImageMagick ImageMagick-perl \
-        postfix \
-        libffi-devel \
-        mysql mysql-server mysql-devel \
-        postgresql postgresql-server postgresql-devel \
-        httpd httpd-devel mod_php mod_ssl \
-        net-tools sudo multitail zip tar bzip2 patch git \
-        nginx \
-    && yum clean all
+RUN apk --update add \
+    coreutils \
+    bash make patch tar bison \
+    htop \
+    git \
+    libxml2 libxml2-dev \
+    gcc g++ \
+    perl \
+    re2c \
+    openssl openssl-dev \
+    curl curl-dev \
+    libjpeg jpeg-dev \
+    libpng libpng-dev \
+    libmcrypt libmcrypt-dev \
+    readline readline-dev \
+    libffi libffi-dev \
+    cmake \
+    libxslt libxslt-dev \
+	&& rm -rf /var/cache/apk/*
+
+# Change shell to bash
+# --------------------
+RUN sed -i 's/\/bin\/ash/\/bin\/bash/g' /etc/passwd \
+    && exec /bin/bash -l
+
+# ↑bashに切り替わらない！
 
 # Install anyenv
 # --------------
@@ -60,11 +63,28 @@ RUN anyenv install plenv \
 
 # Install PHP by phpenv
 # ---------------------
+RUN mkdir ~/src \
+    && cd ~/src \ 
+    && wget https://github.com/htacg/tidy-html5/archive/master.zip \
+    && unzip master.zip \
+    && cd tidy-html5-master/build/cmake/ \
+    && cmake ../.. \
+    && make \
+    && make install \
+    && rm -fr ~/src
+
 RUN anyenv install phpenv \
     && . ~/.bashrc \
-    && phpenv install 5.6.0 \
-    && phpenv global 5.6.0 \
+    && phpenv install 5.4.45 \
+    && phpenv global 5.4.45 \
     && phpenv rehash
+
+# ↑PHPがインストール出来ない！TidyHtmlのインストール前に、PHPソースコードを直接修正＆--with-tidy=/usr/localをdefaultに書く必要あり。
+# だが、phpenvのソースDLとコンパイルの間にその処理をはさむ方法が不明（php-buildをなんとかする？）
+
+# sed -i 's/buffio.h/tidybuffio.h/' ext/tidy/*.c
+# sed -i 's/buffio.h/tidybuffio.h/' /tmp/php-build/source/5.6.0/ext/tidy/*.c
+
 
 # Entry point
 # -----------
