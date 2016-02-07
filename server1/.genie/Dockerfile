@@ -45,33 +45,30 @@ RUN git clone https://github.com/riywo/anyenv ~/.anyenv \
     && echo 'eval "$(anyenv init -)"' >> ~/.bashrc
 ENV PATH /root/.anyenv/bin:$PATH
 RUN source ~/.bashrc
-RUN anyenv install rbenv
-RUN source ~/.bashrc
-RUN anyenv install plenv
-RUN source ~/.bashrc
-RUN anyenv install phpenv
+# RUN anyenv install plenv
+# RUN source ~/.bashrc
+# RUN anyenv install phpenv
 
-# # Install Ruby by rbenv
-# # ---------------------
+# Install Ruby by rbenv
+# ---------------------
+RUN anyenv install rbenv \
+    source ~/.bashrc \
+    rbenv install 2.2.0 \
+    rbenv global 2.2.0
 
-# # RUN anyenv install rbenv
-# # RUN 
-# # RUN exec $SHELL -l
+# Install Perl by plenv
+# ---------------------
+RUN anyenv install plenv \
+    source ~/.bashrc \
+    plenv install 5.20.0 \
+    plenv global 5.20.0
 
-
-# # Install Perl by plenv
-# # ---------------------
-# RUN anyenv install plenv \
-#     && eval "$(anyenv init -)" \
-#     && plenv install 5.23.7 \
-#     && plenv global 5.23.7
-
-# # Install PHP by phpenv
-# # ---------------------
-# RUN anyenv install phpenv \
-#     && eval "$(anyenv init -)" \
-#     && phpenv install 7.0.2 \
-#     && phpenv global 7.0.2
+# Install PHP by phpenv
+# ---------------------
+RUN anyenv install phpenv \
+    source ~/.bashrc \
+    phpenv install 5.6.0 \
+    phpenv global 5.6.0
 
 # Entry point
 # -----------
