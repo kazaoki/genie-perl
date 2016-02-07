@@ -37,6 +37,12 @@ if($is_win) {
 	$can_say = !$?;
 }
 
+# -- ブラウザ起動コマンド
+my $open_cmd;
+   if($is_win  ) { $open_cmd = 'start'; }
+elsif($is_mac  ) { $open_cmd = 'open'; }
+elsif($is_linux) { $open_cmd = 'xdg-open'; }
+
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 
@@ -61,7 +67,7 @@ $config{GENERAL}->{config_name} ||= 'config'; # 未指定の場合 `.genie/confi
 my $genie_path = "./$genie_dir";
 my $now_path = Cwd::getcwd();
 $now_path =~ s/^([A-Za-z])\:\//\//; # ドライブレター削除（for Windows）
-my $drive_letter = $1;
+$config{GENERAL}->{drive_letter} = lc $1;
 my @dirs = split('/', $now_path);
 while(@dirs){
 	my $genie_path = join('/', @dirs);
@@ -74,14 +80,14 @@ while(@dirs){
 }
 
 # -- 設定ファイルをロード
-my $config_file = "$genie_dir/$config{GENERAL}->{config_name}.pl";
-if(-f $config_file){
+$config{GENERAL}->{config_path} = "$config{GENERAL}->{home_path}/$genie_dir/$config{GENERAL}->{config_name}.pl";
+if(-f $config{GENERAL}->{config_path}){
 	# -- 設定を読み込み
-	my $r = require $config_file;
+	my $r = require $config{GENERAL}->{config_path};
 	%config = (%config, %$r);
 } else {
 	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/clear init view httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
-		throw("設定ファイル（$config_file）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
+		throw("設定ファイル（$config{GENERAL}->{config_path}）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
 	}
 }
 
@@ -337,7 +343,7 @@ sub say {
 	if($is_mac) {
 	    `say -r 300 "$message"`;
 	} elsif ($is_win) {
-		`wscript $drive_letter\:$config{GENERAL}->{home_path}/$genie_dir/say.js "$message"`;
+		`wscript $config{GENERAL}->{drive_letter}\:$config{GENERAL}->{home_path}/$genie_dir/say.js "$message"`;
 	}
 }
 
@@ -484,7 +490,7 @@ sub up {
 
 		# -- 本体の起動（Apache）
 		{
-			my $vpath = $is_win ? '/'.lc($drive_letter).$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
+			my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
 			my $cmd =
 				'docker run -d'.
 				' -e TERM=xterm'.
@@ -643,6 +649,16 @@ sub clear {
 # genie config                                    設定の内容を確認する
 # --------------------------------------------------------------------
 sub config {
+
+	# -- エディタオープン
+	if ($ARGV[1] eq 'open') {
+		my $conf = $config{GENERAL}->{config_path};
+		if($is_win) {
+			$conf = "$config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_path}";
+		}
+		return `$open_cmd $conf`;
+	}
+
 	message(info=>Dumper(\%config));
 }
 
@@ -652,7 +668,7 @@ sub config {
 sub httpd {
 
 	# -- 公式httpdイメージから起動
-	my $vpath = $is_win ? '/'.lc($drive_letter).$now_path : $now_path;
+	my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$now_path : $now_path;
 	my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:5.5-apache";
 	# my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:5.6-apache";
 	# my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:7.0-apache";
@@ -671,11 +687,7 @@ sub httpd {
 		message(success=>"http://$ip:$port/");
 
 		# -- ブラウザ起動
-		my $open;
-		if($is_win) { $open = 'start'; }
-		elsif($is_mac) { $open = 'open'; }
-		elsif($is_linux) { $open = 'xdg-open'; }
-		`$open http://$ip:$port/`;
+		`$open_cmd http://$ip:$port/`;
 
 		# -- Ctrl+C時に自動的にコンテナ削除されるように
 		if($is_win) {
