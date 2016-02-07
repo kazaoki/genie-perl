@@ -3,9 +3,11 @@ return {
 	# Docker設定
 	# ----------
 	DOCKER => {
-		IMAGE   => 'kazaoki/genie',
-		MACHINE => 'default',
-		NAME    => 'genie-test',
+		IMAGE         => 'kazaoki/genie',
+		MACHINE       => 'default',
+		NAME          => 'genie-test',
+		OPTIONS       => '--cpuset-cpus=0-3', # `docker run` 時に渡す追加引数
+		OPTIONS_BUILD => '--cpuset-cpus=0-3', # `docker build` 時に渡す追加引数
 	},
 
 	# ネットワーク設定

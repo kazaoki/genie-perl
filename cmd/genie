@@ -478,12 +478,7 @@ sub up {
 			throw("$config{GENERAL}->{home_path}/$genie_dir/entry.sh が見当たりませんので起動できません。");
 		}
 
-		# -- PostgreSQLの起動
-		{
-			;
-		}
-
-		# -- MySQLの起動
+		# -- 外部コンテナの指定があれば起動
 		{
 			;
 		}
@@ -494,7 +489,10 @@ sub up {
 			my $cmd =
 				'docker run -d'.
 				' -e TERM=xterm'.
-				" -v $vpath/$genie_dir:/genie --name=$config{DOCKER}->{NAME} $config{DOCKER}->{IMAGE}"
+				" -v $vpath/$genie_dir:/genie".
+				" --name=$config{DOCKER}->{NAME}".
+				($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
+				" $config{DOCKER}->{IMAGE}"
 			;
 			my $output = `$cmd`;
 			if(!$?){
@@ -731,7 +729,12 @@ sub build {
 	print "\n";
 	if($input =~ /^y$/i ) {
 		# -- ビルド実行
-		my $cmd = "docker build -t $config{DOCKER}->{IMAGE} $nocache $config{GENERAL}->{home_path}/$genie_dir/";
+		my $cmd =
+			"docker build".
+			" -t $config{DOCKER}->{IMAGE}".
+			($config{DOCKER}->{OPTIONS_BUILD} ? " $config{DOCKER}->{OPTIONS_BUILD}" : '').
+			" $nocache $config{GENERAL}->{home_path}/$genie_dir/"
+		;
 		message(info=>"ビルドを開始します。\n$cmd");
 		my $result = `$cmd`;
 		if($?) {
