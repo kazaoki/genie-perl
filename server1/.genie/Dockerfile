@@ -26,6 +26,7 @@ RUN yum update -y && \
         perl-libwww-perl perl-Crypt-SSLeay \
         ImageMagick ImageMagick-perl \
         postfix \
+        libffi-devel \
         mysql mysql-server mysql-devel \
         postgresql postgresql-server postgresql-devel \
         httpd httpd-devel mod_php mod_ssl \
@@ -33,42 +34,37 @@ RUN yum update -y && \
         nginx \
     && yum clean all
 
-# RUN echo ">>>>> $SHELL <<<<<"
-
-# RUN echo 1
-# ENV PATH $HOME/.anyenv/bin:$PATH
-
 # Install anyenv
 # --------------
 RUN git clone https://github.com/riywo/anyenv ~/.anyenv \
     && echo 'export PATH="$HOME/.anyenv/bin:$PATH"' >> ~/.bashrc \
     && echo 'eval "$(anyenv init -)"' >> ~/.bashrc
 ENV PATH /root/.anyenv/bin:$PATH
-RUN source ~/.bashrc
-# RUN anyenv install plenv
-# RUN source ~/.bashrc
-# RUN anyenv install phpenv
+RUN . ~/.bashrc
 
 # Install Ruby by rbenv
 # ---------------------
 RUN anyenv install rbenv \
-    source ~/.bashrc \
-    rbenv install 2.2.0 \
-    rbenv global 2.2.0
+    && . ~/.bashrc \
+    && rbenv install 2.2.0 \
+    && rbenv global 2.2.0 \
+    && rbenv rehash
 
 # Install Perl by plenv
 # ---------------------
-RUN anyenv install plenv \
-    source ~/.bashrc \
-    plenv install 5.20.0 \
-    plenv global 5.20.0
+RUN anyenv install plenv
+    && . ~/.bashrc \
+    && plenv install 5.20.0 \
+    && plenv global 5.20.0 \
+    && plenv rehash
 
 # Install PHP by phpenv
 # ---------------------
 RUN anyenv install phpenv \
-    source ~/.bashrc \
-    phpenv install 5.6.0 \
-    phpenv global 5.6.0
+    && . ~/.bashrc \
+    && phpenv install 5.6.0 \
+    && phpenv global 5.6.0 \
+    && phpenv rehash
 
 # Entry point
 # -----------
