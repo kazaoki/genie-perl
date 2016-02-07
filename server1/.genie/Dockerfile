@@ -3,10 +3,10 @@ MAINTAINER kazaoki lab.
 
 # Set timezone
 # ------------
-RUN apk --update add tzdata && \
-	cp /usr/share/zoneinfo/Asia/Tokyo  /etc/localtime && \
-	echo "Asia/Tokyo" > /etc/timezone && \
-	apk del tzdata
+RUN apk --update add tzdata \
+	&& cp /usr/share/zoneinfo/Asia/Tokyo  /etc/localtime \
+	&& echo "Asia/Tokyo" > /etc/timezone \
+	&& apk del tzdata
 
 # Add packages
 # ------------
@@ -27,15 +27,16 @@ RUN apk --update add \
     readline readline-dev \
     libffi libffi-dev \
     cmake \
+    tree \
     libxslt libxslt-dev \
-	&& rm -rf /var/cache/apk/*
+    findutils \
+    apache2 apache2-dev \
+    && rm -rf /var/cache/apk/*
 
 # Change shell to bash
 # --------------------
 RUN sed -i 's/\/bin\/ash/\/bin\/bash/g' /etc/passwd \
     && exec /bin/bash -l
-
-# ↑bashに切り替わらない！
 
 # Install anyenv
 # --------------
@@ -64,27 +65,25 @@ RUN anyenv install plenv \
 # Install PHP by phpenv
 # ---------------------
 RUN mkdir ~/src \
-    && cd ~/src \ 
+    && cd ~/src \
     && wget https://github.com/htacg/tidy-html5/archive/master.zip \
     && unzip master.zip \
     && cd tidy-html5-master/build/cmake/ \
     && cmake ../.. \
     && make \
     && make install \
-    && rm -fr ~/src
+    && rm -fr ~/src \
+    && cd
 
 RUN anyenv install phpenv \
-    && . ~/.bashrc \
-    && phpenv install 5.4.45 \
+    && . ~/.bashrc
+
+RUN ln -s /genie/tidy_path_overwrite.sh /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
+RUN chmod +x /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
+
+RUN phpenv install 5.4.45 \
     && phpenv global 5.4.45 \
     && phpenv rehash
-
-# ↑PHPがインストール出来ない！TidyHtmlのインストール前に、PHPソースコードを直接修正＆--with-tidy=/usr/localをdefaultに書く必要あり。
-# だが、phpenvのソースDLとコンパイルの間にその処理をはさむ方法が不明（php-buildをなんとかする？）
-
-# sed -i 's/buffio.h/tidybuffio.h/' ext/tidy/*.c
-# sed -i 's/buffio.h/tidybuffio.h/' /tmp/php-build/source/5.6.0/ext/tidy/*.c
-
 
 # Entry point
 # -----------
