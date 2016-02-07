@@ -15,6 +15,8 @@ return {
 			'site.com',
 			'www.site.com',
 			'smtp.gmail.com',
+			'mysql999.com',
+			'postgresql999.com',
 		],
 		HOSTS_ETC => [
 			# {''=>'site.com'},
@@ -78,58 +80,45 @@ return {
 	MYSQL => {
 		ENABLED => 1,
 		DATABASES => [
-			# 内部コンテナのMySQLを利用
 			{
-				NAME => genie_db1,
-				USER => genie_user1,
-				PASS => 123456789,
-				# HOSTNAME_TO_LOCAL => mysql999.db.com,
-				CHARSET => UTF8,
+				NAME    => 'genie_db1',
+				USER    => 'genie_user1',
+				PASS    => '123456789',
+				CHARSET => 'UTF8',
 			},
-			# 外部コンテナのMySQLを利用（officialのみ対応：https://hub.docker.com/_/mysql/）
-			{
-				IMAGE => 'mysql:5.5',
-				NAME => genie_db2,
-				USER => genie_user2,
-				PASS => 123456789,
-				# HOSTNAME_TO_LOCAL => mysql999.db.com,
-				CHARSET => UTF8,
-			},
-		],
-		# -- 外部MySQLコンテナ起動（officialのみ対応：https://hub.docker.com/_/mysql/）
-		OUTER_DBS => [
-			# 1つめ
-			{
-				IMAGE => 'mysql:5.5',
-				NAME => genie_db1,
-				USER => genie_user1,
-				PASS => 123456789,
-				# HOSTNAME_TO_LOCAL => mysql999.db.com,
-				CHARSET => UTF8,
-			},
-			# 2つめ
-			{
-				IMAGE => 'mysql:5.5',
-				NAME => genie_db2,
-				USER => genie_user2,
-				PASS => 123456789,
-				# HOSTNAME_TO_LOCAL => mysql999.db.com,
-				CHARSET => UTF8,
-			},
+			# {
+			# 	IMAGE   => 'mysql:5.5', # 外部コンテナのMySQLを利用（officialのみ対応：https://hub.docker.com/r/library/mysql/tags/）
+			# 	NAME    => 'genie_db2',
+			# 	USER    => 'genie_user2',
+			# 	PASS    => '123456789',
+			# 	CHARSET => 'UTF8',
+			# },
 		],
 	},
 
-
-# # [PostgreSQL]
-# LAMP_PGSQL=0
-# LAMP_PGSQL_DB=lamp
-# LAMP_PGSQL_USER=lamp
-# LAMP_PGSQL_PASS=123456
-# LAMP_PGSQL_PORT=5432:5432
-# # LAMP_PGSQL_HOSTNAME_TO_LOCAL=pgsql3.db
-# LAMP_PGSQL_ENCODING=utf8
-# LAMP_PGSQL_LC_COLLATE=ja_JP.utf-8
-# LAMP_PGSQL_LC_CTYPE=ja_JP.utf-8
-
+	# PostgreSQL設定
+	# ---------
+	POSTGRESQL => {
+		ENABLED => 1,
+		DATABASES => [
+			{
+				NAME       => 'genie_db1',
+				USER       => 'genie_db1',
+				PASS       => '123456789',
+				ENCODING   => 'utf8',
+				LC_COLLATE => 'ja_JP.utf-8',
+				LC_CTYPE   => 'ja_JP.utf-8',
+			},
+			{
+				# IMAGE      => 'postgres:8.4', # 外部コンテナのPostgreSQLを利用（officialのみ対応：https://hub.docker.com/r/library/postgres/tags/）
+				# NAME       => 'genie_db1',
+				# USER       => 'genie_db1',
+				# PASS       => '123456789',
+				# ENCODING   => 'utf8',
+				# LC_COLLATE => 'ja_JP.utf-8',
+				# LC_CTYPE   => 'ja_JP.utf-8',
+			},
+		],
+	},
 
 };
