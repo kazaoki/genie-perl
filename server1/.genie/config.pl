@@ -1,5 +1,13 @@
 return {
 
+	# DATA_SCALAR => 123,
+	# DATA_ARRAY => [1,2,3],
+	# DATA_HASH => {
+	# 	UNDER1=>1,
+	# 	UNDER2=>2,
+	# 	UNDER3=>3,
+	# },
+
 	# Docker設定
 	# ----------
 	DOCKER => {
@@ -8,33 +16,24 @@ return {
 		NAME          => 'genie-test',
 		OPTIONS       => '--cpuset-cpus=0-3', # `docker run` 時に渡す追加引数
 		OPTIONS_BUILD => '--cpuset-cpus=0-3', # `docker build` 時に渡す追加引数
-	},
-
-	# ネットワーク設定
-	# ----------------
-	NETWORK => {
-		HOSTS_ME => [
+		HOSTS_ME      => [
 			'site.com',
 			'www.site.com',
 			'smtp.gmail.com',
 			'mysql999.com',
 			'postgresql999.com',
 		],
-		HOSTS_ETC => [
-			# {''=>'site.com'},
+		HOSTS_ETC     => [
+			'8.8.8.8:dns.google',
+		],
+		PORTS         => [
+			80,
+			8080,
+			443,
+			3306,
+			'5432:5432',
 		],
 	},
-
-	# ポート開放設定
-	# --------------
-	# '80:80'と指定することで強制バインド可能
-	PORTS => [
-		80,
-		8080,
-		443,
-		3306,
-		5432,
-	],
 
 	# Perl設定
 	# --------

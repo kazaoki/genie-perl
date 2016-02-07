@@ -485,12 +485,48 @@ sub up {
 
 		# -- 本体の起動（Apache）
 		{
+			# -- 設定値を環境変数として渡す形(-e)に変換
+			my %envs;
+			my $make_envs;
+			$make_envs = sub {
+				my($var, $label) = @_;
+				$label = uc $label;
+				if(!ref $var) {
+					$var =~ s/\"//g;
+					if($envs{$label} ne '') {
+						$envs{$label} .= ",$var";
+					} else {
+						$envs{$label} = $var;
+					}
+				}
+				elsif(ref $var eq 'ARRAY') {
+					my $count = 1;
+					foreach(@{$var}){
+						if(ref $_ eq 'HASH') {
+							&$make_envs($_, "${label}_${count}");
+						} else {
+							&$make_envs($_, $label);
+						}
+						$count ++; # ハッシュアレイの場合、1から番号を振る
+					}
+				}
+				elsif(ref $var eq 'HASH') {
+					foreach(keys %{$var}){
+						&$make_envs($var->{$_}, ($label ne '' ? "${label}_" : '').$_);
+					}
+				}
+			};
+			&$make_envs(\%config, 'GENIE');
+			my $envs = join(' ', map { sprintf('-e %s="%s"', $_, $envs{$_}) } sort(keys %envs));
+
+			# -- コマンドの作成
 			my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
 			my $cmd =
 				'docker run -d'.
 				' -e TERM=xterm'.
 				" -v $vpath/$genie_dir:/genie".
 				" --name=$config{DOCKER}->{NAME}".
+				" $envs".
 				($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
 				" $config{DOCKER}->{IMAGE}"
 			;
