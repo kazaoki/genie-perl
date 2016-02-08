@@ -12,14 +12,11 @@ RUN apk --update add tzdata \
 # ------------
 RUN apk --update add \
     coreutils \
+    findutils \
+    net-tools sudo zip bzip2 \
+    git htop autoconf gcc g++ re2c \
     bash make patch tar bison \
-    htop \
-    git \
-    autoconf \
     libxml2 libxml2-dev \
-    gcc g++ \
-    perl \
-    re2c \
     openssl openssl-dev \
     curl curl-dev \
     libjpeg jpeg-dev \
@@ -27,11 +24,16 @@ RUN apk --update add \
     libmcrypt libmcrypt-dev \
     readline readline-dev \
     libffi libffi-dev \
-    cmake \
-    tree \
     libxslt libxslt-dev \
-    findutils \
+    cmake tree \
     apache2 apache2-dev \
+    mysql mysql-client \
+    postgresql postgresql-client postgresql-dev \
+    postfix \
+    imagemagick \
+    perl \
+    php \
+    ruby \
     && rm -rf /var/cache/apk/*
 
 # Change shell to bash
@@ -46,30 +48,22 @@ RUN git clone https://github.com/riywo/anyenv ~/.anyenv \
     && echo 'eval "$(anyenv init -)"' >> ~/.bashrc
 ENV PATH /root/.anyenv/bin:$PATH
 
-# Install Ruby by rbenv
-# ---------------------
+# Install rbenv
+# -------------
 RUN ["/bin/bash", "-c", " \
         source ~/.bashrc \
         && anyenv install rbenv \
-        && source ~/.bashrc \
-        && rbenv install 2.2.0 \
-        && rbenv global 2.2.0 \
-        && rbenv rehash \
     "]
 
-# Install Perl by plenv
-# ---------------------
+# Install plenv
+# -------------
 RUN ["/bin/bash", "-c", " \
         source ~/.bashrc \
         && anyenv install plenv \
-        && source ~/.bashrc \
-        && plenv install 5.20.0 \
-        && plenv global 5.20.0 \
-        && plenv rehash \
     "]
 
-# Install PHP by phpenv
-# ---------------------
+# Install phpenv
+# --------------
 RUN mkdir ~/src \
     && cd ~/src \
     && wget https://github.com/htacg/tidy-html5/archive/master.zip \
@@ -84,14 +78,19 @@ RUN ["/bin/bash", "-c", " \
         source ~/.bashrc \
         && anyenv install phpenv \
     "]
-COPY tidy_path_overwrite.sh /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
-RUN chmod +x /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
-RUN ["/bin/bash", "-c", " \
-        source ~/.bashrc \
-        && phpenv install 5.6.0 \
-        && phpenv global 5.6.0 \
-        && phpenv rehash \
-    "]
+
+# COPY tidy_path_overwrite.sh /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
+# RUN chmod +x /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
+# RUN ["/bin/bash", "-c", " \
+#         source ~/.bashrc \
+#         && phpenv install 5.6.0 \
+#         && phpenv global 5.6.0 \
+#         && phpenv rehash \
+#     "]
+
+# Install PhantomJS binary for alpine linux
+# -----------------------------------------
+RUN curl -Ls https://github.com/fgrehm/docker-phantomjs2/releases/download/v2.0.0-20150722/dockerized-phantomjs.tar.gz | tar xz -C /
 
 # Entry point
 # -----------
