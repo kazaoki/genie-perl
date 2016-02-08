@@ -45,23 +45,28 @@ RUN git clone https://github.com/riywo/anyenv ~/.anyenv \
     && echo 'export PATH="$HOME/.anyenv/bin:$PATH"' >> ~/.bashrc \
     && echo 'eval "$(anyenv init -)"' >> ~/.bashrc
 ENV PATH /root/.anyenv/bin:$PATH
-RUN . ~/.bashrc
 
 # Install Ruby by rbenv
 # ---------------------
-RUN anyenv install rbenv \
-    && . ~/.bashrc \
-    && rbenv install 2.2.0 \
-    && rbenv global 2.2.0 \
-    && rbenv rehash
+RUN ["/bin/bash", "-c", " \
+        source ~/.bashrc \
+        && anyenv install rbenv \
+        && source ~/.bashrc \
+        && rbenv install 2.2.0 \
+        && rbenv global 2.2.0 \
+        && rbenv rehash \
+    "]
 
 # Install Perl by plenv
 # ---------------------
-RUN anyenv install plenv \
-    && . ~/.bashrc \
-    && plenv install 5.20.0 \
-    && plenv global 5.20.0 \
-    && plenv rehash
+RUN ["/bin/bash", "-c", " \
+        source ~/.bashrc \
+        && anyenv install plenv \
+        && source ~/.bashrc \
+        && plenv install 5.20.0 \
+        && plenv global 5.20.0 \
+        && plenv rehash \
+    "]
 
 # Install PHP by phpenv
 # ---------------------
@@ -75,13 +80,18 @@ RUN mkdir ~/src \
     && make install \
     && rm -fr ~/src \
     && cd
-RUN anyenv install phpenv \
-    && . ~/.bashrc
-RUN ln -s /genie/tidy_path_overwrite.sh /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
+RUN ["/bin/bash", "-c", " \
+        source ~/.bashrc \
+        && anyenv install phpenv \
+    "]
+COPY tidy_path_overwrite.sh /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
 RUN chmod +x /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/before-install.d/tidy_path_overwrite.sh
-RUN phpenv install 5.4.45 \
-    && phpenv global 5.4.45 \
-    && phpenv rehash
+RUN ["/bin/bash", "-c", " \
+        source ~/.bashrc \
+        && phpenv install 5.6.0 \
+        && phpenv global 5.6.0 \
+        && phpenv rehash \
+    "]
 
 # Entry point
 # -----------
