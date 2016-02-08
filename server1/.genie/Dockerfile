@@ -14,7 +14,7 @@ RUN yum update -y && \
     yum install epel-release -y && \
     yum install -y \
         gcc make perl perl-core openssl openssl-libs openssl-devel htop \
-        git bzip2 tar patch \
+        git bzip2 tar patch wget \
         readline readline-devel \
         zlib zlib-devel \
         curl curl-devel \
@@ -32,6 +32,7 @@ RUN yum update -y && \
         httpd httpd-devel mod_php mod_ssl \
         net-tools sudo multitail zip tar bzip2 patch git \
         nginx \
+        ruby \
     && yum clean all
 
 # Install anyenv
@@ -45,26 +46,25 @@ RUN . ~/.bashrc
 # Install Ruby by rbenv
 # ---------------------
 RUN anyenv install rbenv \
-    && . ~/.bashrc \
-    && rbenv install 2.2.0 \
-    && rbenv global 2.2.0 \
-    && rbenv rehash
+    && . ~/.bashrc
 
 # Install Perl by plenv
 # ---------------------
 RUN anyenv install plenv \
-    && . ~/.bashrc \
-    && plenv install 5.20.0 \
-    && plenv global 5.20.0 \
-    && plenv rehash
+    && . ~/.bashrc
 
 # Install PHP by phpenv
 # ---------------------
 RUN anyenv install phpenv \
-    && . ~/.bashrc \
-    && phpenv install 5.6.0 \
-    && phpenv global 5.6.0 \
-    && phpenv rehash
+    && . ~/.bashrc
+
+# Install PhantomJS
+RUN cd /root/ \
+    && wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 \
+    && tar jxvf phantomjs-2.1.1-linux-x86_64.tar.bz2 \
+    && mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin \
+    && rm -fr phantomjs-2.1.1-linux-x86_64* \
+    && cd
 
 # Entry point
 # -----------
