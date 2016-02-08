@@ -1,12 +1,12 @@
-FROM centos:6.7
+FROM centos:7
 MAINTAINER kazaoki lab.
 
 # Set timezone
 # ------------
 RUN cp /etc/localtime /etc/localtime.org \
     && ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
-    && cp /etc/sysconfig/clock /etc/sysconfig/clock.org \
-    && echo 'ZONE="Asia/Tokyo"' > /etc/sysconfig/clock
+    && echo 'LANG="ja_JP.UTF-8"' > /etc/locale.conf \
+    && . /etc/locale.conf
 
 # Add packages
 # ------------
