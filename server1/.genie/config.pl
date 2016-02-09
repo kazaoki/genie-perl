@@ -12,7 +12,7 @@ return {
 	# ----------
 	DOCKER => {
 		IMAGE         => 'kazaoki/genie',
-		MACHINE       => 'default',
+		MACHINE       => '',
 		NAME          => 'genie-test',
 		OPTIONS       => '--cpuset-cpus=0-3', # `docker run` 時に渡す追加引数
 		OPTIONS_BUILD => '--cpuset-cpus=0-3', # `docker build` 時に渡す追加引数

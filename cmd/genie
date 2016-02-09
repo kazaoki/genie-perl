@@ -41,7 +41,10 @@ if($is_win) {
 my $open_cmd;
    if($is_win  ) { $open_cmd = 'start'; }
 elsif($is_mac  ) { $open_cmd = 'open'; }
-elsif($is_linux) { $open_cmd = 'xdg-open'; }
+elsif($is_linux) {
+	`xdpyinfo >/dev/null 2>&1`;
+	$open_cmd = 'xdg-open' if(!$?);
+}
 
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
@@ -92,27 +95,30 @@ if(-f $config{GENERAL}->{config_path}){
 }
 
 # --------------------------------------------------------------------
-# Docker環境用意
+# Dockerマシーン環境用意
+# ※設定がされていたら。
 # --------------------------------------------------------------------
 
-# -- default設定
-$config{DOCKER}->{MACHINE} ||= 'default';
+# -- docker-machineコマンドが存在してるかどうか
+`docker-machine`;
+my $is_docker_machine = !$?;
 
-# -- docker-machine起動
-{
+# -- Dockerマシーンが指定されていれば切り替える
+if($is_docker_machine && $config{DOCKER}->{MACHINE} ne '') {
+	# -- docker-machine起動
 	my $cmd = 'docker-machine start ' . $config{DOCKER}->{MACHINE}. ' ' . $hide_err;
 	my $result = `$cmd`;
-	if($? && $result !~ /^Starting/) {
-		throw('Dockerマシンの起動に失敗しました。', $cmd);
-	}
-}
-
-# -- docker-machineの環境切り替え
-{
-	my $cmd = 'docker-machine env ' . $config{DOCKER}->{MACHINE} . ' ' . $hide_err;
-	foreach my $line (split(/[\r\n]+/, `$cmd`)) {
-		if($line =~ /(DOCKER_\w+)\s*\=\s*\"?([^\"]+)\"?/) {
-			$ENV{$1} = $2;
+	if(!$?) {
+	 	if($result !~ /^Starting/) {
+			throw('Dockerマシンの起動に失敗しました。', $cmd);
+	 	}
+	} else {
+		# -- docker-machineの環境切り替え
+		$cmd = 'docker-machine env ' . $config{DOCKER}->{MACHINE} . ' ' . $hide_err;
+		foreach my $line (split(/[\r\n]+/, `$cmd`)) {
+			if($line =~ /(DOCKER_\w+)\s*\=\s*\"?([^\"]+)\"?/) {
+				$ENV{$1} = $2;
+			}
 		}
 	}
 }
@@ -376,7 +382,7 @@ return {
 	# ----------
 	DOCKER => {
 		IMAGE   => 'kazaoki/genie',
-		MACHINE => 'default',
+		MACHINE => '',
 		NAME    => 'genie-test',
 	},
 
@@ -578,16 +584,16 @@ sub cmd {
 sub view {
 
 	# -- Dockerマシン一覧
-	{
-		echo "Dockerマシン一覧\n";
+	if($is_docker_machine) {
+		echo "  Dockerマシン一覧\n";
 		my $result = `docker-machine ls`;
 		message(info=>$result, 1);
+		print "\n";
 	}
-	print "\n";
 
 	# -- ACTIVEマシンのイメージ一覧
 	{
-		echo "ACTIVEマシンのイメージ一覧\n";
+		echo "  イメージ一覧\n";
 		my $result = `docker images`;
 		message(info=>$result, 1);
 	}
@@ -595,7 +601,7 @@ sub view {
 
 	# -- ACTIVEマシンのコンテナ一覧
 	{
-		echo "ACTIVEマシンのコンテナ一覧\n";
+		echo "  コンテナ一覧\n";
 		my $result = `docker ps -a`;
 		message(info=>$result, 1);
 	}
@@ -703,34 +709,44 @@ sub httpd {
 
 	# -- 公式httpdイメージから起動
 	my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$now_path : $now_path;
-	my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:5.5-apache";
-	# my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:5.6-apache";
-	# my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:7.0-apache";
+	my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:5.6-apache";
 	my $cid = `$cmd`;
 	if($?) {
 		throw('Webサーバが起動しませんでした。', $cmd);
 	}
+	chomp $cid;
 
 	# -- コンテナの情報からブラウザを起動
 	if(`docker port $cid 80` =~ /(\d+)$/) {
 
 		# -- IPとポートを取得
 		my $port = $1;
-		my $ip = `docker-machine ip default`;
-		chomp $ip;
+		my $ip;
+		if($is_docker_machine) {
+			$ip = `docker-machine ip default`;
+			chomp $ip;
+		} else {
+			$ip = '127.0.0.1';
+		}
 		message(success=>"http://$ip:$port/");
 
 		# -- ブラウザ起動
-		`$open_cmd http://$ip:$port/`;
+		if($open_cmd){
+			`$open_cmd http://$ip:$port/`;
+		}
 
 		# -- Ctrl+C時に自動的にコンテナ削除されるように
 		if($is_win) {
 			# Winの場合
-			$SIG{INT} = sub { `docker rm -f $cid`; };
+			$SIG{INT} = sub {
+				print "\nDeleting container $cid ...\n\n";
+				`docker rm -f $cid`;
+			};
 			system("docker logs -f $cid");
 		} else {
 			# Mac/Linuxの場合
 			system("docker logs -f $cid");
+			print "\nDeleting container $cid ...\n\n";
 			`docker rm -f $cid`;
 		}
 
@@ -754,13 +770,25 @@ sub build {
 	}
 
 	# -- 確認
-	my $input = input(
-		sprintf(
-			'%s マシーンに %s イメージをビルドしてもよろしいでしょうか。[y/N]:',
-			$config{DOCKER}->{MACHINE},
-			$config{DOCKER}->{IMAGE},
-		)
-	);
+	my $input;
+	if($is_docker_machine) {
+		my $machine_name = $config{DOCKER}->{MACHINE} || `docker-machine active`;
+		chomp $machine_name;
+		$input = input(
+			sprintf(
+				'%s マシーンに %s イメージをビルドしてもよろしいでしょうか。[y/N]:',
+				$machine_name,
+				$config{DOCKER}->{IMAGE},
+			)
+		);
+	} else {
+		$input = input(
+			sprintf(
+				'%s イメージをビルドしてもよろしいでしょうか。[y/N]:',
+				$config{DOCKER}->{IMAGE},
+			)
+		);
+	}
 
 	print "\n";
 	if($input =~ /^y$/i ) {
