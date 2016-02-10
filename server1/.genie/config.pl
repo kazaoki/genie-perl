@@ -14,8 +14,8 @@ return {
 		IMAGE         => 'kazaoki/genie',
 		MACHINE       => '',
 		NAME          => 'genie-test',
-		OPTIONS       => '--cpuset-cpus=0-3', # `docker run` 時に渡す追加引数
-		OPTIONS_BUILD => '--cpuset-cpus=0-3', # `docker build` 時に渡す追加引数
+		OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
+		OPTIONS_BUILD => '--cpuset-cpus=0-1', # `docker build` 時に渡す追加引数
 		HOSTS_ME      => [
 			'site.com',
 			'www.site.com',
