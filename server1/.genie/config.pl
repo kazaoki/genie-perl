@@ -65,15 +65,13 @@ return {
 	# ----------
 	NGINX => {
 		ENABLED => 1,
-		PUBLIC_PATH => '../www',
-		BANDWIDTH => '',
 	},
 
 	# Postfix設定
 	# -----------
 	POSTFIX => {
 		ENABLED => 1,
-		FORCE_ENVELOPE => 'xxx@xxx.xxx',
+		FORCE_ENVELOPE => 'test@kazaoki.jp',
 	},
 
 	# MySQL設定

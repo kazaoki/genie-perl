@@ -1,37 +1,27 @@
 #!/bin/sh
 
-# # -- general
-# echo ". /etc/bashrc" >> /root/.bashrc
+# -- general
+echo ". /etc/bashrc" >> /root/.bashrc
 
-# # -- volume sync mode
-# if [[ $LAMP_NO_SYNC == 1 ]]; then
-#   rsync -rtuv --delete /var/www/contents/ /var/www/contents_cp/
-#   chown -R lamp:lamp /var/www/contents_cp
-#   find /var/www/contents_cp/ -type d -exec chmod 0755 {} \;
-#   find /var/www/contents_cp/ -type f -exec chmod 0644 {} \;
-#   find /var/www/contents_cp/ -type f -name *.cgi -exec chmod 0755 {} \;
-#   rm -fr /var/www/html
-#   ln -s /var/www/contents_cp /var/www/html
-# else
-#   rm -fr /var/www/html
-#   ln -s /var/www/contents /var/www/html
-# fi
+# -- Apache
+passenv_string=`set | grep -i '^GENIE_' | perl -pe 'while(<>){ chomp; $_=~ /([^\=]+)/; print "$1 "; }'`
+sed -i "/<__PASSENV__>/,/<\/__PASSENV__>/c\
+\ \ # <__PASSENV__>\n\
+  PassEnv $passenv_string\n\
+  # </__PASSENV__>" /etc/httpd/conf/httpd.conf
+service httpd start
+echo 'Apache started' >> /var/log/entry.log
 
-# # -- Apache
-# passenv_string=`set | grep -i '^LAMP' | perl -pe 'while(<>){ chomp; $_=~ /([^\=]+)/; print "$1 "; }'`
-# sed -i "/<__PASSENV__>/,/<\/__PASSENV__>/c\
-# \ \ # <__PASSENV__>\n\
-#   PassEnv $passenv_string\n\
-#   # </__PASSENV__>" /etc/httpd/conf/httpd.conf
-# service httpd start
-
-# # -- Postfix
-# if [[ $LAMP_FORCE_ENVELOPE != '' ]]; then
-#   echo "canonical_classes = envelope_sender, envelope_recipient" >> /etc/postfix/main.cf
-#   echo "canonical_maps = regexp:/etc/postfix/canonical.regexp" >> /etc/postfix/main.cf
-#   echo "/^.+$/ $LAMP_FORCE_ENVELOPE" >> /etc/postfix/canonical.regexp
-# fi
-# service postfix start
+# -- Postfix
+if [[ $GENIE_POSTFIX_ENABLED ]]; then
+  if [[ $GENIE_POSTFIX_FORCE_ENVELOPE != '' ]]; then
+    echo "canonical_classes = envelope_sender, envelope_recipient" >> /etc/postfix/main.cf
+    echo "canonical_maps = regexp:/etc/postfix/canonical.regexp" >> /etc/postfix/main.cf
+    echo "/^.+$/ $GENIE_POSTFIX_FORCE_ENVELOPE" >> /etc/postfix/canonical.regexp
+  fi
+  service postfix start
+  echo 'Postfix started' >> /var/log/entry.log
+fi
 
 # # -- PostgreSQL
 # if [[ $LAMP_PGSQL == 1 ]]; then
@@ -74,32 +64,12 @@
 #   fi
 # fi
 
-# # -- Mojolicious Web App
-# if [[ $LAMP_NO_SYNC == 1 ]]; then
-#   # for rspec no sync test
-#   sh -c 'cd /app && /usr/local/bin/start_server --port=5000 --interval=3 --pid-file=/var/run/kantaro_web.pid --status-file=/var/run/kantaro_web.status -- /usr/local/bin/plackup -E development -s Starlet -l 0:5000 --max-workers=5 --max-keepalive-reqs=5 --max-reqs-per-child=1000 script/kantaro_web' &
-# else
-#   # for develop
-#   sh -c 'cd /app && /usr/local/bin/morbo -v -l http://*:5000 script/kantaro_web' &
-# fi
-# #sh -c 'cd /app && /usr/local/bin/start_server --port=5000 --interval=3 --pid-file=/var/run/kantaro_web.pid --status-file=/var/run/kantaro_web.status -- /usr/local/bin/plackup -E production -s Starlet -l 0:5000 --max-workers=5 --max-keepalive-reqs=5 --max-reqs-per-child=1000 script/kantaro_web' &
-
-
-# # -- Mojolicious System App
-# if [[ $LAMP_NO_SYNC == 1 ]]; then
-#   # for rspec no sync test
-#   sh -c 'cd /app && /usr/local/bin/start_server --port=4433 --interval=3 --pid-file=/var/run/kantaro_system.pid --status-file=/var/run/kantaro_system.status -- /usr/local/bin/plackup -E development -s Starlet -l 0:4433 --max-workers=5 --max-keepalive-reqs=5 --max-reqs-per-child=1000 script/kantaro_system' &
-# else
-#   # for develop
-#   sh -c 'cd /app && /usr/local/bin/morbo -v -l https://*:4433 script/kantaro_system' &
-# fi
-# #sh -c 'cd /app && /usr/local/bin/start_server --port=4433 --interval=3 --pid-file=/var/run/kantaro_system.pid --status-file=/var/run/kantaro_system.status -- /usr/local/bin/plackup -E production -s Starlet -l 0:4433 --max-workers=5 --max-keepalive-reqs=5 --max-reqs-per-child=1000 script/kantaro_system' &
 
 # # -- Nginx
 # service nginx start
 
 # -- entry finished
-# echo 'finished' >> /var/log/entry.log
+echo 'entry.sh finished' >> /var/log/entry.log
 
 # -- daemon loop start
 while true

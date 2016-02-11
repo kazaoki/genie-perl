@@ -478,7 +478,9 @@ sub demo {
 # --------------------------------------------------------------------
 sub up {
 	if(is_up()) {
-		message(danger=>'起動中です：'.$config{DOCKER}->{NAME});
+		message(warning=>'起動中でしたので再起動します：'.$config{DOCKER}->{NAME});
+		down();
+		up();
 	} else {
 		if(!-s $config{GENERAL}->{home_path}."/$genie_dir/entry.sh"){
 			throw("$config{GENERAL}->{home_path}/$genie_dir/entry.sh が見当たりませんので起動できません。");
@@ -536,10 +538,37 @@ sub up {
 				($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
 				" $config{DOCKER}->{IMAGE}"
 			;
-			my $output = `$cmd`;
+			my $cid = `$cmd`;
+			chomp $cid;
 			if(!$?){
-				message(info=>'起動しました：'.$config{DOCKER}->{NAME}."\n".$output);
+				message(info=>'起動開始：'.$config{DOCKER}->{NAME}."\n".$cid);
 			}
+			print '  ';
+			my $done_sw;
+			my $last_line = 0;
+			while(!$done_sw){
+				`docker exec $cid sh -c "ls -la /var/log/entry.log >/dev/null 2>&1"`;
+				if(!$?){
+					my $log = `docker exec $cid cat /var/log/entry.log`;
+					my @logs = split("\n", $log);
+					my $unshow_count = scalar(@logs)-$last_line;
+					if($unshow_count) {
+						foreach(@logs[-$unshow_count .. -1]){
+							if($_ eq 'entry.sh finished') {
+								$done_sw = 1;
+							}
+							print "> $_\n  ";
+						}
+						$last_line = scalar(@logs);
+					}
+				}
+				if(!$done_sw){
+					print '.';
+					sleep 1;
+				}
+			}
+			print "\n";
+			message(info=>'起動完了しました：'.$config{DOCKER}->{NAME});
 		}
 	}
 }
