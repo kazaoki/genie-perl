@@ -527,17 +527,22 @@ sub up {
 			&$make_envs(\%config, 'GENIE');
 			my $envs = join(' ', map { sprintf('-e %s="%s"', $_, $envs{$_}) } sort(keys %envs));
 
-			# -- コマンドの作成
+			# -- runコマンドの作成
 			my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
 			my $cmd =
 				'docker run -d'.
 				' -e TERM=xterm'.
 				" -v $vpath/$genie_dir:/genie".
+				" -v $vpath/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
+				" -p 80".
 				" --name=$config{DOCKER}->{NAME}".
+				# " --privileged".
 				" $envs".
 				($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
 				" $config{DOCKER}->{IMAGE}"
 			;
+
+			# -- runコマンドの実行
 			my $cid = `$cmd`;
 			chomp $cid;
 			if(!$?){
@@ -569,6 +574,27 @@ sub up {
 			}
 			print "\n";
 			message(info=>'起動完了しました：'.$config{DOCKER}->{NAME});
+
+			# -- コンテナの情報からブラウザを起動
+			if(`docker port $cid 80` =~ /(\d+)$/) {
+
+				# -- IPとポートを取得
+				my $port = $1;
+				my $ip;
+				if($is_docker_machine) {
+					$ip = `docker-machine ip default`;
+					chomp $ip;
+				} else {
+					$ip = '127.0.0.1';
+				}
+				message(success=>"http://$ip:$port/");
+
+				# -- ブラウザ起動
+				if($open_cmd){
+					`$open_cmd http://$ip:$port/`;
+				}
+			}
+
 		}
 	}
 }

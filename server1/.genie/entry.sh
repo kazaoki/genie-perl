@@ -4,12 +4,38 @@
 echo ". /etc/bashrc" >> /root/.bashrc
 
 # -- Apache
+if [[ $GENIE_APACHE_BANDWIDTH ]]; then
+  sed -i "/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
+\ \ # <__BANDWIDTH__>\n\
+    <IfModule mod_bw.c>\n\
+      BandWidthModule On\n\
+      ForceBandWidthModule On\n\
+      BandWidth all ${GENIE_APACHE_BANDWIDTH}\n\
+    </IfModule>\n\
+  # </__BANDWIDTH__>" /etc/httpd/conf/httpd.conf
+else
+  sed -i '/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
+  # <__BANDWIDTH__>\
+  # </__BANDWIDTH__>' /etc/httpd/conf/httpd.conf
+fi
+if [[ $GENIE_APACHE_NO_CACHE ]]; then
+  sed -i '/<__NO_CACHE__>/,/<\/__NO_CACHE__>/c\
+  # <__NO_CACHE__>\
+    FileEtag None\
+    RequestHeader unset If-Modified-Since\
+    Header set Cache-Control no-store\
+  # </__NO_CACHE__>' /etc/httpd/conf/httpd.conf
+else
+  sed -i '/<__NO_CACHE__>/,/<\/__NO_CACHE__>/c\
+  # <__NO_CACHE__>\
+  # </__NO_CACHE__>' /etc/httpd/conf/httpd.conf
+fi
 passenv_string=`set | grep -i '^GENIE_' | perl -pe 'while(<>){ chomp; $_=~ /([^\=]+)/; print "$1 "; }'`
 sed -i "/<__PASSENV__>/,/<\/__PASSENV__>/c\
 \ \ # <__PASSENV__>\n\
   PassEnv $passenv_string\n\
   # </__PASSENV__>" /etc/httpd/conf/httpd.conf
-service httpd start
+/usr/sbin/httpd
 echo 'Apache started' >> /var/log/entry.log
 
 # -- Postfix
@@ -19,7 +45,7 @@ if [[ $GENIE_POSTFIX_ENABLED ]]; then
     echo "canonical_maps = regexp:/etc/postfix/canonical.regexp" >> /etc/postfix/main.cf
     echo "/^.+$/ $GENIE_POSTFIX_FORCE_ENVELOPE" >> /etc/postfix/canonical.regexp
   fi
-  service postfix start
+  /usr/sbin/postfix start
   echo 'Postfix started' >> /var/log/entry.log
 fi
 

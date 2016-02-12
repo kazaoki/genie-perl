@@ -103,6 +103,10 @@ RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g'
     && echo '  EnableSendfile Off' >> /etc/httpd/conf/httpd.conf \
     && echo '  # <__PASSENV__>' >> /etc/httpd/conf/httpd.conf \
     && echo '  # </__PASSENV__>' >> /etc/httpd/conf/httpd.conf \
+    && echo '  # <__BANDWIDTH__>' >> /etc/httpd/conf/httpd.conf \
+    && echo '  # </__BANDWIDTH__>' >> /etc/httpd/conf/httpd.conf \
+    && echo '  # <__NO_CACHE__>' >> /etc/httpd/conf/httpd.conf \
+    && echo '  # </__NO_CACHE__>' >> /etc/httpd/conf/httpd.conf \
     && echo '</Directory>' >> /etc/httpd/conf/httpd.conf
 
 # RUN sed -i 's/User\ apache/User\ lamp/g' /etc/httpd/conf/httpd.conf \

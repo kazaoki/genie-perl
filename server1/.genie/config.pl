@@ -56,9 +56,10 @@ return {
 	# Apache設定
 	# ----------
 	APACHE => {
-		ENABLED => 1,
-		PUBLIC_PATH => '../www',
-		BANDWIDTH => '',
+		ENABLED     => 1,
+		PUBLIC_PATH => 'public_html',
+		# BANDWIDTH   => 100,
+		# NO_CACHE    => 1,
 	},
 
 	# Nginx設定
