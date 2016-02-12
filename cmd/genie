@@ -478,7 +478,7 @@ sub demo {
 # --------------------------------------------------------------------
 sub up {
 	if(is_up()) {
-		message(warning=>'起動中でしたので再起動します：'.$config{DOCKER}->{NAME});
+		message(warning=>'再起動します：'.$config{DOCKER}->{NAME});
 		down();
 		up();
 	} else {
@@ -548,28 +548,32 @@ sub up {
 			if(!$?){
 				message(info=>'起動開始：'.$config{DOCKER}->{NAME}."\n".$cid);
 			}
+
+			# -- entry.sh と after.sh 完了まで待つ
 			print '  ';
-			my $done_sw;
-			my $last_line = 0;
-			while(!$done_sw){
-				`docker exec $cid sh -c "ls -la /var/log/entry.log >/dev/null 2>&1"`;
-				if(!$?){
-					my $log = `docker exec $cid cat /var/log/entry.log`;
-					my @logs = split("\n", $log);
-					my $unshow_count = scalar(@logs)-$last_line;
-					if($unshow_count) {
-						foreach(@logs[-$unshow_count .. -1]){
-							if($_ eq 'entry.sh finished') {
-								$done_sw = 1;
+			foreach my $shell (qw|entry after|){
+				my $done_sw;
+				my $last_line = 0;
+				while(!$done_sw){
+					`docker exec $cid sh -c "ls -la /var/log/$shell.log >/dev/null 2>&1"`;
+					if(!$?){
+						my $log = `docker exec $cid cat /var/log/$shell.log`;
+						my @logs = split("\n", $log);
+						my $unshow_count = scalar(@logs)-$last_line;
+						if($unshow_count) {
+							foreach(@logs[-$unshow_count .. -1]){
+								if($_ eq "$shell.sh finished") {
+									$done_sw = 1;
+								}
+								print "> $_\n  ";
 							}
-							print "> $_\n  ";
+							$last_line = scalar(@logs);
 						}
-						$last_line = scalar(@logs);
 					}
-				}
-				if(!$done_sw){
-					print '.';
-					sleep 1;
+					if(!$done_sw){
+						print '.';
+						sleep 1;
+					}
 				}
 			}
 			print "\n";

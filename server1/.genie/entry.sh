@@ -97,6 +97,10 @@ fi
 # -- entry finished
 echo 'entry.sh finished' >> /var/log/entry.log
 
+# -- run after.sh
+sh -c after.sh
+echo 'after.sh finished' >> /var/log/after.log
+
 # -- daemon loop start
 while true
 do
