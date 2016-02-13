@@ -15,22 +15,21 @@ echo ". /etc/bashrc" >> /root/.bashrc
 #   fi
 # fi
 
-# # -- php install
-# if [[ $GENIE_PHP_VERSION != '' ]]; then
-#   php_install_path="/genie/service/php/$GENIE_PHP_VERSION/"
-#   if [[ ! -e $php_install_path ]]; then
-#     sed -i -e '1i configure_option "--with-apxs2" "/usr/bin/apxs"' /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/definitions/$GENIE_PHP_VERSION
-#     ~/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION /genie/service/php/$GENIE_PHP_VERSION
-#     ln -s /genie/service/php/$GENIE_PHP_VERSION /root/.phpenv/versions/$GENIE_PHP_VERSION
-#     phpenv global $GENIE_PHP_VERSION
-#     phpenv rehash
-#     cp /etc/httpd/modules/libphp5.so /root/.phpenv/versions/$GENIE_PHP_VERSION/
-#   else
-#     ln -s /genie/service/php/$GENIE_PHP_VERSION /root/.phpenv/versions/$GENIE_PHP_VERSION
-#     cp /root/.phpenv/versions/$GENIE_PHP_VERSION/libphp5.so /etc/httpd/modules/
-#   fi
-#   service httpd start
-# fi
+# -- php install
+if [[ $GENIE_PHP_VERSION != '' ]]; then
+  php_install_path="/genie/service/php/$GENIE_PHP_VERSION/"
+  if [[ ! -e $php_install_path ]]; then
+    sed -i -e '1i configure_option "--with-apxs2" "/usr/bin/apxs"' /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/definitions/$GENIE_PHP_VERSION
+    ~/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION /genie/service/php/$GENIE_PHP_VERSION
+    ln -s /genie/service/php/$GENIE_PHP_VERSION /root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION
+    cp /etc/httpd/modules/libphp5.so /root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION/
+  else
+    ln -s /genie/service/php/$GENIE_PHP_VERSION /root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION
+    cp /root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION/libphp5.so /etc/httpd/modules/
+  fi
+  phpenv global $GENIE_PHP_VERSION
+  phpenv rehash
+fi
 
 # -- Apache
 if [[ $GENIE_APACHE_BANDWIDTH ]]; then

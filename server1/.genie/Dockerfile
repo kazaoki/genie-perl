@@ -16,7 +16,7 @@ RUN yum update -y && \
         readline readline-devel \
         zlib zlib-devel \
         curl curl-devel \
-        bison bison-devel re2c libxml2-devel \
+        bison bison-devel re2c libxml2-devel autoconf automake \
         libjpeg-devel libpng-devel readline-devel libtidy-devel \
         libxslt-devel libmcrypt libmcrypt-devel php-mcrypt \
         php php-mbstring php-pdo php-mysql php-pgsql php-gd php-xml \
