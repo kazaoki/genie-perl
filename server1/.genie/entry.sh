@@ -3,6 +3,35 @@
 # -- general
 echo ". /etc/bashrc" >> /root/.bashrc
 
+# # -- perl install
+# if [[ $LAMP_PERL_VERSION != '' ]]; then
+#   perl_install_path="/opt/perl$LAMP_PERL_VERSION/"
+#   if [[ ! -e $perl_install_path ]]; then
+#     curl -L https://raw.github.com/tokuhirom/Perl-Build/master/perl-build | perl - $LAMP_PERL_VERSION $perl_install_path --noman
+#   fi
+#   if [[ ! -L /usr/bin/perl ]]; then
+#     unlink /usr/bin/perl
+#     ln -s $perl_install_path/bin/perl /usr/bin/perl
+#   fi
+# fi
+
+# # -- php install
+# if [[ $GENIE_PHP_VERSION != '' ]]; then
+#   php_install_path="/genie/service/php/$GENIE_PHP_VERSION/"
+#   if [[ ! -e $php_install_path ]]; then
+#     sed -i -e '1i configure_option "--with-apxs2" "/usr/sbin/apxs"' /usr/local/share/php-build/definitions/$LAMP_PHP_VERSION
+#     php-build $LAMP_PHP_VERSION /opt/php-$LAMP_PHP_VERSION
+#     ln -s /opt/php-$LAMP_PHP_VERSION /root/.phpenv/versions/$LAMP_PHP_VERSION
+#     phpenv global $LAMP_PHP_VERSION
+#     phpenv rehash
+#     cp /etc/httpd/modules/libphp5.so /root/.phpenv/versions/$LAMP_PHP_VERSION/
+#   else
+#     ln -s /opt/php-$LAMP_PHP_VERSION /root/.phpenv/versions/$LAMP_PHP_VERSION
+#     cp /root/.phpenv/versions/$LAMP_PHP_VERSION/libphp5.so /etc/httpd/modules/
+#   fi
+#   service httpd start
+# fi
+
 # -- Apache
 if [[ $GENIE_APACHE_BANDWIDTH ]]; then
   sed -i "/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
