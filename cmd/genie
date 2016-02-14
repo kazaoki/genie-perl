@@ -578,6 +578,11 @@ sub up {
 							}
 							$last_line = scalar(@logs);
 						}
+					} else {
+						throw('起動に失敗しました。',
+							join("\n", `docker logs $config{DOCKER}->{NAME}`)
+						);
+						exit 1;
 					}
 					if(!$done_sw){
 						print '.';

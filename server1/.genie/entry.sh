@@ -8,7 +8,7 @@ echo ". /etc/bashrc" >> /root/.bashrc
 [ ! -e /genie/storages ] && mkdir /genie/storages
 if [[ `find /genie/storages -type f | wc -l` != '0' ]]; then
   echo "storages restoring" >> /var/log/entry.log
-  find /genie/storages -type f -exec tar xf {} \;
+  find /genie/storages -maxdepth 1 -type f -exec tar xf {} \;
   echo "storages restoring done!" >> /var/log/entry.log
 fi
 
@@ -20,13 +20,13 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     # -- perl install
     echo "Perl $GENIE_PERL_VERSION installing (only once)" >> /var/log/entry.log
     /root/.anyenv/envs/plenv/plugins/perl-build/bin/perl-build $GENIE_PERL_VERSION ${install_path}
+    if [[ ! -e $install_path ]]; then
+      exit 1
+    fi
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
     echo "Perl $GENIE_PERL_VERSION install done!" >> /var/log/entry.log
-    echo "cpanm installing" >> /var/log/entry.log
-    cpanm -nq --installdeps /genie/
-    echo "cpanm install done!" >> /var/log/entry.log
     tar cf /genie/storages/perl.tar /storages/perl
   else
     # -- perl relink
@@ -38,11 +38,12 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     unlink /usr/bin/perl
     ln -s $install_path/bin/perl /usr/bin/perl
   fi
- else
-  # -- install perl modules from cpanfile (system perl)
-  echo "cpanm installing(system)" >> /var/log/entry.log
+fi
+# -- Install perl modules from cpanfile
+if [[ /genie/cpanfile ]]; then
+  echo "cpanfile installing" >> /var/log/entry.log
   cpanm -nq --installdeps -L /storages/perl/cpanfile-modules/ /genie/
-  echo "cpanm install done!" >> /var/log/entry.log
+  echo "cpanfile install done!" >> /var/log/entry.log
   tar cf /genie/storages/perl.tar /storages/perl
 fi
 

@@ -38,7 +38,7 @@ return {
 	# Perl設定
 	# --------
 	PERL => {
-		VERSION => '5.6.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Ruby設定
