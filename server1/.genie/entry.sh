@@ -3,6 +3,12 @@
 # -- general
 echo ". /etc/bashrc" >> /root/.bashrc
 
+# -- strage restore
+mkdir /storages
+if [[ -e /genie/storages/php.tar ]]; then
+  tar xvf /genie/storages/php.tar
+fi
+
 # # -- perl install
 # if [[ $LAMP_PERL_VERSION != '' ]]; then
 #   perl_install_path="/opt/perl$LAMP_PERL_VERSION/"
@@ -17,18 +23,24 @@ echo ". /etc/bashrc" >> /root/.bashrc
 
 # -- php install
 if [[ $GENIE_PHP_VERSION != '' ]]; then
-  php_install_path="/genie/service/php/$GENIE_PHP_VERSION/"
-  if [[ ! -e $php_install_path ]]; then
+  echo "PHP $GENIE_PHP_VERSION installing " >> /var/log/entry.log
+  php_install_path="/storages/php/$GENIE_PHP_VERSION/"
+  php_link_to="/root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION"
+  if [[ ! -e ${php_install_path} ]]; then
     sed -i -e '1i configure_option "--with-apxs2" "/usr/bin/apxs"' /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/definitions/$GENIE_PHP_VERSION
-    ~/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION /genie/service/php/$GENIE_PHP_VERSION
-    ln -s /genie/service/php/$GENIE_PHP_VERSION /root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION
-    cp /etc/httpd/modules/libphp5.so /root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION/
+    ~/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION ${php_install_path}
+    ln -s ${php_install_path} ${php_link_to}
+    cp /etc/httpd/modules/libphp5.so ${php_link_to}/
+    mkdir /genie/storages/
+    tar cvf /genie/storages/php.tar /storages/php
   else
-    ln -s /genie/service/php/$GENIE_PHP_VERSION /root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION
-    cp /root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION/libphp5.so /etc/httpd/modules/
+    ln -s ${php_install_path} ${php_link_to}
+    cp ${php_link_to}/libphp5.so /etc/httpd/modules/
   fi
-  phpenv global $GENIE_PHP_VERSION
-  phpenv rehash
+  . ~/.bashrc
+  /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
+  /root/.anyenv/envs/phpenv/bin/phpenv rehash
+  echo 'done!' >> /var/log/entry.log
 fi
 
 # -- Apache
@@ -126,8 +138,7 @@ fi
 echo 'entry.sh finished' >> /var/log/entry.log
 
 # -- run after.sh
-after.sh
-echo 'after.sh finished' >> /var/log/after.log
+/genie/after.sh
 
 # -- daemon loop start
 while true

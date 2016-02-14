@@ -50,7 +50,7 @@ return {
 	# PHP設定
 	# --------
 	PHP => {
-		VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
+		VERSION => '5.5.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Apache設定
