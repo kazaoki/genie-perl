@@ -140,6 +140,8 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	php
 	perl
 	ruby
+	store
+	restore
 / ){
 	no strict;
 	$ARGV[0]->();
@@ -893,6 +895,29 @@ sub php {
 # --------------------------------------------------------------------
 sub perl {
 	return unless require_up(); # 起動必須
+
+	# -- cpanfileのモジュールインストールアップデート
+	if($ARGV[1] eq 'cpanfile-update') {
+		message(info=>'/genie/cpanfileを元にperlのモジュールをアップデートします。');
+		my $cmd;
+		if($config{PERL}->{VERSION}) {
+			$cmd = "docker exec $config{DOCKER}->{NAME} cpanm -nq --installdeps /genie/"; # バージョン指定のplenv環境のときは自動的に/storages/perl内にインストールされる
+		} else {
+			$cmd = "docker exec $config{DOCKER}->{NAME} cpanm -nq --installdeps -L /storages/perl/modules/ /genie/"; # system perlのときは明示的にストレージの中を指定する
+		}
+		`$cmd`;
+		if($?) {
+			throw('cpanfileのモジュールインストールアップデートに失敗しました。', $cmd);
+		}
+		message(success=>'cpanfileのモジュールインストールアップデートに成功しました。');
+		my $result = input('/genie/storages/perl.tar に固めますか？ [y/N]:');
+		if($result =~ /^y$/i ) {
+			$ARGV[1] = 'perl';
+			&store;
+		}
+		return;
+	}
+
 	print `docker exec -it $config{DOCKER}->{NAME} /root/.anyenv/envs/plenv/plugins/perl-build/perl-build  --definitions`;
 	print "\n---\n\n";
 	print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && plenv versions"`;
@@ -910,4 +935,62 @@ sub ruby {
 	print "\n";
 }
 
+# --------------------------------------------------------------------
+# genie store (storage name)                          ストレージの保存
+# --------------------------------------------------------------------
+sub store {
+	return unless require_up(); # 起動必須
+
+	if($ARGV[1] eq '') { throw('引数が足りません。ストレージ名を指定してください。（/storages/xxx/のxxxの部分）'); }
+
+	# -- ストレージ名の整理
+	my $storage_name = $ARGV[1];
+	my $dir_path = "/storages/$storage_name";
+	my $tar_path = "/genie/storages/${storage_name}.tar";
+
+	# -- ストレージパスの存在確認
+	`docker exec $config{DOCKER}->{NAME} ls $dir_path $hide_all`;
+	if($?) {
+		throw('ご指定のストレージが見つかりません。', "$storage_name ( $dir_path )");
+	}
+
+	# -- tarで固める
+	my $cmd = "docker exec $config{DOCKER}->{NAME} tar cvf $tar_path $dir_path";
+	`$cmd`;
+	if($?) {
+		throw('tar保存に失敗しました。', "$dir_path -> $tar_path");
+	} else {
+		message(success=>"tar保存に成功しました。\n$dir_path -> $tar_path" );
+	}
+
+}
+
+# --------------------------------------------------------------------
+# genie restore (storage name)                        ストレージの復元
+# --------------------------------------------------------------------
+sub restore {
+	return unless require_up(); # 起動必須
+
+	if($ARGV[1] eq '') { throw('引数が足りません。ストレージ名を指定してください。（/genie/storages/xxx.tarのxxxの部分）'); }
+
+	# -- ストレージ名の整理
+	my $storage_name = $ARGV[1];
+	my $dir_path = "/storages/$storage_name";
+	my $tar_path = "/genie/storages/${storage_name}.tar";
+
+	# -- ストレージtarの存在確認
+	`docker exec $config{DOCKER}->{NAME} ls $tar_path $hide_all`;
+	if($?) {
+		throw('ご指定のtarファイルが見つかりません。', "$storage_name ( $tar_path )");
+	}
+
+	# -- tarを展開する
+	my $cmd = "docker exec $config{DOCKER}->{NAME} tar xvf $tar_path";
+	`$cmd`;
+	if($?) {
+		throw('ストレージの復元に失敗しました。', "$tar_path -> $dir_path");
+	} else {
+		message(success=>"ストレージの復元に成功しました。\n$tar_path -> $dir_path" );
+	}
+}
 

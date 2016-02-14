@@ -12,36 +12,57 @@ if [[ `find /genie/storages -type f | wc -l` != '0' ]]; then
   echo "storages restoring done!" >> /var/log/entry.log
 fi
 
-
-# # -- perl install
-# if [[ $LAMP_PERL_VERSION != '' ]]; then
-#   perl_install_path="/opt/perl$LAMP_PERL_VERSION/"
-#   if [[ ! -e $perl_install_path ]]; then
-#     curl -L https://raw.github.com/tokuhirom/Perl-Build/master/perl-build | perl - $LAMP_PERL_VERSION $perl_install_path --noman
-#   fi
-#   if [[ ! -L /usr/bin/perl ]]; then
-#     unlink /usr/bin/perl
-#     ln -s $perl_install_path/bin/perl /usr/bin/perl
-#   fi
-# fi
+# -- perl setup
+if [[ $GENIE_PERL_VERSION != '' ]]; then
+  install_path="/storages/perl/$GENIE_PERL_VERSION"
+  link_to="/root/.anyenv/envs/plenv/versions/$GENIE_PERL_VERSION"
+  if [[ ! -e $install_path ]]; then
+    # -- perl install
+    echo "Perl $GENIE_PERL_VERSION installing (only once)" >> /var/log/entry.log
+    /root/.anyenv/envs/plenv/plugins/perl-build/bin/perl-build $GENIE_PERL_VERSION ${install_path}
+    ln -s ${install_path} ${link_to}
+    source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
+    source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
+    echo "Perl $GENIE_PERL_VERSION install done!" >> /var/log/entry.log
+    echo "cpanm installing" >> /var/log/entry.log
+    cpanm -nq --installdeps /genie/
+    echo "cpanm install done!" >> /var/log/entry.log
+    tar cf /genie/storages/perl.tar /storages/perl
+  else
+    # -- perl relink
+    ln -s ${install_path} ${link_to}
+    source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
+    source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
+  fi
+  if [[ ! -L /usr/bin/perl ]]; then
+    unlink /usr/bin/perl
+    ln -s $install_path/bin/perl /usr/bin/perl
+  fi
+ else
+  # -- install perl modules from cpanfile (system perl)
+  echo "cpanm installing(system)" >> /var/log/entry.log
+  cpanm -nq --installdeps -L /storages/perl/cpanfile-modules/ /genie/
+  echo "cpanm install done!" >> /var/log/entry.log
+  tar cf /genie/storages/perl.tar /storages/perl
+fi
 
 # -- php setup
 if [[ $GENIE_PHP_VERSION != '' ]]; then
-  php_install_path="/storages/php/$GENIE_PHP_VERSION/"
-  php_link_to="/root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION"
-  if [[ ! -e ${php_install_path} ]]; then
+  install_path="/storages/php/$GENIE_PHP_VERSION/"
+  link_to="/root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION"
+  if [[ ! -e ${install_path} ]]; then
     # -- php install
     echo "PHP $GENIE_PHP_VERSION installing (only once)" >> /var/log/entry.log
     sed -i -e '1i configure_option "--with-apxs2" "/usr/bin/apxs"' /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/definitions/$GENIE_PHP_VERSION
-    ~/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION ${php_install_path}
-    ln -s ${php_install_path} ${php_link_to}
-    cp /etc/httpd/modules/libphp5.so ${php_link_to}/
+    /root/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION ${install_path}
+    ln -s ${install_path} ${link_to}
+    cp -f /etc/httpd/modules/libphp5.so ${link_to}/
     tar cf /genie/storages/php.tar /storages/php
     echo "PHP $GENIE_PHP_VERSION install done!" >> /var/log/entry.log
   else
     # -- php relink
-    ln -s ${php_install_path} ${php_link_to}
-    cp ${php_link_to}/libphp5.so /etc/httpd/modules/
+    ln -s ${install_path} ${link_to}
+    cp -f ${link_to}/libphp5.so /etc/httpd/modules/
   fi
   source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
   source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
