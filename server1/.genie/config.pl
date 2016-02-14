@@ -44,7 +44,7 @@ return {
 	# Ruby設定
 	# --------
 	RUBY => {
-		VERSION => '', # `rbenv install -l` でリストアップされるバージョン文字列を指定
+		VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# PHP設定

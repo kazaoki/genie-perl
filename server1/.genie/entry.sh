@@ -69,6 +69,25 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
   source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
 fi
 
+# -- ruby setup
+if [[ $GENIE_RUBY_VERSION != '' ]]; then
+  install_path="/storages/ruby/$GENIE_RUBY_VERSION/"
+  link_to="/root/.anyenv/envs/rbenv/versions/$GENIE_RUBY_VERSION"
+  if [[ ! -e ${install_path} ]]; then
+    # -- ruby install
+    echo "Ruby $GENIE_RUBY_VERSION installing (only once)" >> /var/log/entry.log
+    /root/.anyenv/envs/rbenv/plugins/ruby-build/bin/ruby-build $GENIE_RUBY_VERSION ${install_path}
+    ln -s ${install_path} ${link_to}
+    tar cf /genie/storages/ruby.tar /storages/ruby
+    echo "Ruby $GENIE_RUBY_VERSION install done!" >> /var/log/entry.log
+  else
+    # -- ruby relink
+    ln -s ${install_path} ${link_to}
+  fi
+  source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
+  source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
+fi
+
 # -- Apache
 if [[ $GENIE_APACHE_BANDWIDTH ]]; then
   sed -i "/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
