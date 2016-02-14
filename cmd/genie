@@ -549,7 +549,11 @@ sub up {
 			my $cid = `$cmd`;
 			chomp $cid;
 			if(!$?){
-				message(info=>'起動開始：'.$config{DOCKER}->{NAME}."\n".$cid);
+				message(info=>'起動開始：'.
+					$config{DOCKER}->{NAME}."\n".
+					"コンテナID：$cid\n".
+					"起動ログコマンド：docker logs -f $cid\n"
+				, 1);
 			}
 
 			# -- entry.sh と after.sh 完了まで待つ

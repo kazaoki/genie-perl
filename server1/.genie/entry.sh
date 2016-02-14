@@ -3,11 +3,15 @@
 # -- general
 echo ". /etc/bashrc" >> /root/.bashrc
 
-# -- strage restore
-mkdir /storages
-if [[ -e /genie/storages/php.tar ]]; then
-  tar xvf /genie/storages/php.tar
+# -- storages restore
+[ ! -e /storages ] && mkdir /storages
+[ ! -e /genie/storages ] && mkdir /genie/storages
+if [[ `find /genie/storages -type f | wc -l` != '0' ]]; then
+  echo "storages restoring" >> /var/log/entry.log
+  find /genie/storages -type f -exec tar xf {} \;
+  echo "storages restoring done!" >> /var/log/entry.log
 fi
+
 
 # # -- perl install
 # if [[ $LAMP_PERL_VERSION != '' ]]; then
@@ -21,26 +25,26 @@ fi
 #   fi
 # fi
 
-# -- php install
+# -- php setup
 if [[ $GENIE_PHP_VERSION != '' ]]; then
-  echo "PHP $GENIE_PHP_VERSION installing " >> /var/log/entry.log
   php_install_path="/storages/php/$GENIE_PHP_VERSION/"
   php_link_to="/root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION"
   if [[ ! -e ${php_install_path} ]]; then
+    # -- php install
+    echo "PHP $GENIE_PHP_VERSION installing (only once)" >> /var/log/entry.log
     sed -i -e '1i configure_option "--with-apxs2" "/usr/bin/apxs"' /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/definitions/$GENIE_PHP_VERSION
     ~/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION ${php_install_path}
     ln -s ${php_install_path} ${php_link_to}
     cp /etc/httpd/modules/libphp5.so ${php_link_to}/
-    mkdir /genie/storages/
-    tar cvf /genie/storages/php.tar /storages/php
+    tar cf /genie/storages/php.tar /storages/php
+    echo "PHP $GENIE_PHP_VERSION install done!" >> /var/log/entry.log
   else
+    # -- php relink
     ln -s ${php_install_path} ${php_link_to}
     cp ${php_link_to}/libphp5.so /etc/httpd/modules/
   fi
-  . ~/.bashrc
-  /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
-  /root/.anyenv/envs/phpenv/bin/phpenv rehash
-  echo 'done!' >> /var/log/entry.log
+  source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
+  source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
 fi
 
 # -- Apache
