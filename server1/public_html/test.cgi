@@ -2,6 +2,7 @@
 
 use strict;
 use utf8;
+use CGI::Carp qw(fatalsToBrowser);
 use Mojolicious;
 
 print "content-type: text/html\n\n";
@@ -16,5 +17,7 @@ print "<hr>";
 foreach(sort keys %ENV) {
 	print "$_ : $ENV{$_}<br>";
 }
+print "<hr>";
+print "\@INC = <blockquote>" . (join('<br>', @INC)) . '</blockquote>';
 
 exit;

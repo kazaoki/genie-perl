@@ -38,13 +38,14 @@ return {
 	# Perl設定
 	# --------
 	PERL => {
-		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		CPANFILE_ENABLED => 1,
 	},
 
 	# Ruby設定
 	# --------
 	RUBY => {
-		VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# PHP設定

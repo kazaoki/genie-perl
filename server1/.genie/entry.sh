@@ -40,7 +40,7 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
   fi
 fi
 # -- Install perl modules from cpanfile
-if [[ /genie/cpanfile ]]; then
+if [[ $PERL_CPANFILE_ENABLED && -e /genie/cpanfile ]]; then
   echo "cpanfile installing" >> /var/log/entry.log
   cpanm -nq --installdeps -L /storages/perl/cpanfile-modules/ /genie/
   echo "cpanfile install done!" >> /var/log/entry.log
@@ -57,13 +57,13 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     sed -i -e '1i configure_option "--with-apxs2" "/usr/bin/apxs"' /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/definitions/$GENIE_PHP_VERSION
     /root/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION ${install_path}
     ln -s ${install_path} ${link_to}
-    cp -f /etc/httpd/modules/libphp5.so ${link_to}/
+    \cp -f /etc/httpd/modules/libphp5.so ${link_to}/
     tar cf /genie/storages/php.tar /storages/php
     echo "PHP $GENIE_PHP_VERSION install done!" >> /var/log/entry.log
   else
     # -- php relink
     ln -s ${install_path} ${link_to}
-    cp -f ${link_to}/libphp5.so /etc/httpd/modules/
+    \cp -f ${link_to}/libphp5.so /etc/httpd/modules/
   fi
   source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
   source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
