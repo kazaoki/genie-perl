@@ -551,10 +551,11 @@ sub up {
 			my $cid = `$cmd`;
 			chomp $cid;
 			if(!$?){
+				$cid =~ /^(.{12})/;
 				message(info=>'起動開始：'.
 					$config{DOCKER}->{NAME}."\n".
-					"コンテナID：$cid\n".
-					"起動ログコマンド：docker logs -f $cid\n"
+					"コンテナID：$1\n".
+					"起動ログコマンド：docker logs -f $config{DOCKER}->{NAME}\n"
 				, 1);
 			}
 
@@ -960,6 +961,7 @@ sub store {
 	}
 
 	# -- tarで固める
+	mkdir '.genie/storages';
 	my $cmd = "docker exec $config{DOCKER}->{NAME} tar cvf $tar_path $dir_path";
 	`$cmd`;
 	if($?) {

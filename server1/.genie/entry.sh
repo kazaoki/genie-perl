@@ -14,7 +14,8 @@ fi
 
 # -- perl setup
 if [[ $GENIE_PERL_VERSION != '' ]]; then
-  install_path="/storages/perl/$GENIE_PERL_VERSION"
+  storage_name='perl-versions'
+  install_path="/storages/${storage_name}/$GENIE_PERL_VERSION"
   link_to="/root/.anyenv/envs/plenv/versions/$GENIE_PERL_VERSION"
   if [[ ! -e $install_path ]]; then
     # -- perl install
@@ -26,7 +27,7 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
-    tar cf /genie/storages/perl.tar /storages/perl
+    tar cf /genie/storages/${storage_name}.tar /storages/${storage_name}
   else
     # -- perl relink
     echo "plenv resetting -> $GENIE_PERL_VERSION" >> /var/log/entry.log
@@ -40,17 +41,20 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
   fi
   echo 'done!' >> /var/log/entry.log
 fi
+
 # -- Install perl modules from cpanfile
-if [[ $PERL_CPANFILE_ENABLED='1' && -e /genie/cpanfile ]]; then
+if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/cpanfile ]]; then
+  storage_name='perl-cpanfile-modules'
   echo "cpanfile installing" >> /var/log/entry.log
-  cpanm -nq --installdeps -L /storages/perl/cpanfile-modules/ /genie/
+  cpanm -nq --installdeps -L /storages/${storage_name}/ /genie/
   echo 'done!' >> /var/log/entry.log
-  tar cf /genie/storages/perl.tar /storages/perl
+  tar cf /genie/storages/${storage_name}.tar /storages/${storage_name}
 fi
 
 # -- php setup
 if [[ $GENIE_PHP_VERSION != '' ]]; then
-  install_path="/storages/php/$GENIE_PHP_VERSION/"
+  storage_name='php-versions'
+  install_path="/storages/${storage_name}/$GENIE_PHP_VERSION/"
   link_to="/root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION"
   if [[ ! -e ${install_path} ]]; then
     # -- php install
@@ -61,7 +65,7 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     \cp -f /etc/httpd/modules/libphp5.so ${link_to}/
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
-    tar cf /genie/storages/php.tar /storages/php
+    tar cf /genie/storages/${storage_name}.tar /storages/${storage_name}
   else
     # -- php relink
     echo "phpenv resetting -> $GENIE_PHP_VERSION" >> /var/log/entry.log
@@ -75,7 +79,8 @@ fi
 
 # -- ruby setup
 if [[ $GENIE_RUBY_VERSION != '' ]]; then
-  install_path="/storages/ruby/$GENIE_RUBY_VERSION/"
+  storage_name='ruby-versions'
+  install_path="/storages/${storage_name}/$GENIE_RUBY_VERSION/"
   link_to="/root/.anyenv/envs/rbenv/versions/$GENIE_RUBY_VERSION"
   if [[ ! -e ${install_path} ]]; then
     # -- ruby install
@@ -84,7 +89,7 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
-    tar cf /genie/storages/ruby.tar /storages/ruby
+    tar cf /genie/storages/${storage_name}.tar /storages/${storage_name}
   else
     # -- ruby relink
     echo "rbenv resetting -> $GENIE_RUBY_VERSION" >> /var/log/entry.log

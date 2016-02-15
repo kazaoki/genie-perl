@@ -39,7 +39,7 @@ return {
 	# --------
 	PERL => {
 		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
-		CPANFILE_ENABLED => 1,
+		# CPANFILE_ENABLED => 1,
 	},
 
 	# Ruby設定
