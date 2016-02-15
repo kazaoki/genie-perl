@@ -9,7 +9,7 @@ echo ". /etc/bashrc" >> /root/.bashrc
 if [[ `find /genie/storages -type f | wc -l` != '0' ]]; then
   echo "storages restoring" >> /var/log/entry.log
   find /genie/storages -maxdepth 1 -type f -exec tar xf {} \;
-  echo "storages restoring done!" >> /var/log/entry.log
+  echo "done!" >> /var/log/entry.log
 fi
 
 # -- perl setup
@@ -26,10 +26,10 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
-    echo "Perl $GENIE_PERL_VERSION install done!" >> /var/log/entry.log
     tar cf /genie/storages/perl.tar /storages/perl
   else
     # -- perl relink
+    echo "plenv resetting -> $GENIE_PERL_VERSION" >> /var/log/entry.log
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
@@ -38,12 +38,13 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     unlink /usr/bin/perl
     ln -s $install_path/bin/perl /usr/bin/perl
   fi
+  echo 'done!' >> /var/log/entry.log
 fi
 # -- Install perl modules from cpanfile
-if [[ $PERL_CPANFILE_ENABLED && -e /genie/cpanfile ]]; then
+if [[ $PERL_CPANFILE_ENABLED='1' && -e /genie/cpanfile ]]; then
   echo "cpanfile installing" >> /var/log/entry.log
   cpanm -nq --installdeps -L /storages/perl/cpanfile-modules/ /genie/
-  echo "cpanfile install done!" >> /var/log/entry.log
+  echo 'done!' >> /var/log/entry.log
   tar cf /genie/storages/perl.tar /storages/perl
 fi
 
@@ -58,15 +59,18 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     /root/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION ${install_path}
     ln -s ${install_path} ${link_to}
     \cp -f /etc/httpd/modules/libphp5.so ${link_to}/
+    source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
+    source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
     tar cf /genie/storages/php.tar /storages/php
-    echo "PHP $GENIE_PHP_VERSION install done!" >> /var/log/entry.log
   else
     # -- php relink
+    echo "phpenv resetting -> $GENIE_PHP_VERSION" >> /var/log/entry.log
     ln -s ${install_path} ${link_to}
     \cp -f ${link_to}/libphp5.so /etc/httpd/modules/
+    source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
+    source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
   fi
-  source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
-  source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
+  echo 'done!' >> /var/log/entry.log
 fi
 
 # -- ruby setup
@@ -78,17 +82,21 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
     echo "Ruby $GENIE_RUBY_VERSION installing (only once)" >> /var/log/entry.log
     /root/.anyenv/envs/rbenv/plugins/ruby-build/bin/ruby-build $GENIE_RUBY_VERSION ${install_path}
     ln -s ${install_path} ${link_to}
+    source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
+    source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
     tar cf /genie/storages/ruby.tar /storages/ruby
-    echo "Ruby $GENIE_RUBY_VERSION install done!" >> /var/log/entry.log
   else
     # -- ruby relink
+    echo "rbenv resetting -> $GENIE_RUBY_VERSION" >> /var/log/entry.log
     ln -s ${install_path} ${link_to}
+    source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
+    source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
   fi
-  source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
-  source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
+  echo 'done!' >> /var/log/entry.log
 fi
 
 # -- Apache
+echo 'Apache starting' >> /var/log/entry.log
 if [[ $GENIE_APACHE_BANDWIDTH ]]; then
   sed -i "/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
 \ \ # <__BANDWIDTH__>\n\
@@ -121,17 +129,18 @@ sed -i "/<__PASSENV__>/,/<\/__PASSENV__>/c\
   PassEnv $passenv_string\n\
   # </__PASSENV__>" /etc/httpd/conf/httpd.conf
 /usr/sbin/httpd
-echo 'Apache started' >> /var/log/entry.log
+echo 'done!' >> /var/log/entry.log
 
 # -- Postfix
 if [[ $GENIE_POSTFIX_ENABLED ]]; then
+  echo 'Postfix starting' >> /var/log/entry.log
   if [[ $GENIE_POSTFIX_FORCE_ENVELOPE != '' ]]; then
     echo "canonical_classes = envelope_sender, envelope_recipient" >> /etc/postfix/main.cf
     echo "canonical_maps = regexp:/etc/postfix/canonical.regexp" >> /etc/postfix/main.cf
     echo "/^.+$/ $GENIE_POSTFIX_FORCE_ENVELOPE" >> /etc/postfix/canonical.regexp
   fi
   /usr/sbin/postfix start
-  echo 'Postfix started' >> /var/log/entry.log
+  echo 'done!' >> /var/log/entry.log
 fi
 
 # # -- PostgreSQL
