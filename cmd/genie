@@ -89,7 +89,7 @@ if(-f $config{GENERAL}->{config_path}){
 	my $r = require $config{GENERAL}->{config_path};
 	%config = (%config, %$r);
 } else {
-	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/clear init view httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
+	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/eject clean init view httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
 		throw("設定ファイル（$config{GENERAL}->{config_path}）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
 	}
 }
@@ -134,7 +134,8 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	up down
 	cmd cli
 	config view
-	clear
+	eject
+	clean
 	httpd
 	build
 	php
@@ -176,7 +177,8 @@ echo <<HELP;
          | ngrok                 ngrokを使って外部に公開
          | cmd                   コンテナ内でコマンドを実行
          | build                 独自Dockerfileをビルドする
-         | clear                 '$config{DOCKER}->{NAME}'コンテナ強制rm、all→全dockerコンテナ強制rm、noneimage→<none>イメージrmi
+         | eject                 '$config{DOCKER}->{NAME}'コンテナ強制rm、all→全dockerコンテナ強制rm
+         | clean                 不要なコンテナ、<none>イメージ、未参照のデータボリュームを削除
          | -m [RUNMODE]          実行モード：product|develop
          | -c [CONFIG TYPE]      設定タイプ：標準は general
 
@@ -683,11 +685,11 @@ sub view {
 }
 
 # --------------------------------------------------------------------
-# genie clear                         コンテナやイメージを強制削除する
+# genie eject                         コンテナやイメージを強制削除する
 # --------------------------------------------------------------------
-sub clear {
+sub eject {
 
-	# -- 規定のgenieコンテナを強制削除する
+	# -- configで指定しているgenieコンテナを強制削除する
 	if($ARGV[1] eq '') {
 		`docker inspect -f {{.Name}} $config{DOCKER}->{NAME} $hide_all`;
 		if($?) {
@@ -729,14 +731,21 @@ sub clear {
 		message(info=>$result, 1);
 	}
 
-	# -- <none>状態のイメージを削除する
-	if($ARGV[1] eq 'noneimage') {
-		my @list = split(/[\r\n]+/, `docker images --filter "dangling=true" -q`);
+}
+
+# --------------------------------------------------------------------
+# genie clean               不要なコンテナやイメージ、ボリュームを削除
+# --------------------------------------------------------------------
+sub clean {
+
+	# -- 終了済みコンテナを削除
+	{
+		my @list = split(/[\r\n]+/, `docker ps -qa --filter status=exited`);
 		if(@list) {
 			my @err;
 			foreach my $id (@list) {
 				echo "  $id - ";
-				`docker rmi -f $id`;
+				`docker rm $id`;
 				if($?) {
 					style(color=>'red'); echo "Failed!\n"; style(color=>'clear');
 					push @err;
@@ -745,19 +754,81 @@ sub clear {
 				}
 			}
 			if(@err) {
-				message(danger=>'強制削除に失敗した<none>イメージがあります。\n'.join('',map{"- $_\n"}@err));
+				message(danger=>'削除に失敗したコンテナがあります。\n'.join('',map{"- $_\n"}@err));
 			} else {
-				message(success=>'全ての<none>イメージを強制削除しました');
+				message(success=>'全ての終了済みコンテナを削除しました。');
 			}
 		} else {
-			message(warning=>'<none>イメージは見つかりませんでした。');
+			message(default=>'終了済みコンテナは見つかりませんでした。');
 		}
-		# イメージ一覧を表示
-		my $result = `docker images`;
-		message(info=>$result, 1);
 	}
 
+	# -- <none>イメージを削除する
+	{
+		my @list = split(/[\r\n]+/, `docker images -q --filter dangling=true`);
+		if(@list) {
+			my @err;
+			foreach my $id (@list) {
+				echo "  $id - ";
+				`docker rmi $id`;
+				if($?) {
+					style(color=>'red'); echo "Failed!\n"; style(color=>'clear');
+					push @err;
+				} else {
+					style(color=>'green'); echo "Deleted.\n"; style(color=>'clear');
+				}
+			}
+			if(@err) {
+				message(danger=>'削除に失敗した<none>イメージがあります。\n'.join('',map{"- $_\n"}@err));
+			} else {
+				message(success=>'全ての<none>イメージを削除しました。');
+			}
+		} else {
+			message(default=>'<none>イメージは見つかりませんでした。');
+		}
+	}
+
+	# -- 未参照のデータボリュームを削除する
+	{
+		my @list = split(/[\r\n]+/, `docker volume ls -q --filter dangling=true`);
+		if(@list) {
+			my @err;
+			foreach my $id (@list) {
+				echo "  $id - ";
+				`docker volume rm $id`;
+				if($?) {
+					style(color=>'red'); echo "Failed!\n"; style(color=>'clear');
+					push @err;
+				} else {
+					style(color=>'green'); echo "Deleted.\n"; style(color=>'clear');
+				}
+			}
+			if(@err) {
+				message(danger=>'削除に失敗した未参照のデータボリュームがあります。\n'.join('',map{"- $_\n"}@err));
+			} else {
+				message(success=>'全ての未参照のデータボリュームを削除しました。');
+			}
+		} else {
+			message(default=>'未参照のデータボリュームは見つかりませんでした。');
+		}
+	}
+
+
+
+	# # -- 引数なし→ヘルプ
+	# if($ARGV[1] eq '') {
+	# 	message(warning=>
+	# 		"引数を指定してください。\n".
+	# 		"genie clean cons|containers   死んでるコンテナを全て削除\n".
+	# 		"genie clean images            noneイメージを全て削除\n".
+	# 		"genie clean volumes           参照のないデータボリュームを全て削除\n".
+	# 		"genie clean all               上記全てを実行\n"
+	# 	);
+	# }
+
+
 }
+
 
 # --------------------------------------------------------------------
 # genie config                                    設定の内容を確認する
