@@ -143,6 +143,7 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	ruby
 	store
 	restore
+	ngrok
 / ){
 	no strict;
 	$ARGV[0]->();
@@ -1072,3 +1073,9 @@ sub restore {
 	}
 }
 
+# --------------------------------------------------------------------
+# genie ngrok                                          ngrokを利用する
+# --------------------------------------------------------------------
+sub ngrok {
+	system "docker exec -it $config{DOCKER}->{NAME} ngrok http 80";
+}

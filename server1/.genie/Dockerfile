@@ -14,7 +14,7 @@ RUN yum update -y && \
         gcc make perl perl-core openssl openssl-libs openssl-devel htop \
         git bzip2 tar patch wget \
         readline readline-devel \
-        zlib zlib-devel \
+        zlib zlib-devel unzip \
         curl curl-devel \
         bison bison-devel re2c libxml2-devel autoconf automake \
         libjpeg-devel libpng-devel readline-devel libtidy-devel \
@@ -113,6 +113,16 @@ RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g'
 #     && sed -i 's/Group\ apache/Group\ lamp/g' /etc/httpd/conf/httpd.conf \
 #     && sed -i 's/\#ServerName www\.example\.com\:80/ServerName lamp/g' /etc/httpd/conf/httpd.conf \
 #     && usermod -G apache lamp
+
+# Install ngrok
+# -------------
+RUN mkdir /tmp/ngrok/ \
+    && cd /tmp/ngrok/ \
+    && wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip \
+    && unzip ngrok-stable-linux-amd64.zip \
+    && mv ngrok /usr/local/bin \
+    && rm -fr /tmp/ngrok/ \
+    && cd
 
 # Entry point
 # -----------
