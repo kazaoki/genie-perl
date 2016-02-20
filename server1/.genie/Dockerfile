@@ -6,6 +6,10 @@ MAINTAINER kazaoki lab.
 RUN cp /etc/localtime /etc/localtime.org \
     && ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
 
+# Add yum Repo
+# ------------
+RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
+
 # Add packages
 # ------------
 RUN yum update -y && \
@@ -25,7 +29,7 @@ RUN yum update -y && \
         ImageMagick ImageMagick-perl \
         postfix \
         libffi-devel \
-        mysql mysql-server mysql-devel \
+        mariadb mariadb-server \
         postgresql postgresql-server postgresql-devel \
         httpd httpd-devel mod_php mod_ssl \
         net-tools sudo multitail zip tar bzip2 patch git \

@@ -494,9 +494,34 @@ sub up {
 			throw("$config{GENERAL}->{home_path}/$genie_dir/entry.sh が見当たりませんので起動できません。");
 		}
 
-		# -- 外部コンテナの指定があれば起動
-		{
-			;
+		# -- -v用にホームパスをいじる（Windowsのみドライブレターが必用なので）
+		my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
+
+		# -- MySQL起動
+		my $mysql_option;
+		if($config{MYSQL}->{ENABLED}) {
+			foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
+				my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{NAME};
+				`docker volume rm $label $hide_all`;
+				`docker volume create --name $label`;
+				my $cmd =
+					"docker run --name $label".
+					" -v $label:/var/lib/mysql".
+					" -v $vpath/.genie/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
+					" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
+					" -e MYSQL_DATABASE=$db->{NAME}".
+					" -e MYSQL_USER=$db->{USER}".
+					" -e MYSQL_PASSWORD=$db->{PASS}".
+					" -e MYSQL_PORT=$db->{PORT}".
+					" -e MYSQL_CHARSET=$db->{CHARSET}".
+					" -e TERM=xterm".
+					" -p $db->{PORT}".
+					" -d $db->{REPOSITORY}"
+				;
+				`$cmd`;
+				$mysql_option .= " -v $label:/storages/$label";
+				$mysql_option .= " --link $label";
+			}
 		}
 
 		# -- 本体の起動（Apache）
@@ -536,12 +561,12 @@ sub up {
 			my $envs = join(' ', map { sprintf('-e %s="%s"', $_, $envs{$_}) } sort(keys %envs));
 
 			# -- runコマンドの作成
-			my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
 			my $cmd =
 				'docker run -d'.
 				' -e TERM=xterm'.
 				" -v $vpath/$genie_dir:/genie".
 				" -v $vpath/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
+				$mysql_option.
 				" -p 80".
 				" --name=$config{DOCKER}->{NAME}".
 				# " --privileged".
@@ -627,11 +652,24 @@ sub up {
 sub down {
 	return unless require_up(); # 起動必須
 
+	# -- MySQL終了
+	if($config{MYSQL}->{ENABLED}) {
+		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
+			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{NAME};
+			`docker rm -f $label $hide_all`;
+		}
+	}
+
+	# -- 本体の終了	
 	my $cmd = 'docker rm -f ' . $config{DOCKER}->{NAME};
 	`$cmd`;
 	if(!$?){
 		message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
 	}
+
+	# -- ストレージボリュームを削除（未参照状態にならないと消えない）
+	# `docker volume rm $config{DOCKER}->{NAME}-storages $hide_all`;
+
 }
 
 # --------------------------------------------------------------------
@@ -981,14 +1019,14 @@ sub perl {
 		if($config{PERL}->{VERSION}) {
 			$cmd = "docker exec $config{DOCKER}->{NAME} cpanm -nq --installdeps /genie/"; # バージョン指定のplenv環境のときは自動的に/storages/perl内にインストールされる
 		} else {
-			$cmd = "docker exec $config{DOCKER}->{NAME} cpanm -nq --installdeps -L /storages/perl/modules/ /genie/"; # system perlのときは明示的にストレージの中を指定する
+			$cmd = "docker exec $config{DOCKER}->{NAME} cpanm -nq --installdeps -L /storages/perl-cpanfile-modules/ /genie/"; # system perlのときは明示的にストレージの中を指定する
 		}
 		`$cmd`;
 		if($?) {
 			throw('cpanfileのモジュールインストールアップデートに失敗しました。', $cmd);
 		}
 		message(success=>'cpanfileのモジュールインストールアップデートに成功しました。');
-		my $result = input('/genie/storages/perl.tar に固めますか？ [y/N]:');
+		my $result = input('/genie/storages/perl-cpanfile-modules.tar に固めますか？ [y/N]:');
 		if($result =~ /^y$/i ) {
 			$ARGV[1] = 'perl';
 			&store;
