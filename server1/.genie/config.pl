@@ -89,14 +89,14 @@ return {
 				PORT         => '13306',
 				CHARSET      => 'utf8',
 			},
-			{
-				REPOSITORY   => 'mysql:5.6',
-				NAME         => 'genie_db2',
-				USER         => 'genie_user2',
-				PASS         => '123456789',
-				PORT         => '13306',
-				CHARSET      => 'utf8',
-			},
+			# {
+			# 	REPOSITORY   => 'mysql:5.6',
+			# 	NAME         => 'genie_db2',
+			# 	USER         => 'genie_user2',
+			# 	PASS         => '123456789',
+			# 	PORT         => '13306',
+			# 	CHARSET      => 'utf8',
+			# },
 		],
 	},
 
@@ -112,15 +112,6 @@ return {
 				ENCODING   => 'utf8',
 				LC_COLLATE => 'ja_JP.utf-8',
 				LC_CTYPE   => 'ja_JP.utf-8',
-			},
-			{
-				# IMAGE      => 'postgres:8.4', # 外部コンテナのPostgreSQLを利用（officialのみ対応：https://hub.docker.com/r/library/postgres/tags/）
-				# NAME       => 'genie_db1',
-				# USER       => 'genie_db1',
-				# PASS       => '123456789',
-				# ENCODING   => 'utf8',
-				# LC_COLLATE => 'ja_JP.utf-8',
-				# LC_CTYPE   => 'ja_JP.utf-8',
 			},
 		],
 	},

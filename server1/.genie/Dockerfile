@@ -29,8 +29,8 @@ RUN yum update -y && \
         ImageMagick ImageMagick-perl \
         postfix \
         libffi-devel \
-        mariadb mariadb-server \
-        postgresql postgresql-server postgresql-devel \
+        mariadb \
+        postgresql \
         httpd httpd-devel mod_php mod_ssl \
         net-tools sudo multitail zip tar bzip2 patch git \
         nginx \
@@ -84,16 +84,16 @@ RUN sed -i 's/\;date\.timezone\ \=/date\.timezone\ \=\ Asia\/Tokyo/g' /etc/php.i
 # -----------
 RUN curl -L http://cpanmin.us | perl - App::cpanminus
 
-# Setup MySQL
-# -----------
-RUN sed -i "1i [mysql]\ndefault-character-set=utf8\n" /etc/my.cnf \
-    && sed -i 's/\[mysqld\]/\[mysqld\]\ndefault-character-set=utf8/' /etc/my.cnf
+# # Setup MySQL
+# # -----------
+# RUN sed -i "1i [mysql]\ndefault-character-set=utf8\n" /etc/my.cnf \
+#     && sed -i 's/\[mysqld\]/\[mysqld\]\ndefault-character-set=utf8/' /etc/my.cnf
 
-# Setup PostgreSQL
-# ----------------
-RUN su - postgres -c "/usr/bin/initdb --encoding=UTF8 --no-locale" \
-    && sed -i "s/\#listen_addresses = 'localhost'/listen_addresses = '*'/g" /var/lib/pgsql/data/postgresql.conf \
-    && echo "host all all 0.0.0.0/0 trust" >> /var/lib/pgsql/data/pg_hba.conf
+# # Setup PostgreSQL
+# # ----------------
+# RUN su - postgres -c "/usr/bin/initdb --encoding=UTF8 --no-locale" \
+#     && sed -i "s/\#listen_addresses = 'localhost'/listen_addresses = '*'/g" /var/lib/pgsql/data/postgresql.conf \
+#     && echo "host all all 0.0.0.0/0 trust" >> /var/lib/pgsql/data/pg_hba.conf
 
 # Setup Apache
 # ------------
