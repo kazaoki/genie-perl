@@ -137,7 +137,7 @@ sed -i "/<__PASSENV__>/,/<\/__PASSENV__>/c\
 \ \ # <__PASSENV__>\n\
   PassEnv $passenv_string\n\
   # </__PASSENV__>" /etc/httpd/conf/httpd.conf
-/usr/sbin/httpd start
+/usr/sbin/httpd
 echo 'done!' >> /var/log/entry.log
 
 # -- Postfix
@@ -171,27 +171,27 @@ fi
 #   fi
 # fi
 
-# -- MySQL
-if [[ $GENIE_MYSQL_ENABLED == 1 ]]; then
-  # port set
-  mkdir /etc/mysql
-  echo "[mysqld]" >> /etc/mysql/my.cnf
-  echo "port=$GENIE_MYSQL_PORT" >> /etc/mysql/my.cnf
+# # -- MySQL
+# if [[ $GENIE_MYSQL_ENABLED == 1 ]]; then
+#   # port set
+#   mkdir /etc/mysql
+#   echo "[mysqld]" >> /etc/mysql/my.cnf
+#   echo "port=$GENIE_MYSQL_PORT" >> /etc/mysql/my.cnf
 
-  # service start
-  /usr/sbin/mysqld start
+#   # service start
+#   /usr/sbin/mysqld start
 
-  # database and user set up
-  echo "CREATE DATABASE \`${LAMP_MYSQL_DB}\` DEFAULT CHARACTER SET ${LAMP_MYSQL_DEFAULT_CHARACTER_SET}" | mysql
-  echo "CREATE USER '${LAMP_MYSQL_USER}'@'%' IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
-  echo "GRANT ALL PRIVILEGES ON \`${LAMP_MYSQL_DB}\`.* TO '${LAMP_MYSQL_USER}'@localhost IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
-  echo "FLUSH PRIVILEGES" | mysql
+#   # database and user set up
+#   echo "CREATE DATABASE \`${LAMP_MYSQL_DB}\` DEFAULT CHARACTER SET ${LAMP_MYSQL_DEFAULT_CHARACTER_SET}" | mysql
+#   echo "CREATE USER '${LAMP_MYSQL_USER}'@'%' IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
+#   echo "GRANT ALL PRIVILEGES ON \`${LAMP_MYSQL_DB}\`.* TO '${LAMP_MYSQL_USER}'@localhost IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
+#   echo "FLUSH PRIVILEGES" | mysql
 
-  # add local hosts
-  if [[ $LAMP_MYSQL_HOSTNAME_TO_LOCAL != '' ]]; then
-    echo "127.0.0.1 $LAMP_MYSQL_HOSTNAME_TO_LOCAL" >> /etc/hosts
-  fi
-fi
+#   # add local hosts
+#   if [[ $LAMP_MYSQL_HOSTNAME_TO_LOCAL != '' ]]; then
+#     echo "127.0.0.1 $LAMP_MYSQL_HOSTNAME_TO_LOCAL" >> /etc/hosts
+#   fi
+# fi
 
 
 # # -- Nginx
