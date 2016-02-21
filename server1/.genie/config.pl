@@ -42,16 +42,16 @@ return {
 		CPANFILE_ENABLED => 1,
 	},
 
-	# Ruby設定
-	# --------
-	RUBY => {
-		VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
-	},
-
 	# PHP設定
 	# --------
 	PHP => {
 		VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
+	},
+
+	# Ruby設定
+	# --------
+	RUBY => {
+		VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Apache設定
@@ -89,14 +89,14 @@ return {
 				PORT         => '13306',
 				CHARSET      => 'utf8',
 			},
-			# {
-			# 	REPOSITORY   => 'mysql:5.6',
-			# 	NAME         => 'genie_db2',
-			# 	USER         => 'genie_user2',
-			# 	PASS         => '123456789',
-			# 	PORT         => '13306',
-			# 	CHARSET      => 'utf8',
-			# },
+			{
+				REPOSITORY   => 'mysql:5.6',
+				NAME         => 'genie_db2',
+				USER         => 'genie_user2',
+				PASS         => '123456789',
+				PORT         => '13306',
+				CHARSET      => 'utf8',
+			},
 		],
 	},
 

@@ -144,6 +144,7 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	store
 	restore
 	ngrok
+	mysql
 / ){
 	no strict;
 	$ARGV[0]->();
@@ -506,7 +507,7 @@ sub up {
 				`docker volume create --name $label`;
 				my $cmd =
 					"docker run --name $label".
-					" -v $label:/var/lib/mysql".
+					" -v $label:/var/lib/mysql/$db->{NAME}".
 					" -v $vpath/.genie/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
 					" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 					" -e MYSQL_DATABASE=$db->{NAME}".
@@ -519,7 +520,7 @@ sub up {
 					" -d $db->{REPOSITORY}"
 				;
 				`$cmd`;
-				$mysql_option .= " -v $label:/storages/$label";
+				$mysql_option .= " -v $label:/storages/mysql-$db->{NAME}";
 				$mysql_option .= " --link $label";
 			}
 		}
@@ -651,12 +652,14 @@ sub up {
 # --------------------------------------------------------------------
 sub down {
 	return unless require_up(); # 起動必須
+	my @rm_volumes_cmd;
 
 	# -- MySQL終了
 	if($config{MYSQL}->{ENABLED}) {
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{NAME};
 			`docker rm -f $label $hide_all`;
+			push @rm_volumes_cmd, "docker volume rm $label $hide_all"; # 内部で利用してるデータボリュームの削除
 		}
 	}
 
@@ -667,8 +670,11 @@ sub down {
 		message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
 	}
 
-	# -- ストレージボリュームを削除（未参照状態にならないと消えない）
-	# `docker volume rm $config{DOCKER}->{NAME}-storages $hide_all`;
+	# -- ストレージボリュームを削除（未参照状態にならないと消えないので最後に実行）
+	foreach(@rm_volumes_cmd) {
+		`docker volume rm $_ $hide_all`;
+	}
+	
 
 }
 
@@ -712,7 +718,13 @@ sub view {
 		my $result = `docker images`;
 		message(info=>$result, 1);
 	}
-	print "\n";
+
+	# -- ACTIVEマシンのデータボリューム一覧
+	{
+		echo "  データボリューム一覧\n";
+		my $result = `docker volume ls`;
+		message(info=>$result, 1);
+	}
 
 	# -- ACTIVEマシンのコンテナ一覧
 	{
@@ -1072,7 +1084,7 @@ sub store {
 
 	# -- tarで固める
 	mkdir '.genie/storages';
-	my $cmd = "docker exec $config{DOCKER}->{NAME} tar cvf $tar_path $dir_path";
+	my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c " cd $dir_path && tar cvf $tar_path ./"|;
 	`$cmd`;
 	if($?) {
 		throw('tar保存に失敗しました。', "$dir_path -> $tar_path");
@@ -1102,7 +1114,8 @@ sub restore {
 	}
 
 	# -- tarを展開する
-	my $cmd = "docker exec $config{DOCKER}->{NAME} tar xvf $tar_path";
+	my $cmd = "docker exec $config{DOCKER}->{NAME} tar xvf $tar_path -C $dir_path";
+
 	`$cmd`;
 	if($?) {
 		throw('ストレージの復元に失敗しました。', "$tar_path -> $dir_path");
@@ -1116,4 +1129,53 @@ sub restore {
 # --------------------------------------------------------------------
 sub ngrok {
 	system "docker exec -it $config{DOCKER}->{NAME} ngrok http 80";
+}
+
+# --------------------------------------------------------------------
+# genie mysql (options)                                      MySQL操作
+# --------------------------------------------------------------------
+sub mysql {
+	return unless require_up(); # 起動必須
+	my @dbs = @{$config{MYSQL}->{DATABASES}} if ref $config{MYSQL}->{DATABASES};
+
+	# -- 引数未指定または数字
+	if($ARGV[1] eq '' || $ARGV[1] =~ /^\d+$/ ) {
+		my $db_number = $ARGV[1] =~ /^\d+$/ ? $ARGV[1] : 1;
+		unless($db_number>0 && $db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
+		my $db = $config{MYSQL}->{DATABASES}[$db_number-1];
+		my $cmd =
+			qq|docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{NAME}|.
+			qq| mysql $db->{NAME}|.
+			qq| -u$db->{USER}|.
+			qq| -p$db->{PASS}|.
+			qq| -P$db->{PORT}|
+		;
+		system $cmd;
+	}
+	# -- store (db num) : 対象番号のDBをストレージからtarに保存 ※番号未指定なら全てのDBを保存
+	elsif($ARGV[1] eq 'store') {
+		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
+		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
+		my $count = 1;
+		foreach my $db (@dbs){
+			if($db_number && $db_number!=$count++) { next; }
+			$ARGV[1] = "mysql-$db->{NAME}";
+			store();
+		}
+	}
+	# -- restore (db num) : 対象番号のDBをtarからストレージに復元 ※番号未指定なら全てのDBを復元
+	elsif($ARGV[1] eq 'restore') {
+		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
+		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
+		my $count = 1;
+		foreach my $db (@dbs){
+			if($db_number && $db_number!=$count++) { next; }
+			$ARGV[1] = "mysql-$db->{NAME}";
+			restore();
+		}
+	}
+	# -- 引数ミス
+	else{
+		throw('引数が間違っています');
+	}
 }

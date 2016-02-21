@@ -8,7 +8,7 @@ echo ". /etc/bashrc" >> /root/.bashrc
 [ ! -e /genie/storages ] && mkdir /genie/storages
 if [[ `find /genie/storages -type f | wc -l` != '0' ]]; then
   echo "storages restoring" >> /var/log/entry.log
-  find /genie/storages -maxdepth 1 -type f -exec tar xf {} \;
+  find /genie/storages -maxdepth 1 -type f -exec perl -e '$_=shift;if(~/([^\/]+).tar$/){mkdir "/storages/$1";`tar xf $_ -C /storages/$1`}' {} \;
   echo "done!" >> /var/log/entry.log
 fi
 
@@ -27,7 +27,8 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
-    tar cf /genie/storages/${storage_name}.tar /storages/${storage_name}
+    cd /storages/${storage_name}
+    tar cf /genie/storages/${storage_name}.tar ./
   else
     # -- perl relink
     echo "plenv resetting -> $GENIE_PERL_VERSION" >> /var/log/entry.log
@@ -48,7 +49,8 @@ if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/cpanfile ]]; then
   echo "cpanfile installing" >> /var/log/entry.log
   cpanm -nq --installdeps -L /storages/${storage_name}/ /genie/
   echo 'done!' >> /var/log/entry.log
-  tar cf /genie/storages/${storage_name}.tar /storages/${storage_name}
+  cd /storages/${storage_name}
+  tar cf /genie/storages/${storage_name}.tar ./
 fi
 
 # -- php setup
@@ -65,7 +67,8 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     \cp -f /etc/httpd/modules/libphp5.so ${link_to}/
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
-    tar cf /genie/storages/${storage_name}.tar /storages/${storage_name}
+    cd /storages/${storage_name}
+    tar cf /genie/storages/${storage_name}.tar ./
   else
     # -- php relink
     echo "phpenv resetting -> $GENIE_PHP_VERSION" >> /var/log/entry.log
@@ -89,7 +92,8 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
-    tar cf /genie/storages/${storage_name}.tar /storages/${storage_name}
+    cd /storages/${storage_name}
+    tar cf /genie/storages/${storage_name}.tar ./
   else
     # -- ruby relink
     echo "rbenv resetting -> $GENIE_RUBY_VERSION" >> /var/log/entry.log
@@ -133,7 +137,7 @@ sed -i "/<__PASSENV__>/,/<\/__PASSENV__>/c\
 \ \ # <__PASSENV__>\n\
   PassEnv $passenv_string\n\
   # </__PASSENV__>" /etc/httpd/conf/httpd.conf
-/usr/sbin/httpd
+/usr/sbin/httpd start
 echo 'done!' >> /var/log/entry.log
 
 # -- Postfix
@@ -167,27 +171,27 @@ fi
 #   fi
 # fi
 
-# # -- MySQL
-# if [[ $LAMP_MYSQL == 1 ]]; then
-#   # port set
-#   mkdir /etc/mysql
-#   echo "[mysqld]" >> /etc/mysql/my.cnf
-#   echo "port=$LAMP_MYSQL_PORT_INNER" >> /etc/mysql/my.cnf
+# -- MySQL
+if [[ $GENIE_MYSQL_ENABLED == 1 ]]; then
+  # port set
+  mkdir /etc/mysql
+  echo "[mysqld]" >> /etc/mysql/my.cnf
+  echo "port=$GENIE_MYSQL_PORT" >> /etc/mysql/my.cnf
 
-#   # service start
-#   service mysqld start
+  # service start
+  /usr/sbin/mysqld start
 
-#   # database and user set up
-#   echo "CREATE DATABASE \`${LAMP_MYSQL_DB}\` DEFAULT CHARACTER SET ${LAMP_MYSQL_DEFAULT_CHARACTER_SET}" | mysql
-#   echo "CREATE USER '${LAMP_MYSQL_USER}'@'%' IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
-#   echo "GRANT ALL PRIVILEGES ON \`${LAMP_MYSQL_DB}\`.* TO '${LAMP_MYSQL_USER}'@localhost IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
-#   echo "FLUSH PRIVILEGES" | mysql
+  # database and user set up
+  echo "CREATE DATABASE \`${LAMP_MYSQL_DB}\` DEFAULT CHARACTER SET ${LAMP_MYSQL_DEFAULT_CHARACTER_SET}" | mysql
+  echo "CREATE USER '${LAMP_MYSQL_USER}'@'%' IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
+  echo "GRANT ALL PRIVILEGES ON \`${LAMP_MYSQL_DB}\`.* TO '${LAMP_MYSQL_USER}'@localhost IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
+  echo "FLUSH PRIVILEGES" | mysql
 
-#   # add local hosts
-#   if [[ $LAMP_MYSQL_HOSTNAME_TO_LOCAL != '' ]]; then
-#     echo "127.0.0.1 $LAMP_MYSQL_HOSTNAME_TO_LOCAL" >> /etc/hosts
-#   fi
-# fi
+  # add local hosts
+  if [[ $LAMP_MYSQL_HOSTNAME_TO_LOCAL != '' ]]; then
+    echo "127.0.0.1 $LAMP_MYSQL_HOSTNAME_TO_LOCAL" >> /etc/hosts
+  fi
+fi
 
 
 # # -- Nginx
