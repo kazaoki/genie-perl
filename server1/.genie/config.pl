@@ -38,26 +38,25 @@ return {
 	# Perl設定
 	# --------
 	PERL => {
-		VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
-		CPANFILE_ENABLED => 1,
+		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		# CPANFILE_ENABLED => 1,
 	},
 
 	# PHP設定
 	# --------
 	PHP => {
-		VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Ruby設定
 	# --------
 	RUBY => {
-		VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Apache設定
 	# ----------
 	APACHE => {
-		ENABLED     => 1,
 		PUBLIC_PATH => 'public_html',
 		# BANDWIDTH   => 100,
 		# NO_CACHE    => 1,
@@ -66,20 +65,20 @@ return {
 	# Nginx設定
 	# ----------
 	NGINX => {
-		ENABLED => 1,
+		# ENABLED => 1,
 	},
 
 	# Postfix設定
 	# -----------
 	POSTFIX => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		FORCE_ENVELOPE => 'test@kazaoki.jp',
 	},
 
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			{
 				REPOSITORY   => 'mysql:5.6',
@@ -101,17 +100,26 @@ return {
 	},
 
 	# PostgreSQL設定
-	# ---------
+	# --------------
+	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
 		ENABLED => 1,
 		DATABASES => [
 			{
+				REPOSITORY => 'postgres:9.4',
 				NAME       => 'genie_db1',
-				USER       => 'genie_db1',
+				USER       => 'genie_user1',
 				PASS       => '123456789',
-				ENCODING   => 'utf8',
-				LC_COLLATE => 'ja_JP.utf-8',
-				LC_CTYPE   => 'ja_JP.utf-8',
+				PORT       => '55432',
+				LOCALE     => 'ja_JP.UTF-8',
+			},
+			{
+				REPOSITORY => 'postgres:9.3',
+				NAME       => 'genie_db2',
+				USER       => 'genie_user2',
+				PASS       => '123456789',
+				PORT       => '55432',
+				LOCALE     => 'ja_JP.UTF-8',
 			},
 		],
 	},

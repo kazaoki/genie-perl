@@ -145,6 +145,7 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	restore
 	ngrok
 	mysql
+	psql
 / ){
 	no strict;
 	$ARGV[0]->();
@@ -525,6 +526,37 @@ sub up {
 			}
 		}
 
+		# -- PostgreSQL起動
+		my $postgresql_option;
+		if($config{POSTGRESQL}->{ENABLED}) {
+			foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
+				my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{NAME};
+				`docker volume rm $label $hide_all`;
+				`docker volume create --name $label`;
+				my $cmd =
+					"docker run --name $label".
+					" -v $label:/var/lib/postgresql/data".
+					" -v $vpath/.genie/postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
+					" -v $vpath/.genie/:/genie".
+					" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
+					" -e POSTGRES_DB=$db->{NAME}".
+					" -e POSTGRES_USER=$db->{USER}".
+					" -e POSTGRES_PASSWORD=$db->{PASS}".
+					" -e POSTGERS_PORT=$db->{PORT}".
+					" -e POSTGERS_ENCODING=$db->{ENCODING}".
+					" -e POSTGERS_LOCALE=$db->{LOCALE}".
+					" -e TERM=xterm".
+					" -p $db->{PORT}".
+					" --entrypoint=/genie/postgresql/before-entry.sh".
+					" -d $db->{REPOSITORY}".
+					" postgres"
+				;
+				`$cmd`;
+				$postgresql_option .= " -v $label:/storages/postgresql-$db->{NAME}";
+				$postgresql_option .= " --link $label";
+			}
+		}
+
 		# -- 本体の起動（Apache）
 		{
 			# -- 設定値を環境変数として渡す形(-e)に変換
@@ -568,6 +600,7 @@ sub up {
 				" -v $vpath/$genie_dir:/genie".
 				" -v $vpath/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
 				$mysql_option.
+				$postgresql_option.
 				" -p 80".
 				" --name=$config{DOCKER}->{NAME}".
 				# " --privileged".
@@ -658,6 +691,15 @@ sub down {
 	if($config{MYSQL}->{ENABLED}) {
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{NAME};
+			`docker rm -f $label $hide_all`;
+			push @rm_volumes_cmd, "docker volume rm $label $hide_all"; # 内部で利用してるデータボリュームの削除
+		}
+	}
+
+	# -- PostgreSQL終了
+	if($config{POSTGRESQL}->{ENABLED}) {
+		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
+			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{NAME};
 			`docker rm -f $label $hide_all`;
 			push @rm_volumes_cmd, "docker volume rm $label $hide_all"; # 内部で利用してるデータボリュームの削除
 		}
@@ -1041,7 +1083,7 @@ sub perl {
 		my $result = input('/genie/storages/perl-cpanfile-modules.tar に固めますか？ [y/N]:');
 		if($result =~ /^y$/i ) {
 			$ARGV[1] = 'perl';
-			&store;
+			&store();
 		}
 		return;
 	}
@@ -1067,8 +1109,8 @@ sub ruby {
 # genie store (storage name)                          ストレージの保存
 # --------------------------------------------------------------------
 sub store {
+	my $param = shift;
 	return unless require_up(); # 起動必須
-
 	if($ARGV[1] eq '') { throw('引数が足りません。ストレージ名を指定してください。（/storages/xxx/のxxxの部分）'); }
 
 	# -- ストレージ名の整理
@@ -1083,8 +1125,12 @@ sub store {
 	}
 
 	# -- tarで固める
+	my $opt;
+	if(defined $param->{opt}) {
+		$opt = $param->{opt};
+	}
 	mkdir '.genie/storages';
-	my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c " cd $dir_path && tar cvf $tar_path ./"|;
+	my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c " cd $dir_path && tar cvf $tar_path ./ $opt"|;
 	`$cmd`;
 	if($?) {
 		throw('tar保存に失敗しました。', "$dir_path -> $tar_path");
@@ -1160,7 +1206,7 @@ sub mysql {
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
 			$ARGV[1] = "mysql-$db->{NAME}";
-			store();
+			&store();
 		}
 	}
 	# -- restore (db num) : 対象番号のDBをtarからストレージに復元 ※番号未指定なら全てのDBを復元
@@ -1171,7 +1217,53 @@ sub mysql {
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
 			$ARGV[1] = "mysql-$db->{NAME}";
-			restore();
+			&restore();
+		}
+	}
+	# -- 引数ミス
+	else{
+		throw('引数が間違っています');
+	}
+}
+
+# --------------------------------------------------------------------
+# genie psql (options)                                  PostgreSQL操作
+# --------------------------------------------------------------------
+sub psql {
+	return unless require_up(); # 起動必須
+	my @dbs = @{$config{POSTGRESQL}->{DATABASES}} if ref $config{POSTGRESQL}->{DATABASES};
+
+	# -- 引数未指定または数字
+	if($ARGV[1] eq '' || $ARGV[1] =~ /^\d+$/ ) {
+		my $db_number = $ARGV[1] =~ /^\d+$/ ? $ARGV[1] : 1;
+		unless($db_number>0 && $db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
+		my $db = $config{POSTGRESQL}->{DATABASES}[$db_number-1];
+		my $cmd =
+			qq|docker exec -it $config{DOCKER}->{NAME}-postgresql-$db->{NAME}|.
+			qq| psql $db->{NAME} -U $db->{USER} -p $db->{PORT}|
+		;
+		system $cmd;
+	}
+	# -- store (db num) : 対象番号のDBをストレージからtarに保存 ※番号未指定なら全てのDBを保存
+	elsif($ARGV[1] eq 'store') {
+		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
+		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
+		my $count = 1;
+		foreach my $db (@dbs){
+			if($db_number && $db_number!=$count++) { next; }
+			$ARGV[1] = "postgresql-$db->{NAME}";
+			&store({opt=>'--exclude postmaster.pid'});
+		}
+	}
+	# -- restore (db num) : 対象番号のDBをtarからストレージに復元 ※番号未指定なら全てのDBを復元
+	elsif($ARGV[1] eq 'restore') {
+		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
+		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
+		my $count = 1;
+		foreach my $db (@dbs){
+			if($db_number && $db_number!=$count++) { next; }
+			$ARGV[1] = "postgresql-$db->{NAME}";
+			&restore();
 		}
 	}
 	# -- 引数ミス

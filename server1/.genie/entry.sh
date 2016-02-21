@@ -152,48 +152,6 @@ if [[ $GENIE_POSTFIX_ENABLED ]]; then
   echo 'done!' >> /var/log/entry.log
 fi
 
-# # -- PostgreSQL
-# if [[ $LAMP_PGSQL == 1 ]]; then
-#   # port set
-#   echo "PGPORT=$LAMP_PGSQL_PORT_INNER" > /etc/sysconfig/pgsql/postgresql
-
-#   # service start
-#   service postgresql start
-
-#   # database and user set up
-#   sleep 5
-#   su - postgres -c "echo CREATE USER $LAMP_PGSQL_USER WITH SUPERUSER PASSWORD \'${LAMP_PGSQL_PASS}\' | psql -p $LAMP_PGSQL_PORT_INNER"
-#   su - postgres -c "echo CREATE DATABASE $LAMP_PGSQL_DB WITH ENCODING \'${LAMP_PGSQL_ENCODING}\' LC_COLLATE \'${LAMP_PGSQL_LC_COLLATE}\' LC_CTYPE \'${LAMP_PGSQL_LC_CTYPE}\' TEMPLATE template0 OWNER $LAMP_PGSQL_USER | psql -p $LAMP_PGSQL_PORT_INNER"
-
-#   # add local hosts
-#   if [[ $LAMP_PGSQL_HOSTNAME_TO_LOCAL != '' ]]; then
-#     echo "127.0.0.1 $LAMP_PGSQL_HOSTNAME_TO_LOCAL" >> /etc/hosts
-#   fi
-# fi
-
-# # -- MySQL
-# if [[ $GENIE_MYSQL_ENABLED == 1 ]]; then
-#   # port set
-#   mkdir /etc/mysql
-#   echo "[mysqld]" >> /etc/mysql/my.cnf
-#   echo "port=$GENIE_MYSQL_PORT" >> /etc/mysql/my.cnf
-
-#   # service start
-#   /usr/sbin/mysqld start
-
-#   # database and user set up
-#   echo "CREATE DATABASE \`${LAMP_MYSQL_DB}\` DEFAULT CHARACTER SET ${LAMP_MYSQL_DEFAULT_CHARACTER_SET}" | mysql
-#   echo "CREATE USER '${LAMP_MYSQL_USER}'@'%' IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
-#   echo "GRANT ALL PRIVILEGES ON \`${LAMP_MYSQL_DB}\`.* TO '${LAMP_MYSQL_USER}'@localhost IDENTIFIED BY '${LAMP_MYSQL_PASS}'" | mysql
-#   echo "FLUSH PRIVILEGES" | mysql
-
-#   # add local hosts
-#   if [[ $LAMP_MYSQL_HOSTNAME_TO_LOCAL != '' ]]; then
-#     echo "127.0.0.1 $LAMP_MYSQL_HOSTNAME_TO_LOCAL" >> /etc/hosts
-#   fi
-# fi
-
-
 # # -- Nginx
 # service nginx start
 
