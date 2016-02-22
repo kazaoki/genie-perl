@@ -106,15 +106,19 @@ return {
 		ENABLED => 1,
 		DATABASES => [
 			{
+				LABEL      => 'db1',
 				REPOSITORY => 'postgres:9.4',
+				HOST       => 'db1.com',
 				NAME       => 'genie_db1',
 				USER       => 'genie_user1',
 				PASS       => '123456789',
-				PORT       => '55432',
+				PORT       => '54321',
 				LOCALE     => 'ja_JP.UTF-8',
 			},
 			{
+				LABEL      => 'test-db',
 				REPOSITORY => 'postgres:9.3',
+				HOST       => '127.0.0.1',
 				NAME       => 'genie_db2',
 				USER       => 'genie_user2',
 				PASS       => '123456789',

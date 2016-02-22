@@ -530,15 +530,14 @@ sub up {
 		my $postgresql_option;
 		if($config{POSTGRESQL}->{ENABLED}) {
 			foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
-				my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{NAME};
-				`docker volume rm $label $hide_all`;
-				`docker volume create --name $label`;
+				my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
 				my $cmd =
 					"docker run --name $label".
-					" -v $label:/var/lib/postgresql/data".
 					" -v $vpath/.genie/postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
 					" -v $vpath/.genie/:/genie".
 					" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
+					" -e POSTGRES_LABEL=$db->{LABEL}".
+					" -e POSTGRES_HOST=$db->{HOST}".
 					" -e POSTGRES_DB=$db->{NAME}".
 					" -e POSTGRES_USER=$db->{USER}".
 					" -e POSTGRES_PASSWORD=$db->{PASS}".
@@ -699,7 +698,7 @@ sub down {
 	# -- PostgreSQL終了
 	if($config{POSTGRESQL}->{ENABLED}) {
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
-			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{NAME};
+			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
 			`docker rm -f $label $hide_all`;
 			push @rm_volumes_cmd, "docker volume rm $label $hide_all"; # 内部で利用してるデータボリュームの削除
 		}
@@ -1130,7 +1129,7 @@ sub store {
 		$opt = $param->{opt};
 	}
 	mkdir '.genie/storages';
-	my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c " cd $dir_path && tar cvf $tar_path ./ $opt"|;
+	my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd $dir_path && tar cvf $tar_path ./ $opt"|;
 	`$cmd`;
 	if($?) {
 		throw('tar保存に失敗しました。', "$dir_path -> $tar_path");
@@ -1220,6 +1219,14 @@ sub mysql {
 			&restore();
 		}
 	}
+	# -- cli (db num) : 対象番号のDBコンテナに入る ※番号未指定なら1
+	elsif($ARGV[1] eq 'cli') {
+		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : 1;
+		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
+		my $db = $config{POSTGRESQL}->{DATABASES}[$db_number-1];
+		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{NAME} bash";
+		system $cmd;
+	}
 	# -- 引数ミス
 	else{
 		throw('引数が間違っています');
@@ -1239,7 +1246,7 @@ sub psql {
 		unless($db_number>0 && $db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
 		my $db = $config{POSTGRESQL}->{DATABASES}[$db_number-1];
 		my $cmd =
-			qq|docker exec -it $config{DOCKER}->{NAME}-postgresql-$db->{NAME}|.
+			qq|docker exec -it $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}|.
 			qq| psql $db->{NAME} -U $db->{USER} -p $db->{PORT}|
 		;
 		system $cmd;
@@ -1251,8 +1258,12 @@ sub psql {
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
-			$ARGV[1] = "postgresql-$db->{NAME}";
-			&store({opt=>'--exclude postmaster.pid'});
+			`docker exec $config{DOCKER}->{NAME}-postgresql-$db->{LABEL} sh -c "cd \$PGDATA && tar cfz /genie/postgresql/dbdata_$db->{LABEL}.tar.gz ./ --exclude postmaster.pid"`;
+			if(!$?) {
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} を保存しました。\n.genie/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
+			} else {
+				throw('データベースの保存に失敗しました。', $!);
+			}
 		}
 	}
 	# -- restore (db num) : 対象番号のDBをtarからストレージに復元 ※番号未指定なら全てのDBを復元
@@ -1262,9 +1273,21 @@ sub psql {
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
-			$ARGV[1] = "postgresql-$db->{NAME}";
-			&restore();
+			`docker restart $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}`;
+			if(!$?) {
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n.genie/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
+			} else {
+				throw('データベースの復元に失敗しました。', $!);
+			}
 		}
+	}
+	# -- cli (db num) : 対象番号のDBコンテナに入る ※番号未指定なら1
+	elsif($ARGV[1] eq 'cli') {
+		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : 1;
+		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
+		my $db = $config{POSTGRESQL}->{DATABASES}[$db_number-1];
+		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-postgresql-$db->{LABEL} bash";
+		system $cmd;
 	}
 	# -- 引数ミス
 	else{

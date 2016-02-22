@@ -4,7 +4,31 @@
 # -----------
 echo "port = $POSTGERS_PORT" >> $PGDATA/postgresql.conf
 
-# echo "!!??"
+# mv /var/lib/postgresql/data/postmaster.pid /var/lib/postgresql/_data
+# export PGDATA=/var/lib/postgresql/_data
+
+# gosu postgres pg_ctl -m f stop
+# sleep 1
+# echo .
+# sleep 1
+# echo .
+# sleep 1
+# echo .
+# sleep 1
+# echo .
+# sleep 1
+# echo .
+# sleep 1
+# echo .
+# sleep 1
+# echo .
+# sleep 1
+# gosu postgres rm -fr $PGDATA/*
+# gosu postgres ls -la $PGDATA
+# gosu postgres cp /var/lib/postgresql/_data/* $PGDATA
+# gosu postgres ls -la $PGDATA
+# gosu postgres pg_ctl -D "$PGDATA" -m fast -w stop
+
 
 
 
