@@ -103,6 +103,19 @@ if(-f $config{GENERAL}->{config_path}){
 `docker-machine`;
 my $is_docker_machine = !$?;
 
+# -- ホストIPを設定
+if($config{GENERAL}->{HOST_IP_FORCE}){
+	$config{GENERAL}->{host_ip} = $config{GENERAL}->{HOST_IP_FORCE};
+} else {
+	if($is_docker_machine) {
+		my $ip = `docker-machine ip`;
+		chomp $ip;
+		$config{GENERAL}->{host_ip} = $ip;
+	} else {
+		$config{GENERAL}->{host_ip} = '127.0.0.1';
+	}
+}
+
 # -- Dockerマシーンが指定されていれば切り替える
 if($is_docker_machine && $config{DOCKER}->{MACHINE} ne '') {
 	# -- docker-machine起動
@@ -657,21 +670,10 @@ sub up {
 
 			# -- コンテナの情報からブラウザを起動
 			if(`docker port $cid 80` =~ /(\d+)$/) {
-
-				# -- IPとポートを取得
-				my $port = $1;
-				my $ip;
-				if($is_docker_machine) {
-					$ip = `docker-machine ip default`;
-					chomp $ip;
-				} else {
-					$ip = '127.0.0.1';
-				}
-				message(success=>"http://$ip:$port/");
-
-				# -- ブラウザ起動
+				my $url = "http://$config{GENERAL}->{host_ip}:$1/";
+				message(success=>$url);
 				if($open_cmd){
-					`$open_cmd http://$ip:$port/`;
+					`$open_cmd $url`;
 				}
 			}
 
@@ -956,20 +958,11 @@ sub httpd {
 	# -- コンテナの情報からブラウザを起動
 	if(`docker port $cid 80` =~ /(\d+)$/) {
 
-		# -- IPとポートを取得
-		my $port = $1;
-		my $ip;
-		if($is_docker_machine) {
-			$ip = `docker-machine ip default`;
-			chomp $ip;
-		} else {
-			$ip = '127.0.0.1';
-		}
-		message(success=>"http://$ip:$port/");
-
 		# -- ブラウザ起動
+		my $url = "http://$config{GENERAL}->{host_ip}:$1/";
+		message(success=>$url);
 		if($open_cmd){
-			`$open_cmd http://$ip:$port/`;
+			`$open_cmd $url`;
 		}
 
 		# -- Ctrl+C時に自動的にコンテナ削除されるように
@@ -1244,12 +1237,17 @@ sub psql {
 	if($ARGV[1] eq '' || $ARGV[1] =~ /^\d+$/ ) {
 		my $db_number = $ARGV[1] =~ /^\d+$/ ? $ARGV[1] : 1;
 		unless($db_number>0 && $db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
-		my $db = $config{POSTGRESQL}->{DATABASES}[$db_number-1];
+		my $db = $dbs[$db_number-1];
 		my $cmd =
 			qq|docker exec -it $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}|.
 			qq| psql $db->{NAME} -U $db->{USER} -p $db->{PORT}|
 		;
 		system $cmd;
+	}
+	# -- ls
+	if($ARGV[1] eq 'ls' ) {
+		my $count = 1;
+		message(info=>join("\n", map { ($count++) . ': ' . $_->{LABEL} } @dbs));
 	}
 	# -- store (db num) : 対象番号のDBをストレージからtarに保存 ※番号未指定なら全てのDBを保存
 	elsif($ARGV[1] eq 'store') {
