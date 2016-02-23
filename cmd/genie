@@ -376,6 +376,20 @@ sub say {
 	}
 }
 
+# 使用中のデータボリュームを返す
+# ------------------------------
+sub get_data_volume_name {
+	my $container_name = shift;
+	my @volumes;
+	my @lines = `docker inspect --format='{{.Mounts}}' $container_name` =~ /\{\s*([^\{\}]+)\s*\}/g;
+	foreach(@lines){
+		if( $_=~/^(.+?) / && $1!~/\// ) {
+			push @volumes, $1;
+		}
+	}
+	return @volumes;
+}
+
 # --------------------------------------------------------------------
 # genie init                                                    初期化
 # --------------------------------------------------------------------
@@ -477,6 +491,10 @@ EOL
 # --------------------------------------------------------------------
 sub demo {
 
+my @vols = get_data_volume_name('genie-test-mysql-db1');
+message(info=>Dumper \@vols);
+exit;
+
 	# -- カラーメッセージBOX
 	foreach(qw/default primary success info warning danger disabled/) {
 		message($_=>$_);
@@ -536,7 +554,6 @@ sub up {
 					" mysqld"
 				;
 				`$cmd`;
-				$mysql_option .= " -v $label:/storages/mysql-$db->{NAME}";
 				$mysql_option .= " --link $label";
 			}
 		}
@@ -566,7 +583,6 @@ sub up {
 					" postgres"
 				;
 				`$cmd`;
-				$postgresql_option .= " -v $label:/storages/postgresql-$db->{NAME}";
 				$postgresql_option .= " --link $label";
 			}
 		}
@@ -688,14 +704,14 @@ sub up {
 # --------------------------------------------------------------------
 sub down {
 	return unless require_up(); # 起動必須
-	my @rm_volumes_cmd;
+	my @rm_volumes;
 
 	# -- MySQL終了
 	if($config{MYSQL}->{ENABLED}) {
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
+			push @rm_volumes, get_data_volume_name($label);
 			`docker rm -f $label $hide_all`;
-			push @rm_volumes_cmd, "docker volume rm $label $hide_all"; # 内部で利用してるデータボリュームの削除
 		}
 	}
 
@@ -703,23 +719,23 @@ sub down {
 	if($config{POSTGRESQL}->{ENABLED}) {
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
+			push @rm_volumes, get_data_volume_name($label);
 			`docker rm -f $label $hide_all`;
-			push @rm_volumes_cmd, "docker volume rm $label $hide_all"; # 内部で利用してるデータボリュームの削除
 		}
 	}
 
-	# -- 本体の終了	
-	my $cmd = 'docker rm -f ' . $config{DOCKER}->{NAME};
-	`$cmd`;
+	# -- 本体終了
+	push @rm_volumes, get_data_volume_name($config{DOCKER}->{NAME});
+	`docker rm -f $config{DOCKER}->{NAME} $hide_all`;
 	if(!$?){
 		message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
 	}
 
 	# -- ストレージボリュームを削除（未参照状態にならないと消えないので最後に実行）
-	foreach(@rm_volumes_cmd) {
-		`docker volume rm $_ $hide_all`;
+	if(@rm_volumes) {
+		my $cmd = 'docker volume rm ' . join(' ', @rm_volumes) . " $hide_all";
+		`$cmd`;
 	}
-	
 
 }
 
@@ -908,21 +924,6 @@ sub clean {
 			message(default=>'未参照のデータボリュームは見つかりませんでした。');
 		}
 	}
-
-
-
-	# # -- 引数なし→ヘルプ
-	# if($ARGV[1] eq '') {
-	# 	message(warning=>
-	# 		"引数を指定してください。\n".
-	# 		"genie clean cons|containers   死んでるコンテナを全て削除\n".
-	# 		"genie clean images            noneイメージを全て削除\n".
-	# 		"genie clean volumes           参照のないデータボリュームを全て削除\n".
-	# 		"genie clean all               上記全てを実行\n"
-	# 	);
-	# }
-
-
 }
 
 
