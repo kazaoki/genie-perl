@@ -17,7 +17,6 @@ export LANG=$POSTGERS_LOCALE
 # --------------------
 if [ -f /genie/postgresql/dbdata_$POSTGRES_LABEL.tar.gz ]; then
   tar xfz /genie/postgresql/dbdata_$POSTGRES_LABEL.tar.gz -C $PGDATA
-  ls -la $PGDATA
   sed -i -e "s/^port\s*\=.*$/port = $POSTGERS_PORT/" $PGDATA/postgresql.conf
 fi
 

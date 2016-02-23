@@ -516,13 +516,13 @@ sub up {
 		my $mysql_option;
 		if($config{MYSQL}->{ENABLED}) {
 			foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
-				my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{NAME};
-				`docker volume rm $label $hide_all`;
-				`docker volume create --name $label`;
+				my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
 				my $cmd =
 					"docker run --name $label".
-					" -v $label:/var/lib/mysql/$db->{NAME}".
 					" -v $vpath/.genie/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
+					" -v $vpath/.genie/:/genie".
+					" -e MYSQL_LABEL=$db->{LABEL}".
+					" -e MYSQL_HOST=$db->{HOST}".
 					" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 					" -e MYSQL_DATABASE=$db->{NAME}".
 					" -e MYSQL_USER=$db->{USER}".
@@ -531,7 +531,9 @@ sub up {
 					" -e MYSQL_CHARSET=$db->{CHARSET}".
 					" -e TERM=xterm".
 					" -p $db->{PORT}".
-					" -d $db->{REPOSITORY}"
+					" --entrypoint=/genie/mysql/before-entry.sh".
+					" -d $db->{REPOSITORY}".
+					" mysqld"
 				;
 				`$cmd`;
 				$mysql_option .= " -v $label:/storages/mysql-$db->{NAME}";
@@ -691,7 +693,7 @@ sub down {
 	# -- MySQL終了
 	if($config{MYSQL}->{ENABLED}) {
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
-			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{NAME};
+			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
 			`docker rm -f $label $hide_all`;
 			push @rm_volumes_cmd, "docker volume rm $label $hide_all"; # 内部で利用してるデータボリュームの削除
 		}
@@ -1182,13 +1184,18 @@ sub mysql {
 		unless($db_number>0 && $db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
 		my $db = $config{MYSQL}->{DATABASES}[$db_number-1];
 		my $cmd =
-			qq|docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{NAME}|.
+			qq|docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{LABEL}|.
 			qq| mysql $db->{NAME}|.
 			qq| -u$db->{USER}|.
 			qq| -p$db->{PASS}|.
 			qq| -P$db->{PORT}|
 		;
 		system $cmd;
+	}
+	# -- ls
+	elsif($ARGV[1] eq 'ls' ) {
+		my $count = 1;
+		message(info=>join("\n", map { ($count++) . ': ' . $_->{LABEL} } @dbs));
 	}
 	# -- store (db num) : 対象番号のDBをストレージからtarに保存 ※番号未指定なら全てのDBを保存
 	elsif($ARGV[1] eq 'store') {
@@ -1197,8 +1204,12 @@ sub mysql {
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
-			$ARGV[1] = "mysql-$db->{NAME}";
-			&store();
+			`docker exec $config{DOCKER}->{NAME}-mysql-$db->{LABEL} sh -c "cd /var/lib/mysql/$db->{NAME} && tar cfz /genie/mysql/dbdata_$db->{LABEL}.tar.gz ./"`;
+			if(!$?) {
+				message(success=>"MySQLのデータベース $db->{LABEL} を保存しました。\n.genie/mysql/dbdata_$db->{LABEL}.tar.gz",1)
+			} else {
+				throw('データベースの保存に失敗しました。', $!);
+			}
 		}
 	}
 	# -- restore (db num) : 対象番号のDBをtarからストレージに復元 ※番号未指定なら全てのDBを復元
@@ -1208,8 +1219,12 @@ sub mysql {
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
-			$ARGV[1] = "mysql-$db->{NAME}";
-			&restore();
+			`docker restart $config{DOCKER}->{NAME}-mysql-$db->{LABEL}`;
+			if(!$?) {
+				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n.genie/mysql/dbdata_$db->{LABEL}.tar.gz",1)
+			} else {
+				throw('データベースの復元に失敗しました。', $!);
+			}
 		}
 	}
 	# -- cli (db num) : 対象番号のDBコンテナに入る ※番号未指定なら1
@@ -1217,7 +1232,7 @@ sub mysql {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : 1;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
 		my $db = $config{POSTGRESQL}->{DATABASES}[$db_number-1];
-		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{NAME} bash";
+		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{LABEL} bash";
 		system $cmd;
 	}
 	# -- 引数ミス
@@ -1245,7 +1260,7 @@ sub psql {
 		system $cmd;
 	}
 	# -- ls
-	if($ARGV[1] eq 'ls' ) {
+	elsif($ARGV[1] eq 'ls' ) {
 		my $count = 1;
 		message(info=>join("\n", map { ($count++) . ': ' . $_->{LABEL} } @dbs));
 	}
