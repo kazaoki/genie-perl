@@ -94,6 +94,15 @@ if(-f $config{GENERAL}->{config_path}){
 	}
 }
 
+# -- データベース設定でLABELが重複していないか確認
+foreach my $db_type (qw|MYSQL POSTGRESQL|) {
+	my @err;
+	my %book;
+	map { if($book{$_->{LABEL}}++){push @err, $_->{LABEL};} } @{$config{$db_type}->{DATABASES}};
+	throw("${db_type}の設定で、重複するラベルがあります。", join("\n", @err)) if @err;
+}
+
+
 # --------------------------------------------------------------------
 # Dockerマシーン環境用意
 # ※設定がされていたら。
@@ -314,10 +323,12 @@ sub style {
 	print $set if $set;
 }
 
-# 起動しているか確認するヘルパー
-# ------------------------------
+# コンテナが起動しているか確認するヘルパー
+# ----------------------------------------
+# 引数未指定の場合はkazaoki/genieのコンテナ名
 sub is_up {
-	my $cmd = 'docker inspect ' . $config{DOCKER}->{NAME};
+	my $container_name = shift;
+	my $cmd = 'docker top ' . ($container_name || $config{DOCKER}->{NAME});
 	`$cmd $hide_all`;
 	return !$?;
 }
@@ -376,8 +387,8 @@ sub say {
 	}
 }
 
-# 使用中のデータボリュームを返す
-# ------------------------------
+# 使用中のデータボリューム名を返す
+# --------------------------------
 sub get_data_volume_name {
 	my $container_name = shift;
 	my @volumes;
@@ -388,6 +399,95 @@ sub get_data_volume_name {
 		}
 	}
 	return @volumes;
+}
+
+# コンテナ側処理をプログレスを表示しながら待つ
+# --------------------------------------------
+# [例]
+# &wait_container(
+#     container_name => 'genie-test',
+#     log_file       => '/var/log/apache.log',
+#     stopword       => 'done',
+#     label          => 'Start',
+#     label_head     => ' ',   # default '  | '
+#     progress_char  => '+',   # default '.'
+#     result_ok      => ' ok', # default ' OK'
+#     result_ng      => ' ng', # default ' NG'
+#     sleep_sec      => 5,     # default 1
+# );
+# `container_name`コンテナ内の`log_file`に`stopword`が見つかるまでループします。
+sub wait_container {
+	my $param = shift;
+	# -- コンテナ名チェック
+	if(!$param->{container_name}){
+		throw('コンテナ名が指定されていません。');
+	}
+	if(!is_up($param->{container_name})){
+		throw("指定のコンテナ `$param->{container_name}` に接続出来ませんでした。")
+	}
+	# -- ログファイルチェック
+	if(!$param->{log_file}){
+		throw('ログファイルが指定されていません。');
+	}
+	# -- 停止ワードチェック
+	if(!$param->{stopword}){
+		throw('停止ワードが指定されていません。');
+	}
+	# -- デフォルト値セット
+	$param->{label}          ||= '';
+	$param->{label_head}     ||= '  | ';
+	$param->{progress_char}  ||= '.';
+	$param->{result_ok}      ||= 'OK';
+	$param->{result_ng}      ||= 'NG';
+	$param->{sleep_sec}      ||= 1;
+
+	# -- ラベル表示
+	echo "$param->{label_head}$param->{label} ";
+
+	my $error;
+	my $loop = 1;
+	my $cmd = qq|docker exec $param->{container_name} sh -c "cat $param->{log_file} 2>/dev/null \| grep '$param->{stopword}' \| wc -l"|;
+	do {
+		# -- 生存確認
+		if(is_up($param->{container_name})){
+			# -- ログファイルチェック
+			my $hit_count = `$cmd`;
+			chomp $hit_count;
+			if($hit_count) {
+				echo $param->{progress_char};
+				undef $loop;
+			} else {
+				echo $param->{progress_char};
+				sleep $param->{sleep_sec};
+			}
+		} else {
+			# -- コンテナが死んでる場合
+			$error = `docker logs $param->{container_name}`;
+			$error ||= 'コンテナが削除された可能性があります。';
+			undef $loop;
+		}
+	} while($loop);
+
+	# -- 完了表示
+	if(!$error){
+		# -- 成功
+		style(color=>'green');
+		echo " $param->{result_ok}";
+		style(color=>'clear');
+	} else {
+		# -- エラー
+		style(color=>'red');
+		echo " $param->{result_ng}";
+		style(color=>'clear');
+		my @lines = split(/\r\n/, $error);
+		if(scalar(@lines) > 10 ) {
+			@lines = splice(@lines, -10, 10); # エラーメッセージが110行以上なら最後から10行のみ表示
+		}
+		print "\n";
+		message(danger=>join("\n", @lines));
+	}
+
+	return;
 }
 
 # --------------------------------------------------------------------
@@ -491,8 +591,19 @@ EOL
 # --------------------------------------------------------------------
 sub demo {
 
-my @vols = get_data_volume_name('genie-test-mysql-db1');
-message(info=>Dumper \@vols);
+
+#     container_name => 'genie-test',
+#     log_file       => '/var/log/apache.log',
+#     stopword       => 'done',
+#     label          => 'Start',
+
+wait_container({
+	container_name => 'genie-test',
+	log_file       => '/var/log/test.log',
+	stopword       => 'done',
+	label          => 'Test Start',
+});
+
 exit;
 
 	# -- カラーメッセージBOX
@@ -533,8 +644,10 @@ sub up {
 		# -- MySQL起動
 		my $mysql_option;
 		if($config{MYSQL}->{ENABLED}) {
+			my $last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 			foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 				my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
+				$last_label = $label;
 				my $cmd =
 					"docker run --name $label".
 					" -v $vpath/.genie/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
@@ -556,6 +669,13 @@ sub up {
 				`$cmd`;
 				$mysql_option .= " --link $label";
 			}
+			# -- 起動プログレス
+			# wait_container({
+			# 	container_name => $last_label,
+			# 	log_file       => '/var/log/done.log',
+			# 	stopword       => 'done',
+			# 	label          => 'MySQL Container',
+			# });
 		}
 
 		# -- PostgreSQL起動
@@ -1232,7 +1352,7 @@ sub mysql {
 	elsif($ARGV[1] eq 'cli') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : 1;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
-		my $db = $config{POSTGRESQL}->{DATABASES}[$db_number-1];
+		my $db = $config{MYSQL}->{DATABASES}[$db_number-1];
 		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{LABEL} bash";
 		system $cmd;
 	}
