@@ -10,6 +10,7 @@ use Encode qw/encode decode/;
 use Data::Dumper;
 use Getopt::Long qw/GetOptions/;
 use Cwd;
+$| = 1;
 
 # --------------------------------------------------------------------
 # 下準備：変数用意、マクロ用意
@@ -392,7 +393,7 @@ sub say {
 sub get_data_volume_name {
 	my $container_name = shift;
 	my @volumes;
-	my @lines = `docker inspect --format='{{.Mounts}}' $container_name` =~ /\{\s*([^\{\}]+)\s*\}/g;
+	my @lines = `docker inspect --format='{{.Mounts}}' $container_name $hide_err` =~ /\{\s*([^\{\}]+)\s*\}/g;
 	foreach(@lines){
 		if( $_=~/^(.+?) / && $1!~/\// ) {
 			push @volumes, $1;
@@ -407,7 +408,7 @@ sub get_data_volume_name {
 # &wait_container(
 #     container_name => 'genie-test',
 #     log_file       => '/var/log/apache.log',
-#     stopword       => 'done',
+#     stop_word      => 'done',
 #     label          => 'Start',
 #     label_head     => ' ',   # default '  | '
 #     progress_char  => '+',   # default '.'
@@ -415,7 +416,8 @@ sub get_data_volume_name {
 #     result_ng      => ' ng', # default ' NG'
 #     sleep_sec      => 5,     # default 1
 # );
-# `container_name`コンテナ内の`log_file`に`stopword`が見つかるまでループします。
+# `container_name`コンテナ内の`log_file`に`stop_word`が見つかるまでループします。
+# ※log_file未指定の場合は、標準出力(docker logs)の値から探します。
 sub wait_container {
 	my $param = shift;
 	# -- コンテナ名チェック
@@ -425,12 +427,8 @@ sub wait_container {
 	if(!is_up($param->{container_name})){
 		throw("指定のコンテナ `$param->{container_name}` に接続出来ませんでした。")
 	}
-	# -- ログファイルチェック
-	if(!$param->{log_file}){
-		throw('ログファイルが指定されていません。');
-	}
 	# -- 停止ワードチェック
-	if(!$param->{stopword}){
+	if(!$param->{stop_word}){
 		throw('停止ワードが指定されていません。');
 	}
 	# -- デフォルト値セット
@@ -446,23 +444,39 @@ sub wait_container {
 
 	my $error;
 	my $loop = 1;
-	my $cmd = qq|docker exec $param->{container_name} sh -c "cat $param->{log_file} 2>/dev/null \| grep '$param->{stopword}' \| wc -l"|;
+	my $cmd =
+		$param->{log_file}
+			? qq|docker exec $param->{container_name} sh -c "cat $param->{log_file} 2>/dev/null \| grep '$param->{stop_word}' \| wc -l"|
+			: qq|docker logs $param->{container_name} 2>&1|
+	;
 	do {
 		# -- 生存確認
 		if(is_up($param->{container_name})){
-			# -- ログファイルチェック
-			my $hit_count = `$cmd`;
-			chomp $hit_count;
-			if($hit_count) {
-				echo $param->{progress_char};
-				undef $loop;
-			} else {
-				echo $param->{progress_char};
-				sleep $param->{sleep_sec};
+			# -- ログファイルをチェック
+			if($param->{log_file}) {
+				my $hit_count = `$cmd`;
+				chomp $hit_count;
+				if($hit_count) {
+					undef $loop;
+				} else {
+					echo $param->{progress_char};
+					sleep $param->{sleep_sec};
+				}
+			}
+			# -- 標準出力をチェック
+			else {
+				my $log = `$cmd`;
+				$log = decode('UTF-8', $log);
+				if(grep { index($_, $param->{stop_word})!=-1 } split(/[\r\n]+/, $log)) {
+					undef $loop;
+				} else {
+					echo $param->{progress_char};
+					sleep $param->{sleep_sec};
+				}
 			}
 		} else {
 			# -- コンテナが死んでる場合
-			$error = `docker logs $param->{container_name}`;
+			$error = `docker logs $param->{container_name} 2>&1`;
 			$error ||= 'コンテナが削除された可能性があります。';
 			undef $loop;
 		}
@@ -479,7 +493,7 @@ sub wait_container {
 		style(color=>'red');
 		echo " $param->{result_ng}";
 		style(color=>'clear');
-		my @lines = split(/\r\n/, $error);
+		my @lines = split(/[\r\n]+/, $error);
 		if(scalar(@lines) > 10 ) {
 			@lines = splice(@lines, -10, 10); # エラーメッセージが110行以上なら最後から10行のみ表示
 		}
@@ -591,21 +605,6 @@ EOL
 # --------------------------------------------------------------------
 sub demo {
 
-
-#     container_name => 'genie-test',
-#     log_file       => '/var/log/apache.log',
-#     stopword       => 'done',
-#     label          => 'Start',
-
-wait_container({
-	container_name => 'genie-test',
-	log_file       => '/var/log/test.log',
-	stopword       => 'done',
-	label          => 'Test Start',
-});
-
-exit;
-
 	# -- カラーメッセージBOX
 	foreach(qw/default primary success info warning danger disabled/) {
 		message($_=>$_);
@@ -629,193 +628,204 @@ exit;
 # genie up                                                起動・再起動
 # --------------------------------------------------------------------
 sub up {
-	if(is_up()) {
-		message(warning=>'再起動します：'.$config{DOCKER}->{NAME});
-		down();
-		up();
-	} else {
-		if(!-s $config{GENERAL}->{home_path}."/$genie_dir/entry.sh"){
-			throw("$config{GENERAL}->{home_path}/$genie_dir/entry.sh が見当たりませんので起動できません。");
-		}
 
-		# -- -v用にホームパスをいじる（Windowsのみドライブレターが必用なので）
-		my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
+	# -- 既存のシステムを終了させる
+	style(color=>'black', bgcolor=>'dark_black');
+	print "  Deleting old container ...";
+	style(color=>'clear', bgcolor=>'clear');
+	down({silent=>1});
+	print "\n\n";
 
-		# -- MySQL起動
-		my $mysql_option;
-		if($config{MYSQL}->{ENABLED}) {
-			my $last_label; # 最後に起動したコンテナを起動プログレス表示に使用
-			foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
-				my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
-				$last_label = $label;
-				my $cmd =
-					"docker run --name $label".
-					" -v $vpath/.genie/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
-					" -v $vpath/.genie/:/genie".
-					" -e MYSQL_LABEL=$db->{LABEL}".
-					" -e MYSQL_HOST=$db->{HOST}".
-					" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
-					" -e MYSQL_DATABASE=$db->{NAME}".
-					" -e MYSQL_USER=$db->{USER}".
-					" -e MYSQL_PASSWORD=$db->{PASS}".
-					" -e MYSQL_PORT=$db->{PORT}".
-					" -e MYSQL_CHARSET=$db->{CHARSET}".
-					" -e TERM=xterm".
-					" -p $db->{PORT}".
-					" --entrypoint=/genie/mysql/before-entry.sh".
-					" -d $db->{REPOSITORY}".
-					" mysqld"
-				;
-				`$cmd`;
-				$mysql_option .= " --link $label";
-			}
-			# -- 起動プログレス
-			# wait_container({
-			# 	container_name => $last_label,
-			# 	log_file       => '/var/log/done.log',
-			# 	stopword       => 'done',
-			# 	label          => 'MySQL Container',
-			# });
-		}
+	# -- 起動
+	if(!-s $config{GENERAL}->{home_path}."/$genie_dir/entry.sh"){
+		throw("$config{GENERAL}->{home_path}/$genie_dir/entry.sh が見当たりませんので起動できません。");
+	}
 
-		# -- PostgreSQL起動
-		my $postgresql_option;
-		if($config{POSTGRESQL}->{ENABLED}) {
-			foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
-				my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
-				my $cmd =
-					"docker run --name $label".
-					" -v $vpath/.genie/postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
-					" -v $vpath/.genie/:/genie".
-					" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
-					" -e POSTGRES_LABEL=$db->{LABEL}".
-					" -e POSTGRES_HOST=$db->{HOST}".
-					" -e POSTGRES_DB=$db->{NAME}".
-					" -e POSTGRES_USER=$db->{USER}".
-					" -e POSTGRES_PASSWORD=$db->{PASS}".
-					" -e POSTGERS_PORT=$db->{PORT}".
-					" -e POSTGERS_ENCODING=$db->{ENCODING}".
-					" -e POSTGERS_LOCALE=$db->{LOCALE}".
-					" -e TERM=xterm".
-					" -p $db->{PORT}".
-					" --entrypoint=/genie/postgresql/before-entry.sh".
-					" -d $db->{REPOSITORY}".
-					" postgres"
-				;
-				`$cmd`;
-				$postgresql_option .= " --link $label";
-			}
-		}
+	# -- -v用にホームパスをいじる（Windowsのみドライブレターが必用なので）
+	my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
 
-		# -- 本体の起動（Apache）
-		{
-			# -- 設定値を環境変数として渡す形(-e)に変換
-			my %envs;
-			my $make_envs;
-			$make_envs = sub {
-				my($var, $label) = @_;
-				$label = uc $label;
-				if(!ref $var) {
-					$var =~ s/\"//g;
-					if($envs{$label} ne '') {
-						$envs{$label} .= ",$var";
-					} else {
-						$envs{$label} = $var;
-					}
-				}
-				elsif(ref $var eq 'ARRAY') {
-					my $count = 1;
-					foreach(@{$var}){
-						if(ref $_ eq 'HASH') {
-							&$make_envs($_, "${label}_${count}");
-						} else {
-							&$make_envs($_, $label);
-						}
-						$count ++; # ハッシュアレイの場合、1から番号を振る
-					}
-				}
-				elsif(ref $var eq 'HASH') {
-					foreach(keys %{$var}){
-						&$make_envs($var->{$_}, ($label ne '' ? "${label}_" : '').$_);
-					}
-				}
-			};
-			&$make_envs(\%config, 'GENIE');
-			my $envs = join(' ', map { sprintf('-e %s="%s"', $_, $envs{$_}) } sort(keys %envs));
-
-			# -- runコマンドの作成
+	# -- MySQL起動
+	my $mysql_option;
+	if($config{MYSQL}->{ENABLED}) {
+		my $last_label; # 最後に起動したコンテナを起動プログレス表示に使用
+		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
+			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
+			$last_label = $label;
 			my $cmd =
-				'docker run -d'.
-				' -e TERM=xterm'.
-				" -v $vpath/$genie_dir:/genie".
-				" -v $vpath/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
-				$mysql_option.
-				$postgresql_option.
-				" -p 80".
-				" --name=$config{DOCKER}->{NAME}".
-				# " --privileged".
-				" $envs".
-				($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
-				" $config{DOCKER}->{IMAGE}"
+				"docker run --name $label".
+				" -v $vpath/.genie/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
+				" -v $vpath/.genie/:/genie".
+				" -e MYSQL_LABEL=$db->{LABEL}".
+				" -e MYSQL_HOST=$db->{HOST}".
+				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
+				" -e MYSQL_DATABASE=$db->{NAME}".
+				" -e MYSQL_USER=$db->{USER}".
+				" -e MYSQL_PASSWORD=$db->{PASS}".
+				" -e MYSQL_PORT=$db->{PORT}".
+				" -e MYSQL_CHARSET=$db->{CHARSET}".
+				" -e TERM=xterm".
+				" -p $db->{PORT}".
+				" --entrypoint=/genie/mysql/before-entry.sh".
+				" -d $db->{REPOSITORY}".
+				" mysqld"
 			;
-
-			# -- runコマンドの実行
-			my $cid = `$cmd`;
-			chomp $cid;
-			if(!$?){
-				$cid =~ /^(.{12})/;
-				message(info=>'起動開始：'.
-					$config{DOCKER}->{NAME}."\n".
-					"コンテナID：$1\n".
-					"起動ログコマンド：docker logs -f $config{DOCKER}->{NAME}\n"
-				, 1);
-			}
-
-			# -- entry.sh と after.sh 完了まで待つ
-			print '  ';
-			foreach my $shell (qw|entry after|){
-				my $done_sw;
-				my $last_line = 0;
-				while(!$done_sw){
-					`docker exec $cid sh -c "ls -la /var/log/$shell.log >/dev/null 2>&1"`;
-					if(!$?){
-						my $log = `docker exec $cid cat /var/log/$shell.log`;
-						my @logs = split("\n", $log);
-						my $unshow_count = scalar(@logs)-$last_line;
-						if($unshow_count) {
-							foreach(@logs[-$unshow_count .. -1]){
-								if($_ eq "$shell.sh finished") {
-									$done_sw = 1;
-								}
-								print "> $_\n  ";
-							}
-							$last_line = scalar(@logs);
-						}
-					} else {
-						throw('起動に失敗しました。',
-							join("\n", `docker logs $config{DOCKER}->{NAME}`)
-						);
-						exit 1;
-					}
-					if(!$done_sw){
-						print '.';
-						sleep 1;
-					}
-				}
-			}
-			print "\n";
-			message(info=>'起動完了しました：'.$config{DOCKER}->{NAME});
-
-			# -- コンテナの情報からブラウザを起動
-			if(`docker port $cid 80` =~ /(\d+)$/) {
-				my $url = "http://$config{GENERAL}->{host_ip}:$1/";
-				message(success=>$url);
-				if($open_cmd){
-					`$open_cmd $url`;
-				}
-			}
-
+			`$cmd`;
+			$mysql_option .= " --link $label";
 		}
+		# -- 起動プログレス
+		wait_container ({
+			container_name => $last_label,
+			stop_word      => 'MySQL init process done. Ready for start up.',
+			label          => 'MySQL Container(s)',
+		});
+	}
+
+	# -- PostgreSQL起動
+	my $postgresql_option;
+	if($config{POSTGRESQL}->{ENABLED}) {
+		my $last_label; # 最後に起動したコンテナを起動プログレス表示に使用
+		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
+			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
+			$last_label = $label;
+			my $cmd =
+				"docker run --name $label".
+				" -v $vpath/.genie/postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
+				" -v $vpath/.genie/:/genie".
+				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
+				" -e POSTGRES_LABEL=$db->{LABEL}".
+				" -e POSTGRES_HOST=$db->{HOST}".
+				" -e POSTGRES_DB=$db->{NAME}".
+				" -e POSTGRES_USER=$db->{USER}".
+				" -e POSTGRES_PASSWORD=$db->{PASS}".
+				" -e POSTGERS_PORT=$db->{PORT}".
+				" -e POSTGERS_ENCODING=$db->{ENCODING}".
+				" -e POSTGERS_LOCALE=$db->{LOCALE}".
+				" -e TERM=xterm".
+				" -p $db->{PORT}".
+				" --entrypoint=/genie/postgresql/before-entry.sh".
+				# " --log-driver=json-file$vpath/.genie/postgresql/log.json".
+				" -d $db->{REPOSITORY}".
+				" postgres"
+			;
+			`$cmd`;
+			$postgresql_option .= " --link $label";
+		}
+		# -- 起動プログレス
+		wait_container ({
+			container_name => $last_label,
+			stop_word      => 'データベースシステムの接続受付準備が整いました。',
+			label          => 'PostgreSQL Container(s)',
+		});
+	}
+
+	# -- 本体の起動（Apache）
+	{
+		# -- 設定値を環境変数として渡す形(-e)に変換
+		my %envs;
+		my $make_envs;
+		$make_envs = sub {
+			my($var, $label) = @_;
+			$label = uc $label;
+			if(!ref $var) {
+				$var =~ s/\"//g;
+				if($envs{$label} ne '') {
+					$envs{$label} .= ",$var";
+				} else {
+					$envs{$label} = $var;
+				}
+			}
+			elsif(ref $var eq 'ARRAY') {
+				my $count = 1;
+				foreach(@{$var}){
+					if(ref $_ eq 'HASH') {
+						&$make_envs($_, "${label}_${count}");
+					} else {
+						&$make_envs($_, $label);
+					}
+					$count ++; # ハッシュアレイの場合、1から番号を振る
+				}
+			}
+			elsif(ref $var eq 'HASH') {
+				foreach(keys %{$var}){
+					&$make_envs($var->{$_}, ($label ne '' ? "${label}_" : '').$_);
+				}
+			}
+		};
+		&$make_envs(\%config, 'GENIE');
+		my $envs = join(' ', map { sprintf('-e %s="%s"', $_, $envs{$_}) } sort(keys %envs));
+
+		# -- runコマンドの作成
+		my $cmd =
+			'docker run -d'.
+			' -e TERM=xterm'.
+			" -v $vpath/$genie_dir:/genie".
+			" -v $vpath/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
+			$mysql_option.
+			$postgresql_option.
+			" -p 80".
+			" --name=$config{DOCKER}->{NAME}".
+			# " --privileged".
+			" $envs".
+			($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
+			" $config{DOCKER}->{IMAGE}"
+		;
+
+		# -- runコマンドの実行
+		my $cid = `$cmd`;
+		chomp $cid;
+		if(!$?){
+			$cid =~ /^(.{12})/;
+			message(info=>'起動開始：'.
+				$config{DOCKER}->{NAME}."\n".
+				"コンテナID：$1\n".
+				"起動ログコマンド：docker logs -f $config{DOCKER}->{NAME}\n"
+			, 1);
+		}
+
+		# -- entry.sh と after.sh 完了まで待つ
+		print '  ';
+		foreach my $shell (qw|entry after|){
+			my $done_sw;
+			my $last_line = 0;
+			while(!$done_sw){
+				`docker exec $cid sh -c "ls -la /var/log/$shell.log >/dev/null 2>&1"`;
+				if(!$?){
+					my $log = `docker exec $cid cat /var/log/$shell.log`;
+					my @logs = split("\n", $log);
+					my $unshow_count = scalar(@logs)-$last_line;
+					if($unshow_count) {
+						foreach(@logs[-$unshow_count .. -1]){
+							if($_ eq "$shell.sh finished") {
+								$done_sw = 1;
+							}
+							print "> $_\n  ";
+						}
+						$last_line = scalar(@logs);
+					}
+				} else {
+					throw('起動に失敗しました。',
+						join("\n", `docker logs $config{DOCKER}->{NAME} 2>&1`)
+					);
+					exit 1;
+				}
+				if(!$done_sw){
+					print '.';
+					sleep 1;
+				}
+			}
+		}
+		print "\n";
+		message(info=>'起動完了しました：'.$config{DOCKER}->{NAME});
+
+		# -- コンテナの情報からブラウザを起動
+		if(`docker port $cid 80` =~ /(\d+)$/) {
+			my $url = "http://$config{GENERAL}->{host_ip}:$1/";
+			message(success=>$url);
+			if($open_cmd){
+				`$open_cmd $url`;
+			}
+		}
+
 	}
 }
 
@@ -823,7 +833,7 @@ sub up {
 # genie down                                                      終了
 # --------------------------------------------------------------------
 sub down {
-	return unless require_up(); # 起動必須
+	my $param = shift;
 	my @rm_volumes;
 
 	# -- MySQL終了
@@ -831,7 +841,9 @@ sub down {
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
 			push @rm_volumes, get_data_volume_name($label);
-			`docker rm -f $label $hide_all`;
+			if(is_up($label)) {
+				`docker rm -f $label $hide_all`;
+			}
 		}
 	}
 
@@ -840,15 +852,26 @@ sub down {
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
 			push @rm_volumes, get_data_volume_name($label);
-			`docker rm -f $label $hide_all`;
+			if(is_up($label)) {
+				`docker rm -f $label $hide_all`;
+			}
 		}
 	}
 
 	# -- 本体終了
 	push @rm_volumes, get_data_volume_name($config{DOCKER}->{NAME});
-	`docker rm -f $config{DOCKER}->{NAME} $hide_all`;
+	if(is_up($config{DOCKER}->{NAME})) {
+		`docker rm -f $config{DOCKER}->{NAME} $hide_all`;
+	}
+
 	if(!$?){
-		message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
+		if(!$param->{silent}) {
+			message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
+		}
+	} else {
+		if(!$param->{silent}) {
+			message(danger=>'終了に失敗しました：' . $config{DOCKER}->{NAME});
+		}
 	}
 
 	# -- ストレージボリュームを削除（未参照状態にならないと消えないので最後に実行）
