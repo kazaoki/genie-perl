@@ -433,7 +433,7 @@ sub wait_container {
 	}
 	# -- デフォルト値セット
 	$param->{label}          ||= '';
-	$param->{label_head}     ||= '  | ';
+	$param->{label_head}     ||= '  | - ';
 	$param->{progress_char}  ||= '.';
 	$param->{result_ok}      ||= 'OK';
 	$param->{result_ng}      ||= 'NG';
@@ -444,6 +444,7 @@ sub wait_container {
 
 	my $error;
 	my $loop = 1;
+	my $progress_count = 0;
 	my $cmd =
 		$param->{log_file}
 			? qq|docker exec $param->{container_name} sh -c "cat $param->{log_file} 2>/dev/null \| grep '$param->{stop_word}' \| wc -l"|
@@ -460,6 +461,7 @@ sub wait_container {
 					undef $loop;
 				} else {
 					echo $param->{progress_char};
+					$progress_count ++;
 					sleep $param->{sleep_sec};
 				}
 			}
@@ -471,6 +473,7 @@ sub wait_container {
 					undef $loop;
 				} else {
 					echo $param->{progress_char};
+					$progress_count ++;
 					sleep $param->{sleep_sec};
 				}
 			}
@@ -486,7 +489,8 @@ sub wait_container {
 	if(!$error){
 		# -- 成功
 		style(color=>'green');
-		echo " $param->{result_ok}";
+		if($progress_count) { print ' '; }
+		echo "$param->{result_ok}";
 		style(color=>'clear');
 	} else {
 		# -- エラー
@@ -500,6 +504,8 @@ sub wait_container {
 		print "\n";
 		message(danger=>join("\n", @lines));
 	}
+
+	print "\n";
 
 	return;
 }
@@ -646,11 +652,11 @@ sub up {
 
 	# -- MySQL起動
 	my $mysql_option;
+	my $mysql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{MYSQL}->{ENABLED}) {
-		my $last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
-			$last_label = $label;
+			$mysql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
 				" -v $vpath/.genie/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
@@ -672,21 +678,15 @@ sub up {
 			`$cmd`;
 			$mysql_option .= " --link $label";
 		}
-		# -- 起動プログレス
-		wait_container ({
-			container_name => $last_label,
-			stop_word      => 'MySQL init process done. Ready for start up.',
-			label          => 'MySQL Container(s)',
-		});
 	}
 
 	# -- PostgreSQL起動
 	my $postgresql_option;
+	my $postgresql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{POSTGRESQL}->{ENABLED}) {
-		my $last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
-			$last_label = $label;
+			$postgresql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
 				" -v $vpath/.genie/postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
@@ -710,12 +710,6 @@ sub up {
 			`$cmd`;
 			$postgresql_option .= " --link $label";
 		}
-		# -- 起動プログレス
-		wait_container ({
-			container_name => $last_label,
-			stop_word      => 'データベースシステムの接続受付準備が整いました。',
-			label          => 'PostgreSQL Container(s)',
-		});
 	}
 
 	# -- 本体の起動（Apache）
@@ -772,55 +766,124 @@ sub up {
 
 		# -- runコマンドの実行
 		my $cid = `$cmd`;
-		chomp $cid;
-		if(!$?){
-			$cid =~ /^(.{12})/;
-			message(info=>'起動開始：'.
-				$config{DOCKER}->{NAME}."\n".
-				"コンテナID：$1\n".
-				"起動ログコマンド：docker logs -f $config{DOCKER}->{NAME}\n"
-			, 1);
+		if($?){
+			throw('genie本体の起動に失敗しました。');
 		}
+		$cid =~ /^(.{12})/;
+		my $short_cid = $1;
 
-		# -- entry.sh と after.sh 完了まで待つ
-		print '  ';
-		foreach my $shell (qw|entry after|){
-			my $done_sw;
-			my $last_line = 0;
-			while(!$done_sw){
-				`docker exec $cid sh -c "ls -la /var/log/$shell.log >/dev/null 2>&1"`;
-				if(!$?){
-					my $log = `docker exec $cid cat /var/log/$shell.log`;
-					my @logs = split("\n", $log);
-					my $unshow_count = scalar(@logs)-$last_line;
-					if($unshow_count) {
-						foreach(@logs[-$unshow_count .. -1]){
-							if($_ eq "$shell.sh finished") {
-								$done_sw = 1;
-							}
-							print "> $_\n  ";
-						}
-						$last_line = scalar(@logs);
-					}
-				} else {
-					throw('起動に失敗しました。',
-						join("\n", `docker logs $config{DOCKER}->{NAME} 2>&1`)
-					);
-					exit 1;
-				}
-				if(!$done_sw){
-					print '.';
-					sleep 1;
-				}
+		# -- 起動プログレスまとめて（ここで一気にウェイトかけたほうが起動早い）
+		{
+
+			# -- kazaoki/genie本体
+			wait_container ({
+				container_name => $config{DOCKER}->{NAME},
+				log_file       => '/var/log/entry.log',
+				stop_word      => 'entry.sh setup start.',
+				label          => "Genie container start ($config{DOCKER}->{NAME}: $short_cid)",
+			});
+
+			# -- entry.sh：ストレージ復元
+			if(glob("$config{GENERAL}->{home_path}/.genie/storages/*.tar")) {
+				wait_container ({
+					container_name => $config{DOCKER}->{NAME},
+					log_file       => '/var/log/entry.log',
+					stop_word      => 'Storages restore done.',
+					label          => 'Storages restore',
+				});
 			}
+
+			# -- entry.sh：Perl
+			if($config{PERL}->{VERSION}){
+				wait_container ({
+					container_name => $config{DOCKER}->{NAME},
+					log_file       => '/var/log/entry.log',
+					stop_word      => 'Perl setup done.',
+					label          => "Perl setup (version $config{PERL}->{VERSION})",
+				});
+			}
+
+			# -- entry.sh：cpanfile
+			if($config{PERL}->{CPANFILE_ENABLED}){
+				wait_container ({
+					container_name => $config{DOCKER}->{NAME},
+					log_file       => '/var/log/entry.log',
+					stop_word      => 'cpanfile setup done.',
+					label          => "cpanfile setup",
+				});
+			}
+
+			# -- entry.sh：PHP
+			if($config{PHP}->{VERSION}){
+				wait_container ({
+					container_name => $config{DOCKER}->{NAME},
+					log_file       => '/var/log/entry.log',
+					stop_word      => 'PHP setup done.',
+					label          => "PHP setup (version $config{PHP}->{VERSION})",
+				});
+			}
+
+			# -- entry.sh：Ruby
+			if($config{RUBY}->{VERSION}){
+				wait_container ({
+					container_name => $config{DOCKER}->{NAME},
+					log_file       => '/var/log/entry.log',
+					stop_word      => 'Ruby setup done.',
+					label          => "Ruby setup (version $config{RUBY}->{VERSION})",
+				});
+			}
+
+			# -- entry.sh：Apache
+			wait_container ({
+				container_name => $config{DOCKER}->{NAME},
+				log_file       => '/var/log/entry.log',
+				stop_word      => 'Apache setup done.',
+				label          => "Apache setup",
+			});
+
+			# -- entry.sh：Postfix
+			if($config{POSTFIX}->{ENABLED}){
+				wait_container ({
+					container_name => $config{DOCKER}->{NAME},
+					log_file       => '/var/log/entry.log',
+					stop_word      => 'Postfix setup done.',
+					label          => "Postfix setup",
+				});
+			}
+
+			# -- after.sh
+			wait_container ({
+				container_name => $config{DOCKER}->{NAME},
+				log_file       => '/var/log/entry.log',
+				stop_word      => 'after.sh setup done.',
+				label          => "after.sh setup",
+			});
+
+			# -- MySQL
+			if($config{MYSQL}->{ENABLED}) {
+				wait_container ({
+					container_name => $mysql_last_label,
+					stop_word      => 'MySQL init process done. Ready for start up.',
+					label          => 'MySQL container(s)',
+				});
+			}
+
+			# -- PostgreSQL
+			if($config{POSTGRESQL}->{ENABLED}) {
+				wait_container ({
+					container_name => $postgresql_last_label,
+					stop_word      => 'データベースシステムの接続受付準備が整いました。',
+					label          => 'PostgreSQL container(s)',
+				});
+			}
+
+			print "\n";
 		}
-		print "\n";
-		message(info=>'起動完了しました：'.$config{DOCKER}->{NAME});
 
 		# -- コンテナの情報からブラウザを起動
 		if(`docker port $cid 80` =~ /(\d+)$/) {
 			my $url = "http://$config{GENERAL}->{host_ip}:$1/";
-			message(success=>$url);
+			message(success=>"起動完了しました：$config{DOCKER}->{NAME}\n$url", 1);
 			if($open_cmd){
 				`$open_cmd $url`;
 			}

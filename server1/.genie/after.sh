@@ -13,4 +13,4 @@ find /var/www/html/ -type f -name *.cgi -exec chmod 0755 {} \;
 
 
 # -- Print log
-echo 'after.sh finished' >> /var/log/after.log
+echo 'after.sh setup done.' >> /var/log/entry.log

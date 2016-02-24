@@ -39,20 +39,20 @@ return {
 	# Perl設定
 	# --------
 	PERL => {
-		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
-		# CPANFILE_ENABLED => 1,
+		VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		CPANFILE_ENABLED => 1,
 	},
 
 	# PHP設定
 	# --------
 	PHP => {
-		# VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
+		VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Ruby設定
 	# --------
 	RUBY => {
-		# VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
+		VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Apache設定
@@ -72,14 +72,14 @@ return {
 	# Postfix設定
 	# -----------
 	POSTFIX => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		FORCE_ENVELOPE => 'test@kazaoki.jp',
 	},
 
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL      => 'db1',
@@ -115,7 +115,7 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL      => 'db1',
