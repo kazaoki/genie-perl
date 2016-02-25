@@ -672,8 +672,8 @@ sub up {
 			$mysql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				" -v $vpath/.genie/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
-				" -v $vpath/.genie/:/genie".
+				" -v $vpath/$genie_dir/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
+				" -v $vpath/$genie_dir/:/genie".
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_HOST=$db->{HOST}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
@@ -705,8 +705,8 @@ sub up {
 			$postgresql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				" -v $vpath/.genie/postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
-				" -v $vpath/.genie/:/genie".
+				" -v $vpath/$genie_dir/postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
+				" -v $vpath/$genie_dir/:/genie".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -719,7 +719,6 @@ sub up {
 				" -e TERM=xterm".
 				" -p $db->{PORT}".
 				" --entrypoint=/genie/postgresql/before-entry.sh".
-				# " --log-driver=json-file$vpath/.genie/postgresql/log.json".
 				" -d $db->{REPOSITORY}".
 				" postgres"
 			;
@@ -800,7 +799,7 @@ sub up {
 			});
 
 			# -- entry.sh：ストレージ復元
-			if(glob("$config{GENERAL}->{home_path}/.genie/storages/*.tar")) {
+			if(glob("$config{GENERAL}->{home_path}/$genie_dir/storages/*.tar")) {
 				wait_container ({
 					container_name => $config{DOCKER}->{NAME},
 					log_file       => '/var/log/entry.log',
@@ -1345,7 +1344,7 @@ sub store {
 	if(defined $param->{opt}) {
 		$opt = $param->{opt};
 	}
-	mkdir '.genie/storages';
+	mkdir "$genie_dir/storages";
 	my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd $dir_path && tar cvf $tar_path ./ $opt"|;
 	`$cmd`;
 	if($?) {
@@ -1428,7 +1427,7 @@ sub mysql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker exec $config{DOCKER}->{NAME}-mysql-$db->{LABEL} sh -c "cd /var/lib/mysql/$db->{NAME} && tar cfz /genie/mysql/dbdata_$db->{LABEL}.tar.gz ./"`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} を保存しました。\n.genie/mysql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"MySQLのデータベース $db->{LABEL} を保存しました。\n$genie_dir/mysql/dbdata_$db->{LABEL}.tar.gz",1)
 			} else {
 				throw('データベースの保存に失敗しました。', $!);
 			}
@@ -1443,7 +1442,7 @@ sub mysql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker restart $config{DOCKER}->{NAME}-mysql-$db->{LABEL}`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n.genie/mysql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$genie_dir/mysql/dbdata_$db->{LABEL}.tar.gz",1)
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
@@ -1495,7 +1494,7 @@ sub psql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker exec $config{DOCKER}->{NAME}-postgresql-$db->{LABEL} sh -c "cd \$PGDATA && tar cfz /genie/postgresql/dbdata_$db->{LABEL}.tar.gz ./ --exclude postmaster.pid"`;
 			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} を保存しました。\n.genie/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} を保存しました。\n$genie_dir/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
 			} else {
 				throw('データベースの保存に失敗しました。', $!);
 			}
@@ -1510,7 +1509,7 @@ sub psql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker restart $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}`;
 			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n.genie/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n$genie_dir/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
