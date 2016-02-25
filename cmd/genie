@@ -412,6 +412,15 @@ sub get_data_volume_name {
 	return @volumes;
 }
 
+# 指定コンテナの内部IPを返す
+# --------------------------
+sub get_container_ip {
+	my $container_name = shift;
+	my $ip = `docker inspect --format='{{.NetworkSettings.IPAddress}}' $container_name $hide_err`;
+	chomp $ip;
+	return $ip;
+}
+
 # コンテナ側処理をプログレスを表示しながら待つ
 # --------------------------------------------
 # [例]
@@ -672,10 +681,9 @@ sub up {
 			$mysql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				" -v $vpath/$genie_dir/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
+				# " -v $vpath/$genie_dir/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
 				" -v $vpath/$genie_dir/:/genie".
 				" -e MYSQL_LABEL=$db->{LABEL}".
-				" -e MYSQL_HOST=$db->{HOST}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
 				" -e MYSQL_USER=$db->{USER}".
@@ -683,13 +691,22 @@ sub up {
 				" -e MYSQL_PORT=$db->{PORT}".
 				" -e MYSQL_CHARSET=$db->{CHARSET}".
 				" -e TERM=xterm".
+				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
 				" -p $db->{PORT}".
 				" --entrypoint=/genie/mysql/before-entry.sh".
 				" -d $db->{REPOSITORY}".
 				" mysqld"
 			;
 			`$cmd`;
+			
+			# -- 本体からリンク
 			$mysql_option .= " --link $label";
+
+			# -- HOST情報をセット
+			if($db->{HOST}) {
+				$mysql_option .= ' --add-host='.$db->{HOST}.':'.get_container_ip($label);
+			}
+
 		}
 	}
 
@@ -1418,22 +1435,43 @@ sub mysql {
 		my $count = 1;
 		message(info=>join("\n", map { ($count++) . ': ' . $_->{LABEL} } @dbs));
 	}
-	# -- store (db num) : 対象番号のDBをストレージからtarに保存 ※番号未指定なら全てのDBを保存
-	elsif($ARGV[1] eq 'store') {
+	# -- dump (db num) : 対象番号のDBをdump
+	elsif($ARGV[1] eq 'dump') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
-			`docker exec $config{DOCKER}->{NAME}-mysql-$db->{LABEL} sh -c "cd /var/lib/mysql/$db->{NAME} && tar cfz /genie/mysql/dbdata_$db->{LABEL}.tar.gz ./"`;
+			my $label = "$config{DOCKER}->{NAME}-mysql-$db->{LABEL}";
+
+			# -- ダンプファイル保存ディレクトリの作成
+			`docker exec $config{DOCKER}->{NAME} mkdir -p /genie/mysql/$db->{LABEL}/ $hide_all`;
+
+			# -- ダンプファイルの世代処理
+			my $max_gen = $db->{DUMP_GENEL};
+			foreach my $gen (reverse 1..$max_gen) {
+				my $gen_str = $gen==1 ? '' : ".$gen";
+				if($gen==$max_gen) {
+					my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "rm /genie/mysql/dumps/$db->{LABEL}.sql$gen_str"|;
+					`$cmd $hide_all`;
+					next;
+				}
+				my $next = $gen + 1;
+				my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd /genie/mysql/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
+				`$cmd $hide_all`;
+			}
+
+			# -- ダンプ生成
+			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /genie/mysql/dumps/$db->{LABEL}.sql"|;
+			`$cmd`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} を保存しました。\n$genie_dir/mysql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$genie_dir/mysql/dumps/$db->{LABEL}.sql",1);
 			} else {
-				throw('データベースの保存に失敗しました。', $!);
+				throw('データベースのダンプに失敗しました。', $!);
 			}
 		}
 	}
-	# -- restore (db num) : 対象番号のDBをtarからストレージに復元 ※番号未指定なら全てのDBを復元
+	# -- restore (db num) : 対象番号のDBダンプを復元 ※番号未指定なら全てのDBを復元
 	elsif($ARGV[1] eq 'restore') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
@@ -1442,7 +1480,7 @@ sub mysql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker restart $config{DOCKER}->{NAME}-mysql-$db->{LABEL}`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$genie_dir/mysql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$genie_dir/mysql/dumps/$db->{LABEL}.sql",1);
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
