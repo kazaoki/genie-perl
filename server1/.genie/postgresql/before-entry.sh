@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Process start
+# -------------
+echo 'Process start' >> /var/log/init.log
+
 # TimeZone set
 # ------------
 cp -p /usr/share/zoneinfo/Asia/Tokyo /etc/localtime

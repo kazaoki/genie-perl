@@ -659,10 +659,24 @@ sub demo {
 sub up {
 
 	# -- 既存のシステムを終了させる
+	my @exist_containers;
+	if(ref $config{MYSQL}->{DATABASES}) {
+		foreach(@{$config{MYSQL}->{DATABASES}}){
+			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $_->{LABEL};
+			push @exist_containers, $label if(is_exist($label));
+		}
+	}
+	if(ref $config{POSTGRESQL}->{DATABASES}) {
+		foreach(@{$config{POSTGRESQL}->{DATABASES}}){
+			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $_->{LABEL};
+			push @exist_containers, $label if(is_exist($label));
+		}
+	}
+	push @exist_containers, $config{DOCKER}->{NAME} if(is_exist($config{DOCKER}->{NAME}));
 	style(color=>'black', bgcolor=>'dark_black');
-	print "  Deleting old container(s) ...";
+	print "  Deleting old container".(scalar(@exist_containers)>1 ? 's' : '') . ' ';
+	down({silent=>'.'});
 	style(color=>'clear', bgcolor=>'clear');
-	down({silent=>1});
 	print "\n\n";
 
 	# -- 起動
@@ -701,6 +715,14 @@ sub up {
 				" mysqld"
 			;
 			`$cmd`;
+
+			# -- 起動開始のプログレス
+			wait_container ({
+				container_name => $label,
+				log_file       => '/var/log/init.log',
+				stop_word      => 'Process start',
+				label          => "MySQL container start ($label)",
+			});
 			
 			# -- 本体からリンク
 			$mysql_option .= " --link $label";
@@ -742,6 +764,14 @@ sub up {
 				" postgres"
 			;
 			`$cmd`;
+
+			# -- 起動開始のプログレス
+			wait_container ({
+				container_name => $label,
+				log_file       => '/var/log/init.log',
+				stop_word      => 'Process start',
+				label          => "PostgreSQL container start ($label)",
+			});
 
 			# -- 本体からリンク
 			$postgresql_option .= " --link $label";
@@ -824,7 +854,7 @@ sub up {
 		$cid =~ /^(.{12})/;
 		my $short_cid = $1;
 
-		# -- 起動プログレスまとめて（ここで一気にウェイトかけたほうが起動早い）
+		# -- 起動プログレスまとめ（各コンテナは並行処理なのでウェイト処理はここでまとめる）
 		{
 
 			# -- kazaoki/genie本体
@@ -832,7 +862,7 @@ sub up {
 				container_name => $config{DOCKER}->{NAME},
 				log_file       => '/var/log/entry.log',
 				stop_word      => 'entry.sh setup start.',
-				label          => "Genie container start ($config{DOCKER}->{NAME}: $short_cid)",
+				label          => "Genie container start ($config{DOCKER}->{NAME})",
 			});
 
 			# -- entry.sh：ストレージ復元
@@ -916,7 +946,7 @@ sub up {
 				wait_container ({
 					container_name => $mysql_last_label,
 					stop_word      => 'MySQL init process done. Ready for start up.',
-					label          => 'MySQL container(s)',
+					label          => 'MySQL ready',
 				});
 			}
 
@@ -925,7 +955,7 @@ sub up {
 				wait_container ({
 					container_name => $postgresql_last_label,
 					stop_word      => 'データベースシステムの接続受付準備が整いました。',
-					label          => 'PostgreSQL container(s)',
+					label          => 'PostgreSQL ready',
 				});
 			}
 
@@ -934,7 +964,7 @@ sub up {
 
 		# -- コンテナの情報からブラウザを起動
 		if(`docker port $cid 80` =~ /(\d+)$/) {
-			my $url = "http://$config{GENERAL}->{host_ip}:$1/";
+			my $url = "http://$config{GENERAL}->{host_ip}" .($1==80 ? '' : ":$1"). "/";
 			message(success=>"起動完了しました：$config{DOCKER}->{NAME}\n$url", 1);
 			if($open_cmd){
 				`$open_cmd $url`;
@@ -959,6 +989,7 @@ sub down {
 			if(is_exist($label)) {
 				`docker rm -f $label $hide_all`;
 			}
+			print $param->{silent} if $param->{silent};
 		}
 	}
 
@@ -970,6 +1001,7 @@ sub down {
 			if(is_exist($label)) {
 				`docker rm -f $label $hide_all`;
 			}
+			print $param->{silent} if $param->{silent};
 		}
 	}
 
@@ -980,10 +1012,14 @@ sub down {
 		if(!$?){
 			if(!$param->{silent}) {
 				message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
+			} else {
+				print $param->{silent};
 			}
 		} else {
 			if(!$param->{silent}) {
 				message(danger=>'終了に失敗しました：' . $config{DOCKER}->{NAME});
+			} else {
+				print $param->{silent};
 			}
 		}
 	}
@@ -1610,8 +1646,8 @@ sub psql {
 sub open {
 	# -- コンテナの情報からブラウザを起動
 	if(`docker port $config{DOCKER}->{NAME} 80` =~ /(\d+)$/) {
-		my $url = "http://$config{GENERAL}->{host_ip}:$1/";
-		message(success=>"起動完了しました：$config{DOCKER}->{NAME}\n$url", 1);
+		my $url = "http://$config{GENERAL}->{host_ip}" .($1==80 ? '' : ":$1"). "/";
+		message(success=>$url);
 		if($open_cmd){
 			`$open_cmd $url`;
 		}

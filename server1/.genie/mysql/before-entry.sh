@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Process start
+# -------------
+echo 'Process start' >> /var/log/init.log
+
 # TimeZone set
 # ------------
 cp -p /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
@@ -18,7 +22,9 @@ cp /genie/mysql/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
 
 # Copy dump file
 # --------------
-cp /genie/mysql/dumps/$MYSQL_LABEL.sql /docker-entrypoint-initdb.d
+if [ -f /genie/mysql/dumps/$MYSQL_LABEL.sql ]; then
+  cp /genie/mysql/dumps/$MYSQL_LABEL.sql /docker-entrypoint-initdb.d
+fi
 
 # Pass to true shell
 # ------------------
