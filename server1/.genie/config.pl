@@ -4,13 +4,14 @@ return {
 	# ----------
 	DOCKER => {
 		IMAGE         => 'kazaoki/genie',
-		MACHINE       => 'sandbox',
+		# MACHINE       => 'sandbox',
 		NAME          => 'genie-test',
 		OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
 		OPTIONS_BUILD => '--cpuset-cpus=0-1', # `docker build` 時に渡す追加引数
 		HOSTS         => [
 			'genie.kazaoki.jp:127.0.0.1',
 		],
+		# HOST_IP_FORCE => '192.168.99.100',
 	},
 
 	# Perl設定

@@ -114,11 +114,11 @@ foreach my $db_type (qw|MYSQL POSTGRESQL|) {
 my $is_docker_machine = !$?;
 
 # -- ホストIPを設定
-if($config{GENERAL}->{HOST_IP_FORCE}){
-	$config{GENERAL}->{host_ip} = $config{GENERAL}->{HOST_IP_FORCE};
+if($config{DOCKER}->{HOST_IP_FORCE}){
+	$config{GENERAL}->{host_ip} = $config{DOCKER}->{HOST_IP_FORCE};
 } else {
 	if($is_docker_machine) {
-		my $ip = `docker-machine ip`;
+		my $ip = `docker-machine ip $config{DOCKER}->{MACHINE}`;
 		chomp $ip;
 		$config{GENERAL}->{host_ip} = $ip;
 	} else {
