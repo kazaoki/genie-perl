@@ -681,7 +681,6 @@ sub up {
 			$mysql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				# " -v $vpath/$genie_dir/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
 				" -v $vpath/$genie_dir/:/genie".
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
@@ -722,7 +721,6 @@ sub up {
 			$postgresql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				" -v $vpath/$genie_dir/postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d".
 				" -v $vpath/$genie_dir/:/genie".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
@@ -740,7 +738,15 @@ sub up {
 				" postgres"
 			;
 			`$cmd`;
+
+			# -- 本体からリンク
 			$postgresql_option .= " --link $label";
+
+			# -- HOST情報をセット
+			if($db->{HOST}) {
+				$postgresql_option .= ' --add-host='.$db->{HOST}.':'.get_container_ip($label);
+			}
+
 		}
 	}
 
@@ -1439,13 +1445,11 @@ sub mysql {
 	elsif($ARGV[1] eq 'dump') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
+		`docker exec $config{DOCKER}->{NAME} mkdir -p /genie/mysql/dumps/ $hide_all`;
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
 			my $label = "$config{DOCKER}->{NAME}-mysql-$db->{LABEL}";
-
-			# -- ダンプファイル保存ディレクトリの作成
-			`docker exec $config{DOCKER}->{NAME} mkdir -p /genie/mysql/$db->{LABEL}/ $hide_all`;
 
 			# -- ダンプファイルの世代処理
 			my $max_gen = $db->{DUMP_GENEL};
@@ -1523,18 +1527,37 @@ sub psql {
 		my $count = 1;
 		message(info=>join("\n", map { ($count++) . ': ' . $_->{LABEL} } @dbs));
 	}
-	# -- store (db num) : 対象番号のDBをストレージからtarに保存 ※番号未指定なら全てのDBを保存
-	elsif($ARGV[1] eq 'store') {
+	# -- dump (db num) : 対象番号のDBをdump
+	elsif($ARGV[1] eq 'dump') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
+		`docker exec $config{DOCKER}->{NAME} mkdir -p /genie/postgresql/dumps/ $hide_all`;
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
-			`docker exec $config{DOCKER}->{NAME}-postgresql-$db->{LABEL} sh -c "cd \$PGDATA && tar cfz /genie/postgresql/dbdata_$db->{LABEL}.tar.gz ./ --exclude postmaster.pid"`;
+			my $label = "$config{DOCKER}->{NAME}-postgresql-$db->{LABEL}";
+
+			# -- ダンプファイルの世代処理
+			my $max_gen = $db->{DUMP_GENEL};
+			foreach my $gen (reverse 1..$max_gen) {
+				my $gen_str = $gen==1 ? '' : ".$gen";
+				if($gen==$max_gen) {
+					my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "rm /genie/postgresql/dumps/$db->{LABEL}.sql$gen_str"|;
+					`$cmd $hide_all`;
+					next;
+				}
+				my $next = $gen + 1;
+				my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd /genie/postgresql/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
+				`$cmd $hide_all`;
+			}
+
+			# -- ダンプ生成
+			my $cmd = qq|docker exec $label sh -c "pg_dump $db->{NAME} -U $db->{USER} -p $db->{PORT} > /genie/postgresql/dumps/$db->{LABEL}.sql"|;
+			`$cmd`;
 			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} を保存しました。\n$genie_dir/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$genie_dir/postgresql/dumps/$db->{LABEL}.sql",1);
 			} else {
-				throw('データベースの保存に失敗しました。', $!);
+				throw('データベースのダンプに失敗しました。', $!);
 			}
 		}
 	}

@@ -72,14 +72,14 @@ return {
 	# Postfix設定
 	# -----------
 	POSTFIX => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		FORCE_ENVELOPE => 'test@kazaoki.jp',
 	},
 
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',
@@ -132,7 +132,7 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL      => 'db1',
@@ -143,17 +143,19 @@ return {
 				PASS       => '123456789',
 				PORT       => '54321',
 				LOCALE     => 'ja_JP.UTF-8',
+				DUMP_GENEL => 3,
 			},
-			{
-				LABEL      => 'test-db',
-				REPOSITORY => 'postgres:9.3',
-				HOST       => '127.0.0.1',
-				NAME       => 'genie_db2',
-				USER       => 'genie_user2',
-				PASS       => '123456789',
-				PORT       => '55432',
-				LOCALE     => 'ja_JP.UTF-8',
-			},
+			# {
+			# 	LABEL      => 'test-db',
+			# 	REPOSITORY => 'postgres:9.3',
+			# 	HOST       => '127.0.0.1',
+			# 	NAME       => 'genie_db2',
+			# 	USER       => 'genie_user2',
+			# 	PASS       => '123456789',
+			# 	PORT       => '55432',
+			# 	LOCALE     => 'ja_JP.UTF-8',
+			# 	DUMP_GENEL => 3,
+			# },
 		],
 	},
 

@@ -13,12 +13,13 @@ echo "ja_JP.EUC-JP EUC-JP" >> /etc/locale.gen
 export LANG=$POSTGERS_LOCALE
 /usr/sbin/update-locale LANG=$POSTGERS_LOCALE
 
-# Extact exist db data
-# --------------------
-if [ -f /genie/postgresql/dbdata_$POSTGRES_LABEL.tar.gz ]; then
-  tar xfz /genie/postgresql/dbdata_$POSTGRES_LABEL.tar.gz -C $PGDATA
-  sed -i -e "s/^port\s*\=.*$/port = $POSTGERS_PORT/" $PGDATA/postgresql.conf
-fi
+# Copy shell file
+# ---------------
+cp /genie/postgresql/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
+
+# Copy dump file
+# --------------
+cp /genie/postgresql/dumps/$POSTGRES_LABEL.sql /docker-entrypoint-initdb.d
 
 # Pass to true shell
 # ------------------
