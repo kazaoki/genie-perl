@@ -1297,7 +1297,7 @@ sub build {
 		# -- イメージ一覧表示
 		message(success=>'ビルド完了しました。');
 		$cmd = `docker images`;
-		message(info=>$cmd);
+		message(info=>$cmd, 1);
 	}
 }
 

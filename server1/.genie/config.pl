@@ -1,50 +1,35 @@
 return {
 
-	# DATA_SCALAR => 123,
-	# DATA_ARRAY => [1,2,3],
-	# DATA_HASH => {
-	# 	UNDER1=>1,
-	# 	UNDER2=>2,
-	# 	UNDER3=>3,
-	# },
-
 	# Docker設定
 	# ----------
 	DOCKER => {
 		IMAGE         => 'kazaoki/genie',
-		MACHINE       => '',
+		MACHINE       => 'sandbox',
 		NAME          => 'genie-test',
 		OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
 		OPTIONS_BUILD => '--cpuset-cpus=0-1', # `docker build` 時に渡す追加引数
 		HOSTS         => [
 			'genie.kazaoki.jp:127.0.0.1',
 		],
-		# PORTS         => [
-		# 	80,
-		# 	8080,
-		# 	443,
-		# 	3306,
-		# 	'5432:5432',
-		# ],
 	},
 
 	# Perl設定
 	# --------
 	PERL => {
-		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
-		# CPANFILE_ENABLED => 1,
+		VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		CPANFILE_ENABLED => 1,
 	},
 
 	# PHP設定
 	# --------
 	PHP => {
-		# VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
+		VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Ruby設定
 	# --------
 	RUBY => {
-		# VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
+		VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Apache設定
@@ -66,7 +51,7 @@ return {
 	# Postfix設定
 	# -----------
 	POSTFIX => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		FORCE_ENVELOPE => 'test@kazaoki.jp',
 	},
 
