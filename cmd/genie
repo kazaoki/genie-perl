@@ -334,6 +334,16 @@ sub is_up {
 	return !$?;
 }
 
+# コンテナが存在しているか確認するヘルパー
+# ----------------------------------------
+# 起動してなくても存在さえしていれば１を返す
+sub is_exist {
+	my $container_name = shift;
+	my $cmd = 'docker inspect ' . ($container_name || $config{DOCKER}->{NAME});
+	`$cmd $hide_all`;
+	return !$?;
+}
+
 # 起動してない場合はエラーを表示するヘルパー
 # ------------------------------------------
 sub require_up {
@@ -637,7 +647,7 @@ sub up {
 
 	# -- 既存のシステムを終了させる
 	style(color=>'black', bgcolor=>'dark_black');
-	print "  Deleting old container ...";
+	print "  Deleting old container(s) ...";
 	style(color=>'clear', bgcolor=>'clear');
 	down({silent=>1});
 	print "\n\n";
@@ -654,6 +664,9 @@ sub up {
 	my $mysql_option;
 	my $mysql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{MYSQL}->{ENABLED}) {
+		# -- スクリプトパーミッション設定
+		chmod 0755, "$config{GENERAL}->{home_path}/$genie_dir/mysql/before-entry.sh";
+		# -- コンテナ起動
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
 			$mysql_last_label = $label;
@@ -684,6 +697,9 @@ sub up {
 	my $postgresql_option;
 	my $postgresql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{POSTGRESQL}->{ENABLED}) {
+		# -- スクリプトパーミッション設定
+		chmod 0755, "$config{GENERAL}->{home_path}/$genie_dir/postgresql/before-entry.sh";
+		# -- コンテナ起動
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
 			$postgresql_last_label = $label;
@@ -904,7 +920,7 @@ sub down {
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
 			push @rm_volumes, get_data_volume_name($label);
-			if(is_up($label)) {
+			if(is_exist($label)) {
 				`docker rm -f $label $hide_all`;
 			}
 		}
@@ -915,7 +931,7 @@ sub down {
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
 			push @rm_volumes, get_data_volume_name($label);
-			if(is_up($label)) {
+			if(is_exist($label)) {
 				`docker rm -f $label $hide_all`;
 			}
 		}
@@ -923,17 +939,16 @@ sub down {
 
 	# -- 本体終了
 	push @rm_volumes, get_data_volume_name($config{DOCKER}->{NAME});
-	if(is_up($config{DOCKER}->{NAME})) {
+	if(is_exist($config{DOCKER}->{NAME})) {
 		`docker rm -f $config{DOCKER}->{NAME} $hide_all`;
-	}
-
-	if(!$?){
-		if(!$param->{silent}) {
-			message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
-		}
-	} else {
-		if(!$param->{silent}) {
-			message(danger=>'終了に失敗しました：' . $config{DOCKER}->{NAME});
+		if(!$?){
+			if(!$param->{silent}) {
+				message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
+			}
+		} else {
+			if(!$param->{silent}) {
+				message(danger=>'終了に失敗しました：' . $config{DOCKER}->{NAME});
+			}
 		}
 	}
 
