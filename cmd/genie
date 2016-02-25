@@ -90,7 +90,7 @@ if(-f $config{GENERAL}->{config_path}){
 	my $r = require $config{GENERAL}->{config_path};
 	%config = (%config, %$r);
 } else {
-	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/eject clean init view httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
+	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/eject clean init ls httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
 		throw("設定ファイル（$config{GENERAL}->{config_path}）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
 	}
 }
@@ -154,9 +154,12 @@ if($is_docker_machine && $config{DOCKER}->{MACHINE} ne '') {
 if( grep{ $ARGV[0] eq $_ } qw /
 	demo
 	init
-	up down
-	cmd cli
-	config view
+	up
+	down
+	cmd
+	cli
+	config
+	ls
 	eject
 	clean
 	httpd
@@ -169,6 +172,7 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	ngrok
 	mysql
 	psql
+	open
 / ){
 	no strict;
 	$ARGV[0]->();
@@ -691,7 +695,7 @@ sub up {
 				" -e MYSQL_CHARSET=$db->{CHARSET}".
 				" -e TERM=xterm".
 				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
-				" -p $db->{PORT}".
+				" -p ".($db->{HOST_PORT} ? "$db->{HOST_PORT}:$db->{PORT}" : $db->{PORT}).
 				" --entrypoint=/genie/mysql/before-entry.sh".
 				" -d $db->{REPOSITORY}".
 				" mysqld"
@@ -732,7 +736,7 @@ sub up {
 				" -e POSTGERS_ENCODING=$db->{ENCODING}".
 				" -e POSTGERS_LOCALE=$db->{LOCALE}".
 				" -e TERM=xterm".
-				" -p $db->{PORT}".
+				" -p ".($db->{HOST_PORT} ? "$db->{HOST_PORT}:$db->{PORT}" : $db->{PORT}).
 				" --entrypoint=/genie/postgresql/before-entry.sh".
 				" -d $db->{REPOSITORY}".
 				" postgres"
@@ -786,6 +790,14 @@ sub up {
 		&$make_envs(\%config, 'GENIE');
 		my $envs = join(' ', map { sprintf('-e %s="%s"', $_, $envs{$_}) } sort(keys %envs));
 
+		# -- add hosts
+		my $add_host;
+		if(ref $config{DOCKER}->{HOSTS}) {
+			foreach(@{$config{DOCKER}->{HOSTS}}){
+				$add_host .= qq| --add-host="$_"|;
+			}
+		}
+
 		# -- runコマンドの作成
 		my $cmd =
 			'docker run -d'.
@@ -794,7 +806,9 @@ sub up {
 			" -v $vpath/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
 			$mysql_option.
 			$postgresql_option.
-			" -p 80".
+			$add_host.
+			" -p ".($config{APACHE}->{HOST_PORT_HTTP} ? "$config{APACHE}->{HOST_PORT_HTTP}:80" : 80).
+			" -p ".($config{APACHE}->{HOST_PORT_HTTPS} ? "$config{APACHE}->{HOST_PORT_HTTPS}:443" : 443).
 			" --name=$config{DOCKER}->{NAME}".
 			# " --privileged".
 			" $envs".
@@ -1004,9 +1018,9 @@ sub cmd {
 }
 
 # --------------------------------------------------------------------
-# genie view                          マシン、イメージ、コンテナの一望
+# genie ls                            マシン、イメージ、コンテナの一望
 # --------------------------------------------------------------------
-sub view {
+sub ls {
 
 	# -- Dockerマシン一覧
 	if($is_docker_machine) {
@@ -1587,5 +1601,19 @@ sub psql {
 	# -- 引数ミス
 	else{
 		throw('引数が間違っています');
+	}
+}
+
+# --------------------------------------------------------------------
+# genie open                                            ブラウザを開く
+# --------------------------------------------------------------------
+sub open {
+	# -- コンテナの情報からブラウザを起動
+	if(`docker port $config{DOCKER}->{NAME} 80` =~ /(\d+)$/) {
+		my $url = "http://$config{GENERAL}->{host_ip}:$1/";
+		message(success=>"起動完了しました：$config{DOCKER}->{NAME}\n$url", 1);
+		if($open_cmd){
+			`$open_cmd $url`;
+		}
 	}
 }
