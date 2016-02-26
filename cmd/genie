@@ -659,32 +659,15 @@ sub demo {
 sub up {
 
 	# -- 既存のシステムを終了させる
-	my @exist_containers;
-	if(ref $config{MYSQL}->{DATABASES}) {
-		foreach(@{$config{MYSQL}->{DATABASES}}){
-			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $_->{LABEL};
-			push @exist_containers, $label if(is_exist($label));
-		}
-	}
-	if(ref $config{POSTGRESQL}->{DATABASES}) {
-		foreach(@{$config{POSTGRESQL}->{DATABASES}}){
-			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $_->{LABEL};
-			push @exist_containers, $label if(is_exist($label));
-		}
-	}
-	push @exist_containers, $config{DOCKER}->{NAME} if(is_exist($config{DOCKER}->{NAME}));
-	style(color=>'black', bgcolor=>'dark_black');
-	print "  Deleting old container".(scalar(@exist_containers)>1 ? 's' : '') . ' ';
-	down({silent=>'.'});
-	style(color=>'clear', bgcolor=>'clear');
-	print "\n\n";
+	down();
 
 	# -- 起動
 	if(!-s $config{GENERAL}->{home_path}."/$genie_dir/entry.sh"){
 		throw("$config{GENERAL}->{home_path}/$genie_dir/entry.sh が見当たりませんので起動できません。");
 	}
+	echo "  Starting containers\n";
 
-	# -- -v用にホームパスをいじる（Windowsのみドライブレターが必用なので）
+	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必用なので）
 	my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
 
 	# -- MySQL起動
@@ -977,59 +960,65 @@ sub up {
 # --------------------------------------------------------------------
 # genie down                                                      終了
 # --------------------------------------------------------------------
+# ※mode='silent' でドットプログレスに。
 sub down {
-	my $param = shift;
+	my $mode = shift;
+
+	# -- 対象コンテナピックアップ
+	my @exist_containers;
 	my @rm_volumes;
 
-	# -- MySQL終了
-	if($config{MYSQL}->{ENABLED}) {
-		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
-			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
-			push @rm_volumes, get_data_volume_name($label);
-			if(is_exist($label)) {
-				`docker rm -f $label $hide_all`;
+	# -- MySQL
+	if(ref $config{MYSQL}->{DATABASES}) {
+		foreach(@{$config{MYSQL}->{DATABASES}}){
+			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $_->{LABEL};
+			if(is_exist($label)){
+				push @exist_containers, $label;
+				push @rm_volumes, get_data_volume_name($label);
 			}
-			print $param->{silent} if $param->{silent};
 		}
 	}
 
-	# -- PostgreSQL終了
-	if($config{POSTGRESQL}->{ENABLED}) {
-		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
-			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
-			push @rm_volumes, get_data_volume_name($label);
-			if(is_exist($label)) {
-				`docker rm -f $label $hide_all`;
+	# -- PostgreSQL
+	if(ref $config{POSTGRESQL}->{DATABASES}) {
+		foreach(@{$config{POSTGRESQL}->{DATABASES}}){
+			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $_->{LABEL};
+			if(is_exist($label)){
+				push @exist_containers, $label;
+				push @rm_volumes, get_data_volume_name($label);
 			}
-			print $param->{silent} if $param->{silent};
 		}
 	}
 
-	# -- 本体終了
-	push @rm_volumes, get_data_volume_name($config{DOCKER}->{NAME});
-	if(is_exist($config{DOCKER}->{NAME})) {
-		`docker rm -f $config{DOCKER}->{NAME} $hide_all`;
-		if(!$?){
-			if(!$param->{silent}) {
-				message(disabled=>'終了しました：' . $config{DOCKER}->{NAME});
+	# -- genie本体
+	if(is_exist($config{DOCKER}->{NAME})){
+		push @exist_containers, $config{DOCKER}->{NAME};
+		push @rm_volumes, get_data_volume_name($config{DOCKER}->{NAME});
+	}
+
+	# -- 削除開始
+	if(@exist_containers) {
+		style(color=>'black', bgcolor=>'dark_black');
+		echo "  Deleting exist container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
+		foreach my $label (@exist_containers){
+			echo "  | - $label ";
+			`docker rm -f $label $hide_all`;
+			if($?) {
+				style({color=>'red'});
+				echo "NG\n";
+				style({color=>'clear'});
 			} else {
-				print $param->{silent};
-			}
-		} else {
-			if(!$param->{silent}) {
-				message(danger=>'終了に失敗しました：' . $config{DOCKER}->{NAME});
-			} else {
-				print $param->{silent};
+				echo "deleted\n";
 			}
 		}
-	}
+		style(color=>'clear', bgcolor=>'clear');
+		print "\n";
 
-	# -- ストレージボリュームを削除（未参照状態にならないと消えないので最後に実行）
-	if(@rm_volumes) {
-		my $cmd = 'docker volume rm ' . join(' ', @rm_volumes) . " $hide_all";
-		`$cmd`;
+		# -- ストレージボリュームを削除（未参照状態にならないと消えないので最後に実行）
+		if(@rm_volumes) {
+			my $cmd = 'docker volume rm ' . join(' ', @rm_volumes) . " $hide_all";
+		}
 	}
-
 }
 
 # --------------------------------------------------------------------
