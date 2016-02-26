@@ -1517,7 +1517,7 @@ sub mysql {
 
 			# -- ダンプ生成
 			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /genie/mysql/dumps/$db->{LABEL}.sql"|;
-			`$cmd`;
+			`$cmd $hide_all`;
 			if(!$?) {
 				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$genie_dir/mysql/dumps/$db->{LABEL}.sql",1);
 			} else {

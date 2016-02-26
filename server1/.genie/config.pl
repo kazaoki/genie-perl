@@ -17,20 +17,20 @@ return {
 	# Perl設定
 	# --------
 	PERL => {
-		VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
-		CPANFILE_ENABLED => 1,
+		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		# CPANFILE_ENABLED => 1,
 	},
 
 	# PHP設定
 	# --------
 	PHP => {
-		VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Ruby設定
 	# --------
 	RUBY => {
-		VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
 	},
 
 	# Apache設定
@@ -61,42 +61,42 @@ return {
 	MYSQL => {
 		ENABLED => 1,
 		DATABASES => [
-			{
-				LABEL      => 'db1',
-				REPOSITORY => 'mysql:5.5',
-				HOST       => 'db1.kazaoki.jp',
-				NAME       => 'genie_db1',
-				USER       => 'genie_user1',
-				PASS       => '123456789',
-				CHARSET    => 'utf8',
-				DUMP_GENEL => 3,
-				PORT       => '13306',
-				# HOST_PORT  => '3308',
-			},
-			{
-				LABEL      => 'db2',
-				REPOSITORY => 'mysql:5.6',
-				HOST       => 'db2.kazaoki.jp',
-				NAME       => 'genie_db2',
-				USER       => 'genie_user2',
-				PASS       => '123456789',
-				CHARSET    => 'utf8',
-				DUMP_GENEL => 3,
-				PORT       => '23306',
-				# HOST_PORT  => '3309',
-			},
-			{
-				LABEL      => 'db3',
-				REPOSITORY => 'mysql:5.7',
-				HOST       => 'db3.kazaoki.jp',
-				NAME       => 'genie_db3',
-				USER       => 'genie_user3',
-				PASS       => '123456789',
-				CHARSET    => 'utf8',
-				DUMP_GENEL => 3,
-				PORT       => '23306',
-				# HOST_PORT  => '3310',
-			},
+			# {
+			# 	LABEL      => 'db1',
+			# 	REPOSITORY => 'mysql:5.5',
+			# 	HOST       => 'db1.kazaoki.jp',
+			# 	NAME       => 'genie_db1',
+			# 	USER       => 'genie_user1',
+			# 	PASS       => '123456789',
+			# 	CHARSET    => 'utf8',
+			# 	DUMP_GENEL => 3,
+			# 	PORT       => '13306',
+			# 	# HOST_PORT  => '3308',
+			# },
+			# {
+			# 	LABEL      => 'db2',
+			# 	REPOSITORY => 'mysql:5.6',
+			# 	HOST       => 'db2.kazaoki.jp',
+			# 	NAME       => 'genie_db2',
+			# 	USER       => 'genie_user2',
+			# 	PASS       => '123456789',
+			# 	CHARSET    => 'utf8',
+			# 	DUMP_GENEL => 3,
+			# 	PORT       => '23306',
+			# 	# HOST_PORT  => '3309',
+			# },
+			# {
+			# 	LABEL      => 'db3',
+			# 	REPOSITORY => 'mysql:5.7',
+			# 	HOST       => 'db3.kazaoki.jp',
+			# 	NAME       => 'genie_db3',
+			# 	USER       => 'genie_user3',
+			# 	PASS       => '123456789',
+			# 	CHARSET    => 'utf8',
+			# 	DUMP_GENEL => 3,
+			# 	PORT       => '23306',
+			# 	# HOST_PORT  => '3310',
+			# },
 			{
 				LABEL      => 'wp',
 				REPOSITORY => 'mysql:5.7',
@@ -116,7 +116,7 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL      => 'db1',
