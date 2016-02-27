@@ -17,8 +17,8 @@ return {
 	# Perl設定
 	# --------
 	PERL => {
-		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
-		# CPANFILE_ENABLED => 1,
+		VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		CPANFILE_ENABLED => 1,
 	},
 
 	# PHP設定
@@ -116,7 +116,7 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL      => 'db1',

@@ -6,18 +6,16 @@ echo ". /etc/bashrc" >> /root/.bashrc
 # -- entry.sh started
 echo 'entry.sh setup start.' >> /var/log/entry.log
 
-# -- storages restore
-[ ! -e /storages ] && mkdir /storages
-[ ! -e /genie/storages ] && mkdir /genie/storages
-if [[ `find /genie/storages -type f | wc -l` != '0' ]]; then
-  find /genie/storages -maxdepth 1 -type f -exec perl -e '$_=shift;if(~/([^\/]+).tar$/){mkdir "/storages/$1";`tar xf $_ -C /storages/$1`}' {} \;
-  echo "Storages restore done." >> /var/log/entry.log
-fi
-
 # -- perl setup
 if [[ $GENIE_PERL_VERSION != '' ]]; then
-  storage_name='perl-versions'
-  install_path="/storages/${storage_name}/$GENIE_PERL_VERSION"
+  # -- tar restore
+  mkdir -p /perl/versions
+  tarfile="/genie/perl/versions.tar"
+  if [ -e $tarfile ]; then
+    tar xf $tarfile -C /perl/versions
+  fi
+  # -- install
+  install_path="/perl/versions/$GENIE_PERL_VERSION"
   link_to="/root/.anyenv/envs/plenv/versions/$GENIE_PERL_VERSION"
   if [[ ! -e $install_path ]]; then
     # -- perl install
@@ -28,8 +26,8 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
-    cd /storages/${storage_name}
-    tar cf /genie/storages/${storage_name}.tar ./
+    cd /perl/versions
+    tar cf /genie/perl/versions.tar ./
   else
     # -- perl relink
     ln -s ${install_path} ${link_to}
@@ -45,17 +43,29 @@ fi
 
 # -- Install perl modules from cpanfile
 if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/cpanfile ]]; then
-  storage_name='perl-cpanfile-modules'
-  cpanm -nq --installdeps -L /storages/${storage_name}/ /genie/
-  cd /storages/${storage_name}
-  tar cf /genie/storages/${storage_name}.tar ./
+  # -- tar restore
+  mkdir -p /perl/cpanfile-modules
+  tarfile="/genie/perl/cpanfile-modules.tar"
+  if [ -e $tarfile ]; then
+    tar xf $tarfile -C /perl/cpanfile-modules
+  fi
+  # -- install
+  cpanm -nq --installdeps -L /perl/cpanfile-modules/ /genie/
+  cd /perl/cpanfile-modules
+  tar cf $tarfile ./
   echo 'cpanfile setup done.' >> /var/log/entry.log
 fi
 
 # -- php setup
 if [[ $GENIE_PHP_VERSION != '' ]]; then
-  storage_name='php-versions'
-  install_path="/storages/${storage_name}/$GENIE_PHP_VERSION/"
+  # -- tar restore
+  mkdir -p /php/versions
+  tarfile="/genie/php/versions.tar"
+  if [ -e $tarfile ]; then
+    tar xf $tarfile -C /php/versions
+  fi
+  # -- install
+  install_path="/php/versions/$GENIE_PHP_VERSION/"
   link_to="/root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION"
   if [[ ! -e ${install_path} ]]; then
     # -- php install
@@ -65,8 +75,8 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     \cp -f /etc/httpd/modules/libphp5.so ${link_to}/
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
-    cd /storages/${storage_name}
-    tar cf /genie/storages/${storage_name}.tar ./
+    cd /php/versions
+    tar cf /genie/php/versions.tar ./
   else
     # -- php relink
     ln -s ${install_path} ${link_to}
@@ -79,8 +89,14 @@ fi
 
 # -- ruby setup
 if [[ $GENIE_RUBY_VERSION != '' ]]; then
-  storage_name='ruby-versions'
-  install_path="/storages/${storage_name}/$GENIE_RUBY_VERSION/"
+  # -- tar restore
+  mkdir -p /ruby/versions
+  tarfile="/genie/ruby/versions.tar"
+  if [ -e $tarfile ]; then
+    tar xf $tarfile -C /ruby/versions
+  fi
+  # -- install
+  install_path="/ruby/versions/$GENIE_RUBY_VERSION/"
   link_to="/root/.anyenv/envs/rbenv/versions/$GENIE_RUBY_VERSION"
   if [[ ! -e ${install_path} ]]; then
     # -- ruby install
@@ -88,8 +104,8 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
-    cd /storages/${storage_name}
-    tar cf /genie/storages/${storage_name}.tar ./
+    cd /ruby/versions
+    tar cf /genie/ruby/versions.tar ./
   else
     # -- ruby relink
     ln -s ${install_path} ${link_to}

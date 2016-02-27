@@ -77,7 +77,7 @@ RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g'
     && echo '  Options FollowSymLinks ExecCGI' >> /etc/httpd/conf/httpd.conf \
     && echo '  AllowOverride All' >> /etc/httpd/conf/httpd.conf \
     && echo '  DirectoryIndex index.cgi index.php index.html index.htm' >> /etc/httpd/conf/httpd.conf \
-    && echo '  SetEnv PERL5LIB /storages/perl-cpanfile-modules/lib/perl5' >> /etc/httpd/conf/httpd.conf \
+    && echo '  SetEnv PERL5LIB /perl/cpanfile-modules/lib/perl5' >> /etc/httpd/conf/httpd.conf \
     && echo '  EnableMMAP Off' >> /etc/httpd/conf/httpd.conf \
     && echo '  EnableSendfile Off' >> /etc/httpd/conf/httpd.conf \
     && echo '  # <__PASSENV__>' >> /etc/httpd/conf/httpd.conf \

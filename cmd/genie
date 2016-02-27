@@ -25,8 +25,8 @@ my $is_linux = !($is_win || $is_mac); # Mac Linux
 my $hide_err = $is_win ? '2>NUL'     : '2>/dev/null';     # エラーのみ非表示
 my $hide_all = $is_win ? '>NUL 2>&1' : '>/dev/null 2>&1'; # エラーと標準出力両方とも非表示
 
-# -- 設定格納ディレクトリ
-my $genie_dir = $ENV{GENIE_DIR} || '.genie';
+# -- 設定格納ディレクトリ名
+my $config_dir_name = '.genie';
 
 # -- sayコマンドが使えるか否か
 my $can_say;
@@ -68,15 +68,15 @@ $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` と
 $config{GENERAL}->{config_name} ||= 'config'; # 未指定の場合 `.genie/config.pl` を読み込みます。
 
 # -- .genieディレクトリがあるパスを探して移動する
-my $genie_path = "./$genie_dir";
 my $now_path = Cwd::getcwd();
 $now_path =~ s/^([A-Za-z])\:\//\//; # ドライブレター削除（for Windows）
 $config{GENERAL}->{drive_letter} = lc $1;
 my @dirs = split('/', $now_path);
 while(@dirs){
 	my $genie_path = join('/', @dirs);
-	if(-d "$genie_path/$genie_dir") {
-		$config{GENERAL}->{home_path} = $genie_path;
+	if(-d "$genie_path/$config_dir_name") {
+		$config{GENERAL}->{home_dir} = $genie_path;
+		$config{GENERAL}->{config_dir} = "$genie_path/$config_dir_name";
 		chdir $genie_path;
 		last;
 	}
@@ -84,14 +84,17 @@ while(@dirs){
 }
 
 # -- 設定ファイルをロード
-$config{GENERAL}->{config_path} = "$config{GENERAL}->{home_path}/$genie_dir/$config{GENERAL}->{config_name}.pl";
-if(-f $config{GENERAL}->{config_path}){
-	# -- 設定を読み込み
-	my $r = require $config{GENERAL}->{config_path};
-	%config = (%config, %$r);
+if( -d $config{GENERAL}->{config_dir} ){
+	$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/$config{GENERAL}->{config_name}.pl";
+	if(-f $config{GENERAL}->{config_file}) {
+		my $r = require $config{GENERAL}->{config_file};
+		%config = (%config, %$r);
+	} else {
+		throw("設定ディレクトリ（$config{GENERAL}->{config_dir}）はあるのに設定ファイル（$config{GENERAL}->{config_name}.pl）が見つかりません。");
+	}
 } else {
-	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/eject clean init ls httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
-		throw("設定ファイル（$config{GENERAL}->{config_path}）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
+	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/reject clean init ls httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
+		throw("設定ファイル（$config{GENERAL}->{config_file}）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
 	}
 }
 
@@ -160,15 +163,13 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	cli
 	config
 	ls
-	eject
+	reject
 	clean
 	httpd
 	build
 	php
 	perl
 	ruby
-	store
-	restore
 	ngrok
 	mysql
 	psql
@@ -207,7 +208,6 @@ echo <<HELP;
          | ngrok                 ngrokを使って外部に公開
          | cmd                   コンテナ内でコマンドを実行
          | build                 独自Dockerfileをビルドする
-         | eject                 '$config{DOCKER}->{NAME}'コンテナ強制rm、all→全dockerコンテナ強制rm
          | clean                 不要なコンテナ、<none>イメージ、未参照のデータボリュームを削除
          | -m [RUNMODE]          実行モード：product|develop
          | -c [CONFIG TYPE]      設定タイプ：標準は general
@@ -364,6 +364,12 @@ sub input {
 	my $string = shift;
 	my $tail_space = shift || 20;
 	my $len = (length Encode::encode('cp932', $string)) + 2 + $tail_space;
+
+	# -- 末尾だと崩れるので少し行送りしてカーソルを戻る
+	print "\n" x 4;
+	print "\e[4A";
+	
+	# -- 描画開始
 	style(color=>'white', bgcolor=>'blue');
 	echo ' ' x $len . "\n";
 	echo "  $string".(' 'x$tail_space)."\n";
@@ -372,7 +378,11 @@ sub input {
 	echo ' ' x $len . "\n";
 	style(color=>'white', bgcolor=>'blue');
 	echo "\e[3A\e[".($len-$tail_space)."C";
+
+	# -- 入力
 	my $input = <STDIN>;
+
+	# -- クリアして終わり
 	echo "\e[2B";
 	style(color=>'clear', bgcolor=>'clear');
 	return decode('sjis', $input);
@@ -398,7 +408,7 @@ sub say {
 	if($is_mac) {
 	    `say -r 300 "$message"`;
 	} elsif ($is_win) {
-		`wscript $config{GENERAL}->{drive_letter}\:$config{GENERAL}->{home_path}/$genie_dir/say.js "$message"`;
+		`wscript $config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_dir}/genie/say.js "$message"`;
 	}
 }
 
@@ -538,22 +548,27 @@ sub wait_container {
 # --------------------------------------------------------------------
 sub init {
 
-	# -- カレントに設定ディレクトリ作成
-	if( -d $genie_dir) {
-		throw("$genie_dir ディレクトリが既にあるので処理を中止します。");
-	} else {
-		mkdir $genie_dir;
-	}
-	if( -d $genie_dir) {
-		message(success=>"$genie_dir ディレクトリを作成しました。");
-	} else {
-		throw("$genie_dir ディレクトリが作成できませんでした。");
-	}
+	### イメージのpullもすべき
 
-	# -- config.plの作成
-	{
-		my $result = open my $fh, '>:raw', "$genie_dir/config.pl"
-			or throw("設定ファイル `$genie_dir/config.pl` が作成できませんでした。")
+	### 各種設定ファイルはサーバ上に上がっているものをDLスべき
+
+	### サーバ設定ファイルなどは一度コンテナを起動しコピーしてくる形がいい
+	#
+	### init postgresql とか init php で、各種設定ファイルを新規一時起動コンテナ側からコピー前状態の設定ファイルをもってくるような（Y/N確認だすといいかも）
+
+	if($config{GENERAL}->{config_dir}) {
+		throw("$config{GENERAL}->{config_dir} ディレクトリが既にあるので処理を中止します。");
+	} else {
+
+		# -- パスの用意
+		$config{GENERAL}->{home_dir}    = $now_path;
+		$config{GENERAL}->{config_dir}  = "$now_path/$config_dir_name";
+		$config{GENERAL}->{config_file} = "$now_path/$config_dir_name/$config{GENERAL}->{config_name}.pl";
+		mkdir $config{GENERAL}->{config_dir};
+
+		# -- config.plの作成
+		my $result = open my $fh, '>:raw', "$config{GENERAL}->{config_dir}/config.pl"
+			or throw("設定ファイル `$config{GENERAL}->{config_dir}/config.pl` が作成できませんでした。")
 		;
 		print $fh encode('UTF-8', <<'EOL');
 return {
@@ -599,8 +614,8 @@ EOL
 
 	# -- entry.shの作成
 	{
-		my $result = open my $fh, '>:raw', "$genie_dir/entry.sh"
-			or throw("設定ファイル `$genie_dir/entry.sh` が作成できませんでした。")
+		my $result = open my $fh, '>:raw', "$config{GENERAL}->{config_dir}/entry.sh"
+			or throw("設定ファイル `$config{GENERAL}->{config_dir}/entry.sh` が作成できませんでした。")
 		;
 		print $fh encode('UTF-8', <<'EOL');
 #!/bin/sh
@@ -616,8 +631,8 @@ EOL
 
 	# -- say.jsの作成（Windowsの場合のみ）
 	if($is_win) {
-		my $result = open my $fh, '>:raw', "$genie_dir/say.js"
-			or throw("`$genie_dir/say.js` が作成できませんでした。")
+		my $result = open my $fh, '>:raw', "$config{GENERAL}->{config_dir}/say.js"
+			or throw("`$config{GENERAL}->{config_dir}/say.js` が作成できませんでした。")
 		;
 		print $fh encode('UTF-8', <<'EOL');
 var args = [];
@@ -626,6 +641,8 @@ WScript.CreateObject('SAPI.SpVoice').Speak('<volume level="100">'+'<rate speed="
 EOL
 		close $fh;
 	}
+
+	message(success=>"設定ファイルを作成しました。\n$config{GENERAL}->{config_file}", 1);
 
 }
 
@@ -662,27 +679,27 @@ sub up {
 	down();
 
 	# -- 起動
-	if(!-s $config{GENERAL}->{home_path}."/$genie_dir/entry.sh"){
-		throw("$config{GENERAL}->{home_path}/$genie_dir/entry.sh が見当たりませんので起動できません。");
+	if(!-s "$config{GENERAL}->{config_dir}/genie/entry.sh"){
+		throw("$config{GENERAL}->{config_dir}/genie/entry.sh が見当たりませんので起動できません。");
 	}
 	echo "  Starting containers\n";
 
 	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必用なので）
-	my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$config{GENERAL}->{home_path} : $config{GENERAL}->{home_path};
+	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
 
 	# -- MySQL起動
 	my $mysql_option;
 	my $mysql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{MYSQL}->{ENABLED}) {
 		# -- スクリプトパーミッション設定
-		chmod 0755, "$config{GENERAL}->{home_path}/$genie_dir/mysql/before-entry.sh";
+		chmod 0755, "$config{GENERAL}->{config_dir}/mysql/before-entry.sh";
 		# -- コンテナ起動
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
 			$mysql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				" -v $vpath/$genie_dir/:/genie".
+				" -v $letter$config{GENERAL}->{config_dir}/mysql:/genie/mysql".
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -723,14 +740,14 @@ sub up {
 	my $postgresql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{POSTGRESQL}->{ENABLED}) {
 		# -- スクリプトパーミッション設定
-		chmod 0755, "$config{GENERAL}->{home_path}/$genie_dir/postgresql/before-entry.sh";
+		chmod 0755, "$config{GENERAL}->{home_dir}/$config{GENERAL}->{config_dir}/postgresql/before-entry.sh";
 		# -- コンテナ起動
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
 			$postgresql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				" -v $vpath/$genie_dir/:/genie".
+				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/genie/postgresql".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -815,15 +832,14 @@ sub up {
 		my $cmd =
 			'docker run -d'.
 			' -e TERM=xterm'.
-			" -v $vpath/$genie_dir:/genie".
-			" -v $vpath/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
+			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
+			" -v $letter$config{GENERAL}->{home_dir}/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
 			$mysql_option.
 			$postgresql_option.
 			$add_host.
 			" -p ".($config{APACHE}->{HOST_PORT_HTTP} ? "$config{APACHE}->{HOST_PORT_HTTP}:80" : 80).
 			" -p ".($config{APACHE}->{HOST_PORT_HTTPS} ? "$config{APACHE}->{HOST_PORT_HTTPS}:443" : 443).
 			" --name=$config{DOCKER}->{NAME}".
-			# " --privileged".
 			" $envs".
 			($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
 			" $config{DOCKER}->{IMAGE}"
@@ -847,16 +863,6 @@ sub up {
 				stop_word      => 'entry.sh setup start.',
 				label          => "Genie container start ($config{DOCKER}->{NAME})",
 			});
-
-			# -- entry.sh：ストレージ復元
-			if(glob("$config{GENERAL}->{home_path}/$genie_dir/storages/*.tar")) {
-				wait_container ({
-					container_name => $config{DOCKER}->{NAME},
-					log_file       => '/var/log/entry.log',
-					stop_word      => 'Storages restore done.',
-					label          => 'Storages restore',
-				});
-			}
 
 			# -- entry.sh：Perl
 			if($config{PERL}->{VERSION}){
@@ -1037,9 +1043,8 @@ sub cli {
 # --------------------------------------------------------------------
 sub cmd {
 	return unless require_up(); # 起動必須
-
-	my $cmd = 'docker exec ' . $config{DOCKER}->{NAME} . ' ' . join(' ', @ARGV[1..$#ARGV]);
-	`$cmd`;
+	my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' ' . join(' ', @ARGV[1..$#ARGV]);
+	system $cmd;
 }
 
 # --------------------------------------------------------------------
@@ -1079,50 +1084,29 @@ sub ls {
 }
 
 # --------------------------------------------------------------------
-# genie eject                         コンテナやイメージを強制削除する
+# genie reject                dockerが管理する全コンテナを強制削除する
 # --------------------------------------------------------------------
-sub eject {
-
-	# -- configで指定しているgenieコンテナを強制削除する
-	if($ARGV[1] eq '') {
-		`docker inspect -f {{.Name}} $config{DOCKER}->{NAME} $hide_all`;
-		if($?) {
-			message(warning=>"コンテナが見つかりません。：$config{DOCKER}->{NAME}");
-		} else {
-			`docker rm -f $config{DOCKER}->{NAME} $hide_all`;
-			message(success=>"コンテナを強制削除しました。：$config{DOCKER}->{NAME}");
-		}
-		# コンテナ一覧を表示
-		my $result = `docker ps -a`;
-		message(info=>$result, 1);
-	}
-
-	# -- dockerコンテナを全て強制削除する
-	elsif($ARGV[1] eq 'all') {
-		my @list = split(/[\r\n]+/, `docker ps -qa`);
-		if(@list) {
-			my @err;
-			foreach my $id (@list) {
-				echo "  $id - ";
-				`docker rm -f $id`;
-				if($?) {
-					style(color=>'red'); echo "Failed!\n"; style(color=>'clear');
-					push @err;
-				} else {
-					style(color=>'green'); echo "Deleted.\n"; style(color=>'clear');
-				}
-			}
-			if(@err) {
-				message(danger=>'強制削除に失敗したコンテナがあります。\n'.join('',map{"- $_\n"}@err));
+sub reject {
+	my @list = split(/[\r\n]+/, `docker ps -qa`);
+	if(@list) {
+		my @err;
+		foreach my $id (@list) {
+			echo "  $id - ";
+			`docker rm -f $id`;
+			if($?) {
+				style(color=>'red'); echo "Failed!\n"; style(color=>'clear');
+				push @err;
 			} else {
-				message(success=>'全てのコンテナを強制削除しました');
+				style(color=>'green'); echo "Deleted.\n"; style(color=>'clear');
 			}
-		} else {
-			message(warning=>'コンテナが１つも見つかりませんでした。');
 		}
-		# コンテナ一覧を表示
-		my $result = `docker ps -a`;
-		message(info=>$result, 1);
+		if(@err) {
+			message(danger=>'強制削除に失敗したコンテナがあります。\n'.join('',map{"- $_\n"}@err));
+		} else {
+			message(success=>'全てのコンテナを強制削除しました');
+		}
+	} else {
+		message(warning=>'コンテナが１つも見つかりませんでした。');
 	}
 
 }
@@ -1216,9 +1200,9 @@ sub config {
 
 	# -- エディタオープン
 	if ($ARGV[1] eq 'open') {
-		my $conf = $config{GENERAL}->{config_path};
+		my $conf = $config{GENERAL}->{config_file};
 		if($is_win) {
-			$conf = "$config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_path}";
+			$conf = "$config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_file}";
 		}
 		return `$open_cmd $conf`;
 	}
@@ -1232,8 +1216,8 @@ sub config {
 sub httpd {
 
 	# -- 公式httpdイメージから起動
-	my $vpath = $is_win ? '/'.$config{GENERAL}->{drive_letter}.$now_path : $now_path;
-	my $cmd = "docker run -d -p 80 -v $vpath:/var/www/html/ php:5.6-apache";
+	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
+	my $cmd = "docker run -d -p 80 -v $letter$now_path:/var/www/html/ php:5.6-apache";
 	my $cid = `$cmd`;
 	if($?) {
 		throw('Webサーバが起動しませんでした。', $cmd);
@@ -1271,7 +1255,7 @@ sub httpd {
 }
 
 # --------------------------------------------------------------------
-# genie build             簡易ローカルWebサーバ起動（設定ファイル不必要）
+# genie build                             kazaoki/genie イメージビルド
 # --------------------------------------------------------------------
 sub build {
 
@@ -1279,7 +1263,7 @@ sub build {
 	my $nocache = '--no-cache' if ($ARGV[1] eq 'nocache');
 
 	# -- .genie/Dockerfileをビルドする
-	my $dockerfile = $config{GENERAL}->{home_path}."/$genie_dir/Dockerfile";
+	my $dockerfile = "$config{GENERAL}->{config_dir}/genie/Dockerfile";
 	if(! -s $dockerfile){
 		throw('Dockerfileが見つからないか、空ファイルです。', $dockerfile);
 	}
@@ -1312,7 +1296,7 @@ sub build {
 			"docker build".
 			" -t $config{DOCKER}->{IMAGE}".
 			($config{DOCKER}->{OPTIONS_BUILD} ? " $config{DOCKER}->{OPTIONS_BUILD}" : '').
-			" $nocache $config{GENERAL}->{home_path}/$genie_dir/"
+			" $nocache $config{GENERAL}->{config_dir}/genie/"
 		;
 		message(info=>"ビルドを開始します。\n$cmd");
 		my $result = `$cmd`;
@@ -1342,29 +1326,6 @@ sub php {
 # --------------------------------------------------------------------
 sub perl {
 	return unless require_up(); # 起動必須
-
-	# -- cpanfileのモジュールインストールアップデート
-	if($ARGV[1] eq 'cpanfile-update') {
-		message(info=>'/genie/cpanfileを元にperlのモジュールをアップデートします。');
-		my $cmd;
-		if($config{PERL}->{VERSION}) {
-			$cmd = "docker exec $config{DOCKER}->{NAME} cpanm -nq --installdeps /genie/"; # バージョン指定のplenv環境のときは自動的に/storages/perl内にインストールされる
-		} else {
-			$cmd = "docker exec $config{DOCKER}->{NAME} cpanm -nq --installdeps -L /storages/perl-cpanfile-modules/ /genie/"; # system perlのときは明示的にストレージの中を指定する
-		}
-		`$cmd`;
-		if($?) {
-			throw('cpanfileのモジュールインストールアップデートに失敗しました。', $cmd);
-		}
-		message(success=>'cpanfileのモジュールインストールアップデートに成功しました。');
-		my $result = input('/genie/storages/perl-cpanfile-modules.tar に固めますか？ [y/N]:');
-		if($result =~ /^y$/i ) {
-			$ARGV[1] = 'perl';
-			&store();
-		}
-		return;
-	}
-
 	print `docker exec -it $config{DOCKER}->{NAME} /root/.anyenv/envs/plenv/plugins/perl-build/perl-build  --definitions`;
 	print "\n---\n\n";
 	print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && plenv versions"`;
@@ -1380,71 +1341,6 @@ sub ruby {
 	print "\n---\n\n";
 	print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && rbenv versions"`;
 	print "\n";
-}
-
-# --------------------------------------------------------------------
-# genie store (storage name)                          ストレージの保存
-# --------------------------------------------------------------------
-sub store {
-	my $param = shift;
-	return unless require_up(); # 起動必須
-	if($ARGV[1] eq '') { throw('引数が足りません。ストレージ名を指定してください。（/storages/xxx/のxxxの部分）'); }
-
-	# -- ストレージ名の整理
-	my $storage_name = $ARGV[1];
-	my $dir_path = "/storages/$storage_name";
-	my $tar_path = "/genie/storages/${storage_name}.tar";
-
-	# -- ストレージパスの存在確認
-	`docker exec $config{DOCKER}->{NAME} ls $dir_path $hide_all`;
-	if($?) {
-		throw('ご指定のストレージが見つかりません。', "$storage_name ( $dir_path )");
-	}
-
-	# -- tarで固める
-	my $opt;
-	if(defined $param->{opt}) {
-		$opt = $param->{opt};
-	}
-	mkdir "$genie_dir/storages";
-	my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd $dir_path && tar cvf $tar_path ./ $opt"|;
-	`$cmd`;
-	if($?) {
-		throw('tar保存に失敗しました。', "$dir_path -> $tar_path");
-	} else {
-		message(success=>"tar保存に成功しました。\n$dir_path -> $tar_path" );
-	}
-
-}
-
-# --------------------------------------------------------------------
-# genie restore (storage name)                        ストレージの復元
-# --------------------------------------------------------------------
-sub restore {
-	return unless require_up(); # 起動必須
-
-	if($ARGV[1] eq '') { throw('引数が足りません。ストレージ名を指定してください。（/genie/storages/xxx.tarのxxxの部分）'); }
-
-	# -- ストレージ名の整理
-	my $storage_name = $ARGV[1];
-	my $dir_path = "/storages/$storage_name";
-	my $tar_path = "/genie/storages/${storage_name}.tar";
-
-	# -- ストレージtarの存在確認
-	`docker exec $config{DOCKER}->{NAME} ls $tar_path $hide_all`;
-	if($?) {
-		throw('ご指定のtarファイルが見つかりません。', "$storage_name ( $tar_path )");
-	}
-
-	# -- tarを展開する
-	my $cmd = "docker exec $config{DOCKER}->{NAME} tar xvf $tar_path -C $dir_path";
-
-	`$cmd`;
-	if($?) {
-		throw('ストレージの復元に失敗しました。', "$tar_path -> $dir_path");
-	} else {
-		message(success=>"ストレージの復元に成功しました。\n$tar_path -> $dir_path" );
-	}
 }
 
 # --------------------------------------------------------------------
@@ -1508,7 +1404,7 @@ sub mysql {
 			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /genie/mysql/dumps/$db->{LABEL}.sql"|;
 			`$cmd $hide_all`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$genie_dir/mysql/dumps/$db->{LABEL}.sql",1);
+				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/mysql/dumps/$db->{LABEL}.sql",1);
 			} else {
 				throw('データベースのダンプに失敗しました。', $!);
 			}
@@ -1523,7 +1419,7 @@ sub mysql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker restart $config{DOCKER}->{NAME}-mysql-$db->{LABEL}`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$genie_dir/mysql/dumps/$db->{LABEL}.sql",1);
+				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$config{GENERAL}->{config_dir}/mysql/dumps/$db->{LABEL}.sql",1);
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
@@ -1594,7 +1490,7 @@ sub psql {
 			my $cmd = qq|docker exec $label sh -c "pg_dump $db->{NAME} -U $db->{USER} -p $db->{PORT} > /genie/postgresql/dumps/$db->{LABEL}.sql"|;
 			`$cmd`;
 			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$genie_dir/postgresql/dumps/$db->{LABEL}.sql",1);
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/postgresql/dumps/$db->{LABEL}.sql",1);
 			} else {
 				throw('データベースのダンプに失敗しました。', $!);
 			}
@@ -1609,7 +1505,7 @@ sub psql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker restart $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}`;
 			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n$genie_dir/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n$config{GENERAL}->{config_dir}/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
