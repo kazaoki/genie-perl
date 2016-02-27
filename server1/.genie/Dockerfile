@@ -6,15 +6,12 @@ MAINTAINER kazaoki lab.
 RUN cp /etc/localtime /etc/localtime.org \
     && ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
 
-# Add yum Repo
-# ------------
-RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
-
 # Add packages
 # ------------
-RUN yum update -y && \
-    yum install epel-release -y && \
-    yum install -y \
+RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
+    && yum update -y \
+    && yum install epel-release -y \
+    && yum install -y \
         gcc make perl perl-core openssl openssl-libs openssl-devel htop \
         git bzip2 tar patch wget \
         readline readline-devel \
@@ -39,25 +36,14 @@ RUN yum update -y && \
 
 # Install anyenv
 # --------------
+ENV PATH /root/.anyenv/bin:$PATH
 RUN git clone https://github.com/riywo/anyenv ~/.anyenv \
     && echo 'export PATH="$HOME/.anyenv/bin:$PATH"' >> ~/.bashrc \
-    && echo 'eval "$(anyenv init -)"' >> ~/.bashrc
-ENV PATH /root/.anyenv/bin:$PATH
-RUN . ~/.bashrc
-
-# Install Ruby by rbenv
-# ---------------------
-RUN anyenv install rbenv \
-    && . ~/.bashrc
-
-# Install Perl by plenv
-# ---------------------
-RUN anyenv install plenv \
-    && . ~/.bashrc
-
-# Install PHP by phpenv
-# ---------------------
-RUN anyenv install phpenv \
+    && echo 'eval "$(anyenv init -)"' >> ~/.bashrc \
+    && . ~/.bashrc \
+    && anyenv install rbenv \
+    && anyenv install plenv \
+    && anyenv install phpenv \
     && . ~/.bashrc
 
 # Install PhantomJS
@@ -69,8 +55,8 @@ RUN cd /root/ \
     && rm -fr phantomjs-2.1.1-linux-x86_64* \
     && cd
 
-# Setup PHP
-# ---------
+# Setup default PHP
+# -----------------
 RUN sed -i 's/\;date\.timezone\ \=/date\.timezone\ \=\ Asia\/Tokyo/g' /etc/php.ini \
     && sed -i 's/\;mbstring\.language\ \=\ Japanese/mbstring\.language\ \=\ Japanese/g' /etc/php.ini \
     && sed -i 's/\;mbstring\.internal_encoding\ \=\ EUC-JP/mbstring\.internal_encoding\ \=\ UTF-8/g' /etc/php.ini \
@@ -83,17 +69,6 @@ RUN sed -i 's/\;date\.timezone\ \=/date\.timezone\ \=\ Asia\/Tokyo/g' /etc/php.i
 # Setup cpanm
 # -----------
 RUN curl -L http://cpanmin.us | perl - App::cpanminus
-
-# # Setup MySQL
-# # -----------
-# RUN sed -i "1i [mysql]\ndefault-character-set=utf8\n" /etc/my.cnf \
-#     && sed -i 's/\[mysqld\]/\[mysqld\]\ndefault-character-set=utf8/' /etc/my.cnf
-
-# # Setup PostgreSQL
-# # ----------------
-# RUN su - postgres -c "/usr/bin/initdb --encoding=UTF8 --no-locale" \
-#     && sed -i "s/\#listen_addresses = 'localhost'/listen_addresses = '*'/g" /var/lib/pgsql/data/postgresql.conf \
-#     && echo "host all all 0.0.0.0/0 trust" >> /var/lib/pgsql/data/pg_hba.conf
 
 # Setup Apache
 # ------------
@@ -111,12 +86,8 @@ RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g'
     && echo '  # </__BANDWIDTH__>' >> /etc/httpd/conf/httpd.conf \
     && echo '  # <__NO_CACHE__>' >> /etc/httpd/conf/httpd.conf \
     && echo '  # </__NO_CACHE__>' >> /etc/httpd/conf/httpd.conf \
-    && echo '</Directory>' >> /etc/httpd/conf/httpd.conf
-
-# RUN sed -i 's/User\ apache/User\ lamp/g' /etc/httpd/conf/httpd.conf \
-#     && sed -i 's/Group\ apache/Group\ lamp/g' /etc/httpd/conf/httpd.conf \
-#     && sed -i 's/\#ServerName www\.example\.com\:80/ServerName lamp/g' /etc/httpd/conf/httpd.conf \
-#     && usermod -G apache lamp
+    && echo '</Directory>' >> /etc/httpd/conf/httpd.conf \
+    && sed -i 's/\#ServerName www\.example\.com\:80/ServerName genie/g' /etc/httpd/conf/httpd.conf
 
 # Install ngrok
 # -------------
