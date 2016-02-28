@@ -60,10 +60,13 @@ print "\n";
 # --------------------------------------------------------------------
 
 # -- コマンドオプション設定
-GetOptions(
-	'm=s' => \$config{GENERAL}->{runmode},
-	'c=s' => \$config{GENERAL}->{config_name},
-);
+if($ARGV[0] ne 'cli') {
+	# -- cli の時は `genie cli ls -la` などの引数をそのまま渡したいので無効に。
+	GetOptions(
+		'm=s' => \$config{GENERAL}->{runmode},
+		'c=s' => \$config{GENERAL}->{config_name},
+	);
+}
 $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。
 $config{GENERAL}->{config_name} ||= 'config'; # 未指定の場合 `.genie/config.pl` を読み込みます。
 
@@ -174,6 +177,7 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	mysql
 	psql
 	open
+	logs
 / ){
 	no strict;
 	$ARGV[0]->();
@@ -830,7 +834,7 @@ sub up {
 
 		# -- runコマンドの作成
 		my $cmd =
-			'docker run -d'.
+			'docker run -d -it'.
 			' -e TERM=xterm'.
 			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
 			" -v $letter$config{GENERAL}->{home_dir}/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
@@ -1027,23 +1031,20 @@ sub down {
 }
 
 # --------------------------------------------------------------------
-# genie cli                                       コマンドラインに入る
+# genie cli (command line)              コマンドラインに入る・実行する
 # --------------------------------------------------------------------
 sub cli {
 	return unless require_up(); # 起動必須
-
-	my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' /bin/bash';
+	my $cmd;
+	if($ARGV[1]) {
+		# -- 続きの引数があればそのまま渡して実行
+		$cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' ' . join(' ', @ARGV[1..$#ARGV]);
+	} else {
+		# -- 引数が`cli`のみであれば bash に入る
+		$cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' /bin/bash';
+	}
 	system($cmd);
 	echo "\n";
-}
-
-# --------------------------------------------------------------------
-# genie cmd                                         コマンドを実行する
-# --------------------------------------------------------------------
-sub cmd {
-	return unless require_up(); # 起動必須
-	my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' ' . join(' ', @ARGV[1..$#ARGV]);
-	system $cmd;
 }
 
 # --------------------------------------------------------------------
@@ -1535,5 +1536,16 @@ sub open {
 		if($open_cmd){
 			`$open_cmd $url`;
 		}
+	}
+}
+
+# --------------------------------------------------------------------
+# genie logs                                        ログファイルを開く
+# --------------------------------------------------------------------
+sub logs {
+	if(defined $config{LOGS}->{FILES} && ref $config{LOGS}->{FILES}) {
+		my $log_files = join(' ', @{$config{LOGS}->{FILES}});
+		my $cmd = qq|docker exec -ti $config{DOCKER}->{NAME} script /dev/null -qc "multitail $log_files"|;
+		system $cmd;
 	}
 }

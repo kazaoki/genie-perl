@@ -14,11 +14,23 @@ return {
 		# HOST_IP_FORCE => '192.168.99.100',
 	},
 
+	# logs設定
+	# --------
+	LOGS => {
+		FILES => [
+			'/var/log/httpd/access_log',
+			'/var/log/httpd/ssl_access_log',
+			'/var/log/httpd/ssl_request_log',
+			'/var/log/httpd/error_log',
+			'/var/log/httpd/ssl_error_log',
+		],
+	},
+
 	# Perl設定
 	# --------
 	PERL => {
-		VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
-		CPANFILE_ENABLED => 1,
+		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		# CPANFILE_ENABLED => 1,
 	},
 
 	# PHP設定
@@ -52,14 +64,14 @@ return {
 	# Postfix設定
 	# -----------
 	POSTFIX => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		FORCE_ENVELOPE => 'test@kazaoki.jp',
 	},
 
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',
@@ -116,7 +128,7 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL      => 'db1',
