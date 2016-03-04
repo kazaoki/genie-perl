@@ -14,6 +14,14 @@ return {
 		# HOST_IP_FORCE => '192.168.99.100',
 	},
 
+	# ブラウザ設定
+	# ------------
+	BROWSER => {
+		OPEN_AT_UPPED => 1, # UP時にブラウザオープンするか
+		OPEN_IN_PORT  => 80, # ブラウザで開きたい内部ポートを指定（自動的に外部ポートに変換されます）
+		OPEN_SCHEMA   => 'http',
+	},
+
 	# logs設定
 	# --------
 	LOGS => {
@@ -48,9 +56,10 @@ return {
 	# Apache設定
 	# ----------
 	APACHE => {
-		PUBLIC_PATH     => 'public_html',
-		HOST_PORT_HTTP  => '80',
-		HOST_PORT_HTTPS => '443',
+		ENABLED => 1,
+		PUBLIC_PATH => 'public_html',
+		HTTP_PORT   => '80',
+		HTTPS_PORT  => '443:443',
 		# BANDWIDTH   => 100,
 		# NO_CACHE    => 1,
 	},

@@ -824,6 +824,14 @@ sub up {
 		&$make_envs(\%config, 'GENIE');
 		my $envs = join(' ', map { sprintf('-e %s="%s"', $_, $envs{$_}) } sort(keys %envs));
 
+		# -- Apache
+		my $apache_option;
+		if($config{APACHE}->{ENABLED}) {
+			$apache_option .= " -v $letter$config{GENERAL}->{home_dir}/$config{APACHE}->{PUBLIC_PATH}:/var/www/html";
+			$apache_option .= ($config{APACHE}->{HTTP_PORT}  ? " -p $config{APACHE}->{HTTP_PORT}"  : '' );
+			$apache_option .= ($config{APACHE}->{HTTPS_PORT} ? " -p $config{APACHE}->{HTTPS_PORT}" : '' );
+		}
+
 		# -- add hosts
 		my $add_host;
 		if(ref $config{DOCKER}->{HOSTS}) {
@@ -837,12 +845,10 @@ sub up {
 			'docker run -d -it'.
 			' -e TERM=xterm'.
 			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
-			" -v $letter$config{GENERAL}->{home_dir}/$config{APACHE}->{PUBLIC_PATH}:/var/www/html".
 			$mysql_option.
 			$postgresql_option.
+			$apache_option.
 			$add_host.
-			" -p ".($config{APACHE}->{HOST_PORT_HTTP} ? "$config{APACHE}->{HOST_PORT_HTTP}:80" : 80).
-			" -p ".($config{APACHE}->{HOST_PORT_HTTPS} ? "$config{APACHE}->{HOST_PORT_HTTPS}:443" : 443).
 			" --name=$config{DOCKER}->{NAME}".
 			" $envs".
 			($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
@@ -956,12 +962,8 @@ sub up {
 		}
 
 		# -- コンテナの情報からブラウザを起動
-		if(`docker port $cid 80` =~ /(\d+)$/) {
-			my $url = "http://$config{GENERAL}->{host_ip}" .($1==80 ? '' : ":$1"). "/";
-			message(success=>"起動完了しました：$config{DOCKER}->{NAME}\n$url", 1);
-			if($open_cmd){
-				`$open_cmd $url`;
-			}
+		if($config{BROWSER}->{OPEN_AT_UPPED}){
+			&open();
 		}
 
 	}
@@ -1530,8 +1532,11 @@ sub psql {
 # --------------------------------------------------------------------
 sub open {
 	# -- コンテナの情報からブラウザを起動
-	if(`docker port $config{DOCKER}->{NAME} 80` =~ /(\d+)$/) {
-		my $url = "http://$config{GENERAL}->{host_ip}" .($1==80 ? '' : ":$1"). "/";
+	if(`docker port $config{DOCKER}->{NAME} $config{BROWSER}->{OPEN_IN_PORT}` =~ /(\d+)$/) {
+		my $port_str = ":$1";
+		if($config{BROWSER}->{OPEN_SCHEMA} eq 'http' && $port_str eq ':80') { $port_str = ''; }
+		elsif($config{BROWSER}->{OPEN_SCHEMA} eq 'https' && $port_str eq ':443') { $port_str = ''; }
+		my $url = "$config{BROWSER}->{OPEN_SCHEMA}://$config{GENERAL}->{host_ip}$port_str/";
 		message(success=>$url);
 		if($open_cmd){
 			`$open_cmd $url`;
