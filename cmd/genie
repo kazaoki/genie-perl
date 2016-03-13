@@ -1173,20 +1173,34 @@ sub clean {
 		my @list = split(/[\r\n]+/, `docker volume ls -q --filter dangling=true`);
 		if(@list) {
 			my @err;
+			my $deleted;
+			my $undeleted;
 			foreach my $id (@list) {
 				echo "  $id - ";
+				if( $id =~ /^locked/ && $ARGV[1] ne 'locked' ){
+					# -- lockedから始まるVolume名は削除しない。ただし「genie clean locked」で完全削除。
+					$undeleted ++;
+					style(color=>'yellow'); echo "Locked.\n"; style(color=>'clear');
+					next;
+				}
 				`docker volume rm $id`;
 				if($?) {
 					style(color=>'red'); echo "Failed!\n"; style(color=>'clear');
 					push @err;
 				} else {
 					style(color=>'green'); echo "Deleted.\n"; style(color=>'clear');
+					$deleted ++;
 				}
 			}
 			if(@err) {
 				message(danger=>'削除に失敗した未参照のデータボリュームがあります。\n'.join('',map{"- $_\n"}@err));
 			} else {
-				message(success=>'全ての未参照のデータボリュームを削除しました。');
+				if($deleted) {
+					message(success=>"${deleted}個のデータボリュームを削除しました。");
+				}
+				if($undeleted) {
+					message(success=>"${undeleted}個のデータボリュームが設定ファイルでロックされています。");
+				}
 			}
 		} else {
 			message(default=>'未参照のデータボリュームは見つかりませんでした。');

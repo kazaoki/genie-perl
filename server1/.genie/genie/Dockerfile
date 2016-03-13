@@ -70,6 +70,18 @@ RUN sed -i 's/\;date\.timezone\ \=/date\.timezone\ \=\ Asia\/Tokyo/g' /etc/php.i
 # -----------
 RUN curl -L http://cpanmin.us | perl - App::cpanminus
 
+# Install mod_bw
+# --------------
+RUN mkdir ~/src \
+    && cd ~/src \
+    && wget -O mod_bw-0.92.tgz https://sourceforge.net/projects/bwmod/files/bwmod/mod_bw%200.92/mod_bw-0.92.tgz/download \
+    && tar xfz mod_bw-0.92.tgz \
+    && cp mod_bw.c mod_bw.c.org \
+    && sed s/remote_addr/client_addr/g -i mod_bw.c \
+    && apxs -i -a -c mod_bw.c \
+    && rm -fr ~/src
+
+
 # Setup Apache
 # ------------
 RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g' /etc/httpd/conf/httpd.conf \
