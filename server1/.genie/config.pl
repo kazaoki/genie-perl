@@ -51,8 +51,8 @@ return {
 		PUBLIC_PATH     => 'public_html',
 		HOST_PORT_HTTP  => '80',
 		HOST_PORT_HTTPS => '443',
-		# BANDWIDTH   => 100,
-		# NO_CACHE    => 1,
+		# BANDWIDTH       => 100,
+		# NO_CACHE        => 1,
 	},
 
 	# Nginx設定
