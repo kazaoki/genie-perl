@@ -12,6 +12,39 @@ use Getopt::Long qw/GetOptions/;
 use Cwd;
 $| = 1;
 
+# -- 許可する第一引数の正規表現
+my $ok_args = join('|', qw/
+	demo
+	init
+	up
+	down
+	cmd
+	cli
+	config
+	ls
+	reject
+	clean
+	httpd
+	build
+	php
+	perl
+	ruby
+	ngrok
+	mysql
+	psql
+	open
+	logs
+/);
+# -- 設定ファイルが無くても実行可能な第一引数の正規表現
+my $noconf_args = join('|', qw/
+	reject
+	clean
+	init
+	ls
+	httpd
+	demo
+/);
+
 # --------------------------------------------------------------------
 # 下準備：変数用意、マクロ用意
 # --------------------------------------------------------------------
@@ -49,6 +82,12 @@ elsif($is_linux) {
 
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
+
+# -- 正しい第一引数かチェック
+if($ARGV[0] !~ /^$ok_args$/) {
+	help();
+	exit 0;
+}
 
 # -- 設定値変数
 my %config;
@@ -96,7 +135,7 @@ if( -d $config{GENERAL}->{config_dir} ){
 		throw("設定ディレクトリ（$config{GENERAL}->{config_dir}）はあるのに設定ファイル（$config{GENERAL}->{config_name}.pl）が見つかりません。");
 	}
 } else {
-	unless($ARGV[0] eq '' || grep{$ARGV[0] eq $_} qw/reject clean init ls httpd demo/){ # ←設定ファイルが無くても実行可能なものを列挙
+	unless($ARGV[0] eq '' || $ARGV[0] =~ /^$noconf_args$/){
 		throw("設定ファイル（$config{GENERAL}->{config_file}）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
 	}
 }
@@ -157,28 +196,7 @@ if($is_docker_machine && $config{DOCKER}->{MACHINE} ne '') {
 # --------------------------------------------------------------------
 
 # -- 第一引数により関数にジャンプ
-if( grep{ $ARGV[0] eq $_ } qw /
-	demo
-	init
-	up
-	down
-	cmd
-	cli
-	config
-	ls
-	reject
-	clean
-	httpd
-	build
-	php
-	perl
-	ruby
-	ngrok
-	mysql
-	psql
-	open
-	logs
-/ ){
+if( $ARGV[0] =~ /^$ok_args$/ ){
 	no strict;
 	$ARGV[0]->();
 
@@ -191,14 +209,21 @@ if( grep{ $ARGV[0] eq $_ } qw /
 	exit 0;
 }
 
+# -- ヘルプ表示
+help();
+
+exit 0;
+
 # --------------------------------------------------------------------
 # コマンド引数ヘルプ表示
 # --------------------------------------------------------------------
 
-echo "\n";
-echo "Usage: genie COMMAND [arg...] [OPTIONS]\n";
-echo "\n";
-echo <<HELP;
+sub help {
+
+	echo "\n";
+	echo "Usage: genie COMMAND [arg...] [OPTIONS]\n";
+	echo "\n";
+	echo <<HELP;
 \x1b[36mGENERAL\x1b[0m  | up                    起動（コンテナ作成）＆再起動
 \x1b[36mCOMMANDS\x1b[0m | down                  終了（コンテナ削除）
          | version               kazaoki/genieのバージョンを表示
@@ -237,7 +262,7 @@ echo <<HELP;
 
 HELP
 
-exit 0;
+	}
 
 # --------------------------------------------------------------------
 # ヘルパー関数
