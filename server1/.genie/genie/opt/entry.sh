@@ -152,6 +152,12 @@ if [[ $GENIE_APACHE_ENABLED ]]; then
   echo 'Apache setup done.' >> /var/log/entry.log
 fi
 
+# -- Nginx
+if [[ $GENIE_NGINX_ENABLED ]]; then
+    /usr/sbin/nginx
+  echo 'Nginx setup done.' >> /var/log/entry.log
+fi
+
 # -- Postfix
 if [[ $GENIE_POSTFIX_ENABLED ]]; then
   if [[ $GENIE_POSTFIX_FORCE_ENVELOPE != '' ]]; then
@@ -161,12 +167,6 @@ if [[ $GENIE_POSTFIX_ENABLED ]]; then
   fi
   /usr/sbin/postfix start
   echo 'Postfix setup done.' >> /var/log/entry.log
-fi
-
-# # -- Nginx
-if [[ $GENIE_NGINX_ENABLED ]]; then
-  # service nginx start
-  echo ''
 fi
 
 # -- Copy directories other than /opt/

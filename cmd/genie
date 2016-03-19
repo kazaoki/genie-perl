@@ -859,6 +859,14 @@ sub up {
 			$apache_option .= ($config{APACHE}->{HTTPS_PORT} ? " -p $config{APACHE}->{HTTPS_PORT}" : '' );
 		}
 
+		# -- Nginx
+		my $nginx_option;
+		if($config{NGINX}->{ENABLED}) {
+			$nginx_option .= " -v $letter$config{GENERAL}->{home_dir}/$config{NGINX}->{PUBLIC_PATH}:/usr/share/nginx/html";
+			$nginx_option .= ($config{NGINX}->{HTTP_PORT}  ? " -p $config{NGINX}->{HTTP_PORT}"  : '' );
+			$nginx_option .= ($config{NGINX}->{HTTPS_PORT} ? " -p $config{NGINX}->{HTTPS_PORT}" : '' );
+		}
+
 		# -- add hosts
 		my $add_host;
 		if(ref $config{DOCKER}->{HOSTS}) {
@@ -876,6 +884,7 @@ sub up {
 			$mysql_option.
 			$postgresql_option.
 			$apache_option.
+			$nginx_option.
 			$add_host.
 			" --name=$config{DOCKER}->{NAME}".
 			" $envs".
@@ -949,6 +958,16 @@ sub up {
 					log_file       => '/var/log/entry.log',
 					stop_word      => 'Apache setup done.',
 					label          => "Apache setup",
+				});
+			}
+
+			# -- entry.sh：Nginx
+			if($config{NGINX}->{ENABLED}) {
+				wait_container ({
+					container_name => $config{DOCKER}->{NAME},
+					log_file       => '/var/log/entry.log',
+					stop_word      => 'Nginx setup done.',
+					label          => "Nginx setup",
 				});
 			}
 

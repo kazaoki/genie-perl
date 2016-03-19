@@ -56,7 +56,7 @@ return {
 	# Apache設定
 	# ----------
 	APACHE => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		PUBLIC_PATH => 'public_html',
 		HTTP_PORT   => '80:80',
 		HTTPS_PORT  => '443:443',
@@ -65,9 +65,12 @@ return {
 	},
 
 	# Nginx設定
-	# ----------
+	# ---------
 	NGINX => {
-		# ENABLED => 1,
+		ENABLED => 1,
+		PUBLIC_PATH => 'public_html',
+		HTTP_PORT   => '80:80',
+		HTTPS_PORT  => '443:443',
 	},
 
 	# Postfix設定
@@ -80,7 +83,7 @@ return {
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',
