@@ -19,11 +19,11 @@ export LANG=$POSTGERS_LOCALE
 
 # Copy shell file
 # ---------------
-cp /genie/postgresql/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
+cp /opt/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
 
 # Copy dump file
 # --------------
-cp /genie/postgresql/dumps/$POSTGRES_LABEL.sql /docker-entrypoint-initdb.d
+cp /opt/dumps/$POSTGRES_LABEL.sql /docker-entrypoint-initdb.d
 
 # Pass to true shell
 # ------------------

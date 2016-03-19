@@ -10,7 +10,7 @@ echo 'entry.sh setup start.' >> /var/log/entry.log
 if [[ $GENIE_PERL_VERSION != '' ]]; then
   # -- tar restore
   mkdir -p /perl/versions
-  tarfile="/genie/perl/versions.tar"
+  tarfile="/opt/perl/versions.tar"
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /perl/versions
   fi
@@ -27,7 +27,7 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
     cd /perl/versions
-    tar cf /genie/perl/versions.tar ./
+    tar cf /opt/perl/versions.tar ./
   else
     # -- perl relink
     ln -s ${install_path} ${link_to}
@@ -42,15 +42,15 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
 fi
 
 # -- Install perl modules from cpanfile
-if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/cpanfile ]]; then
+if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /opt/cpanfile ]]; then
   # -- tar restore
   mkdir -p /perl/cpanfile-modules
-  tarfile="/genie/perl/cpanfile-modules.tar"
+  tarfile="/opt/perl/cpanfile-modules.tar"
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /perl/cpanfile-modules
   fi
   # -- install
-  cpanm -nq --installdeps -L /perl/cpanfile-modules/ /genie/
+  cpanm -nq --installdeps -L /perl/cpanfile-modules/ /opt/
   cd /perl/cpanfile-modules
   tar cf $tarfile ./
   echo 'cpanfile setup done.' >> /var/log/entry.log
@@ -60,7 +60,7 @@ fi
 if [[ $GENIE_PHP_VERSION != '' ]]; then
   # -- tar restore
   mkdir -p /php/versions
-  tarfile="/genie/php/versions.tar"
+  tarfile="/opt/php/versions.tar"
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /php/versions
   fi
@@ -76,7 +76,7 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
     cd /php/versions
-    tar cf /genie/php/versions.tar ./
+    tar cf /opt/php/versions.tar ./
   else
     # -- php relink
     ln -s ${install_path} ${link_to}
@@ -91,7 +91,7 @@ fi
 if [[ $GENIE_RUBY_VERSION != '' ]]; then
   # -- tar restore
   mkdir -p /ruby/versions
-  tarfile="/genie/ruby/versions.tar"
+  tarfile="/opt/ruby/versions.tar"
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /ruby/versions
   fi
@@ -105,7 +105,7 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
     cd /ruby/versions
-    tar cf /genie/ruby/versions.tar ./
+    tar cf /opt/ruby/versions.tar ./
   else
     # -- ruby relink
     ln -s ${install_path} ${link_to}
@@ -168,7 +168,7 @@ fi
 echo 'entry.sh setup done.' >> /var/log/entry.log
 
 # -- run after.sh
-/genie/after.sh
+/opt/after.sh
 
 # -- daemon loop start
 while true

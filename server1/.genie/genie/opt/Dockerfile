@@ -113,4 +113,4 @@ RUN mkdir /tmp/ngrok/ \
 
 # Entry point
 # -----------
-ENTRYPOINT /genie/entry.sh
+ENTRYPOINT /opt/entry.sh

@@ -437,7 +437,7 @@ sub say {
 	if($is_mac) {
 	    `say -r 300 "$message"`;
 	} elsif ($is_win) {
-		`wscript $config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_dir}/genie/say.js "$message"`;
+		`wscript $config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_dir}/genie/opt/say.js "$message"`;
 	}
 }
 
@@ -708,8 +708,8 @@ sub up {
 	down();
 
 	# -- 起動
-	if(!-s "$config{GENERAL}->{config_dir}/genie/entry.sh"){
-		throw("$config{GENERAL}->{config_dir}/genie/entry.sh が見当たりませんので起動できません。");
+	if(!-s "$config{GENERAL}->{config_dir}/genie/opt/entry.sh"){
+		throw("$config{GENERAL}->{config_dir}/genie/opt/entry.sh が見当たりませんので起動できません。");
 	}
 	echo "  Starting containers\n";
 
@@ -728,7 +728,7 @@ sub up {
 			$mysql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				" -v $letter$config{GENERAL}->{config_dir}/mysql:/genie/mysql".
+				" -v $letter$config{GENERAL}->{config_dir}/mysql/opt:/opt".
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -739,7 +739,7 @@ sub up {
 				" -e TERM=xterm".
 				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
 				" -p ".($db->{HOST_PORT} ? "$db->{HOST_PORT}:$db->{PORT}" : $db->{PORT}).
-				" --entrypoint=/genie/mysql/before-entry.sh".
+				" --entrypoint=/opt/before-entry.sh".
 				" -d $db->{REPOSITORY}".
 				" mysqld"
 			;
@@ -776,7 +776,7 @@ sub up {
 			$postgresql_last_label = $label;
 			my $cmd =
 				"docker run --name $label".
-				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/genie/postgresql".
+				" -v $letter$config{GENERAL}->{config_dir}/postgresql/opt:/opt".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -788,7 +788,7 @@ sub up {
 				" -e POSTGERS_LOCALE=$db->{LOCALE}".
 				" -e TERM=xterm".
 				" -p ".($db->{HOST_PORT} ? "$db->{HOST_PORT}:$db->{PORT}" : $db->{PORT}).
-				" --entrypoint=/genie/postgresql/before-entry.sh".
+				" --entrypoint=/opt/before-entry.sh".
 				" -d $db->{REPOSITORY}".
 				" postgres"
 			;
@@ -869,7 +869,7 @@ sub up {
 		my $cmd =
 			'docker run -d -it'.
 			' -e TERM=xterm'.
-			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
+			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
 			$mysql_option.
 			$postgresql_option.
 			$apache_option.
@@ -1304,7 +1304,7 @@ sub build {
 	my $nocache = '--no-cache' if ($ARGV[1] eq 'nocache');
 
 	# -- .genie/Dockerfileをビルドする
-	my $dockerfile = "$config{GENERAL}->{config_dir}/genie/Dockerfile";
+	my $dockerfile = "$config{GENERAL}->{config_dir}/genie/opt/Dockerfile";
 	if(! -s $dockerfile){
 		throw('Dockerfileが見つからないか、空ファイルです。', $dockerfile);
 	}
@@ -1337,7 +1337,7 @@ sub build {
 			"docker build".
 			" -t $config{DOCKER}->{IMAGE}".
 			($config{DOCKER}->{OPTIONS_BUILD} ? " $config{DOCKER}->{OPTIONS_BUILD}" : '').
-			" $nocache $config{GENERAL}->{config_dir}/genie/"
+			" $nocache $config{GENERAL}->{config_dir}/genie/opt/"
 		;
 		message(info=>"ビルドを開始します。\n$cmd");
 		my $result = `$cmd`;
@@ -1421,7 +1421,7 @@ sub mysql {
 	elsif($ARGV[1] eq 'dump') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
-		`docker exec $config{DOCKER}->{NAME} mkdir -p /genie/mysql/dumps/ $hide_all`;
+		`docker exec $config{DOCKER}->{NAME} mkdir -p /opt/dumps/ $hide_all`;
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
@@ -1432,17 +1432,17 @@ sub mysql {
 			foreach my $gen (reverse 1..$max_gen) {
 				my $gen_str = $gen==1 ? '' : ".$gen";
 				if($gen==$max_gen) {
-					my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "rm /genie/mysql/dumps/$db->{LABEL}.sql$gen_str"|;
+					my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "rm /opt/dumps/$db->{LABEL}.sql$gen_str"|;
 					`$cmd $hide_all`;
 					next;
 				}
 				my $next = $gen + 1;
-				my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd /genie/mysql/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
+				my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd /opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
 				`$cmd $hide_all`;
 			}
 
 			# -- ダンプ生成
-			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /genie/mysql/dumps/$db->{LABEL}.sql"|;
+			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd $hide_all`;
 			if(!$?) {
 				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/mysql/dumps/$db->{LABEL}.sql",1);
@@ -1507,7 +1507,7 @@ sub psql {
 	elsif($ARGV[1] eq 'dump') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
-		`docker exec $config{DOCKER}->{NAME} mkdir -p /genie/postgresql/dumps/ $hide_all`;
+		`docker exec $config{DOCKER}->{NAME} mkdir -p /opt/dumps/ $hide_all`;
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
@@ -1518,17 +1518,17 @@ sub psql {
 			foreach my $gen (reverse 1..$max_gen) {
 				my $gen_str = $gen==1 ? '' : ".$gen";
 				if($gen==$max_gen) {
-					my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "rm /genie/postgresql/dumps/$db->{LABEL}.sql$gen_str"|;
+					my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "rm /opt/dumps/$db->{LABEL}.sql$gen_str"|;
 					`$cmd $hide_all`;
 					next;
 				}
 				my $next = $gen + 1;
-				my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd /genie/postgresql/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
+				my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd /opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
 				`$cmd $hide_all`;
 			}
 
 			# -- ダンプ生成
-			my $cmd = qq|docker exec $label sh -c "pg_dump $db->{NAME} -U $db->{USER} -p $db->{PORT} > /genie/postgresql/dumps/$db->{LABEL}.sql"|;
+			my $cmd = qq|docker exec $label sh -c "pg_dump $db->{NAME} -U $db->{USER} -p $db->{PORT} > /opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd`;
 			if(!$?) {
 				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/postgresql/dumps/$db->{LABEL}.sql",1);
