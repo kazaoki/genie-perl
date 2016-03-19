@@ -80,7 +80,7 @@ return {
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',

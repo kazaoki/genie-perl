@@ -169,7 +169,7 @@ if [[ $GENIE_NGINX_ENABLED ]]; then
   echo ''
 fi
 
-# -- Copy directories others
+# -- Copy directories other than /opt/
 rsync -rltD --exclude /opt /host/* /
 if [[ -d /host/etc/httpd ]]; then
   if [[ $GENIE_APACHE_ENABLED ]]; then

@@ -25,6 +25,16 @@ cp /opt/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
 # --------------
 cp /opt/dumps/$POSTGRES_LABEL.sql /docker-entrypoint-initdb.d
 
+# Copy directories other than /opt/
+# ---------------------------------
+for target in `ls /host`
+do
+  if [ $target != 'opt' ]; then
+    echo $target
+    \cp -rf /host/$target /
+  fi
+done
+
 # Pass to true shell
 # ------------------
 exec /docker-entrypoint.sh $@

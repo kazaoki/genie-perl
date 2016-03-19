@@ -26,6 +26,16 @@ if [ -f /opt/dumps/$MYSQL_LABEL.sql ]; then
   cp /opt/dumps/$MYSQL_LABEL.sql /docker-entrypoint-initdb.d
 fi
 
+# Copy directories other than /opt/
+# ---------------------------------
+for target in `ls /host`
+do
+  if [ $target != 'opt' ]; then
+    echo $target
+    \cp -rf /host/$target /
+  fi
+done
+
 # Pass to true shell
 # ------------------
 exec /entrypoint.sh $@
