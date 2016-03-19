@@ -164,9 +164,27 @@ if [[ $GENIE_POSTFIX_ENABLED ]]; then
 fi
 
 # # -- Nginx
-if [[ $GENIE_NGINX_ENABLE ]]; then
+if [[ $GENIE_NGINX_ENABLED ]]; then
   # service nginx start
   echo ''
+fi
+
+# -- Copy directories others
+rsync -rltD --exclude /opt /host/* /
+if [[ -d /host/etc/httpd ]]; then
+  if [[ $GENIE_APACHE_ENABLED ]]; then
+    /usr/sbin/httpd -k restart
+  fi
+fi
+if [[ -d /host/etc/postfix ]]; then
+  if [[ $GENIE_POSTFIX_ENABLED ]]; then
+    /usr/sbin/postfix reload
+  fi
+fi
+if [[ -d /host/etc/nginx ]]; then
+  if [[ $GENIE_NGINX_ENABLED ]]; then
+    /usr/sbin/nginx -s reload
+  fi
 fi
 
 # -- entry.sh finished
