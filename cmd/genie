@@ -729,6 +729,7 @@ sub up {
 			my $cmd =
 				"docker run --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/mysql/opt:/opt".
+				" -v $letter$config{GENERAL}->{config_dir}/mysql:/host".
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -777,6 +778,7 @@ sub up {
 			my $cmd =
 				"docker run --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/postgresql/opt:/opt".
+				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/host".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -870,6 +872,7 @@ sub up {
 			'docker run -d -it'.
 			' -e TERM=xterm'.
 			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
+			" -v $letter$config{GENERAL}->{config_dir}/genie:/host".
 			$mysql_option.
 			$postgresql_option.
 			$apache_option.
@@ -940,12 +943,14 @@ sub up {
 			}
 
 			# -- entry.sh：Apache
-			wait_container ({
-				container_name => $config{DOCKER}->{NAME},
-				log_file       => '/var/log/entry.log',
-				stop_word      => 'Apache setup done.',
-				label          => "Apache setup",
-			});
+			if($config{APACHE}->{ENABLED}) {
+				wait_container ({
+					container_name => $config{DOCKER}->{NAME},
+					log_file       => '/var/log/entry.log',
+					stop_word      => 'Apache setup done.',
+					label          => "Apache setup",
+				});
+			}
 
 			# -- entry.sh：Postfix
 			if($config{POSTFIX}->{ENABLED}){

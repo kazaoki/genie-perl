@@ -116,8 +116,9 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
 fi
 
 # -- Apache
-if [[ $GENIE_APACHE_BANDWIDTH ]]; then
-  sed -i "/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
+if [[ $GENIE_APACHE_ENABLED ]]; then
+  if [[ $GENIE_APACHE_BANDWIDTH ]]; then
+    sed -i "/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
 \ \ # <__BANDWIDTH__>\n\
     <IfModule mod_bw.c>\n\
       BandWidthModule On\n\
@@ -125,30 +126,31 @@ if [[ $GENIE_APACHE_BANDWIDTH ]]; then
       BandWidth all ${GENIE_APACHE_BANDWIDTH}\n\
     </IfModule>\n\
   # </__BANDWIDTH__>" /etc/httpd/conf/httpd.conf
-else
-  sed -i '/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
+  else
+    sed -i '/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
   # <__BANDWIDTH__>\
   # </__BANDWIDTH__>' /etc/httpd/conf/httpd.conf
-fi
-if [[ $GENIE_APACHE_NO_CACHE ]]; then
-  sed -i '/<__NO_CACHE__>/,/<\/__NO_CACHE__>/c\
+  fi
+  if [[ $GENIE_APACHE_NO_CACHE ]]; then
+    sed -i '/<__NO_CACHE__>/,/<\/__NO_CACHE__>/c\
   # <__NO_CACHE__>\
     FileEtag None\
     RequestHeader unset If-Modified-Since\
     Header set Cache-Control no-store\
   # </__NO_CACHE__>' /etc/httpd/conf/httpd.conf
-else
-  sed -i '/<__NO_CACHE__>/,/<\/__NO_CACHE__>/c\
+  else
+    sed -i '/<__NO_CACHE__>/,/<\/__NO_CACHE__>/c\
   # <__NO_CACHE__>\
   # </__NO_CACHE__>' /etc/httpd/conf/httpd.conf
-fi
-passenv_string=`set | grep -i '^GENIE_' | perl -pe 'while(<>){ chomp; $_=~ /([^\=]+)/; print "$1 "; }'`
-sed -i "/<__PASSENV__>/,/<\/__PASSENV__>/c\
+  fi
+  passenv_string=`set | grep -i '^GENIE_' | perl -pe 'while(<>){ chomp; $_=~ /([^\=]+)/; print "$1 "; }'`
+  sed -i "/<__PASSENV__>/,/<\/__PASSENV__>/c\
 \ \ # <__PASSENV__>\n\
   PassEnv $passenv_string\n\
   # </__PASSENV__>" /etc/httpd/conf/httpd.conf
-/usr/sbin/httpd
-echo 'Apache setup done.' >> /var/log/entry.log
+  /usr/sbin/httpd
+  echo 'Apache setup done.' >> /var/log/entry.log
+fi
 
 # -- Postfix
 if [[ $GENIE_POSTFIX_ENABLED ]]; then
@@ -162,7 +164,10 @@ if [[ $GENIE_POSTFIX_ENABLED ]]; then
 fi
 
 # # -- Nginx
-# service nginx start
+if [[ $GENIE_NGINX_ENABLE ]]; then
+  # service nginx start
+  echo ''
+fi
 
 # -- entry.sh finished
 echo 'entry.sh setup done.' >> /var/log/entry.log
