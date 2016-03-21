@@ -199,14 +199,13 @@ return {
 	# ftpsync設定
 	# -----------
 	FTPSYNC => {
-		HOST                => "hogehoge.com",
-		USER                => "user",
-		PASS                => "password",
-		REMOTE_DIR          => "/public_html",
-		LOCAL_DIR           => "hogehoge.com",
-		NOEXIST_DELETE      => "1",
-		NOEXIST_DELETE_ONLY => "0",
-		OPTIONS             => "-X .git,.svn",
+		REMOTE_HOST  => 'localhost',
+		REMOTE_USER  => 'user',
+		REMOTE_PASS  => '123456',
+		REMOTE_DIR   => '/public_html',
+		LOCAL_DIR    => 'public_html', # ホームパスからの相対です
+		LFTP_CHARSET => 'utf8', # utf8, sjis 等
+		LFTP_OPTION  => '--delete --verbose --only-newer', # mirror時のオプション（http://lftp.yar.ru/lftp-man.html）
 	},
 
 };
