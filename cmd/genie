@@ -1642,16 +1642,15 @@ sub ftpsync {
 		if($config{FTPSYNC}->{LFTP_NEWER_THAN_LAST_COMMIT}) {
 			# -- gitコマンドが使える場合のみ
 			`where git $hide_all`;
-			if($?){
+			if(!$?){
 				foreach(`git log -n 1`) {
-					if($_ =~ /^Date:\s+(.+)$/) {
-						$config{FTPSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($1))/60/60/24)+1).'days';
+					if($_ =~ /^Date:\s+(.+?)(?:\ \+\d{4})?$/) {
+						$config{FTPSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($1))/60)+1).'minutes';
 						last;
 					}
 				}
 			}
 		}
-
 		# -- 新たなコンテナを作成してlftpを実行。そして自動的に終了する。
 		my $local_dir_path = ($config{FTPSYNC}->{LOCAL_DIR} =~ /^\//)
 			? $config{FTPSYNC}->{LOCAL_DIR}
