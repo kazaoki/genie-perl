@@ -739,7 +739,7 @@ sub up {
 				" -e MYSQL_CHARSET=$db->{CHARSET}".
 				" -e TERM=xterm".
 				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
-				" -p ".($db->{HOST_PORT} ? "$db->{HOST_PORT}:$db->{PORT}" : $db->{PORT}).
+				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/opt/before-entry.sh".
 				" $db->{REPOSITORY}".
 				" mysqld"
@@ -789,7 +789,7 @@ sub up {
 				" -e POSTGERS_ENCODING=$db->{ENCODING}".
 				" -e POSTGERS_LOCALE=$db->{LOCALE}".
 				" -e TERM=xterm".
-				" -p ".($db->{HOST_PORT} ? "$db->{HOST_PORT}:$db->{PORT}" : $db->{PORT}).
+				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/opt/before-entry.sh".
 				" $db->{REPOSITORY}".
 				" postgres"
@@ -855,16 +855,22 @@ sub up {
 		my $apache_option;
 		if($config{APACHE}->{ENABLED}) {
 			$apache_option .= " -v $letter$config{GENERAL}->{home_dir}/$config{APACHE}->{PUBLIC_PATH}:/var/www/html";
-			$apache_option .= ($config{APACHE}->{HTTP_PORT}  ? " -p $config{APACHE}->{HTTP_PORT}"  : '' );
-			$apache_option .= ($config{APACHE}->{HTTPS_PORT} ? " -p $config{APACHE}->{HTTPS_PORT}" : '' );
+			if(ref $config{APACHE}->{BIND_PORTS}){
+				foreach(@{$config{APACHE}->{BIND_PORTS}}){
+					$apache_option .= " -p $_";
+				}
+			}
 		}
 
 		# -- Nginx
 		my $nginx_option;
 		if($config{NGINX}->{ENABLED}) {
 			$nginx_option .= " -v $letter$config{GENERAL}->{home_dir}/$config{NGINX}->{PUBLIC_PATH}:/usr/share/nginx/html";
-			$nginx_option .= ($config{NGINX}->{HTTP_PORT}  ? " -p $config{NGINX}->{HTTP_PORT}"  : '' );
-			$nginx_option .= ($config{NGINX}->{HTTPS_PORT} ? " -p $config{NGINX}->{HTTPS_PORT}" : '' );
+			if(ref $config{NGINX}->{BIND_PORTS}){
+				foreach(@{$config{NGINX}->{BIND_PORTS}}){
+					$nginx_option .= " -p $_";
+				}
+			}
 		}
 
 		# -- add hosts

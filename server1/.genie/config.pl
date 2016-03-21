@@ -31,6 +31,8 @@ return {
 			# '/var/log/httpd/ssl_access_log',
 			# '/var/log/httpd/ssl_request_log',
 			# '/var/log/httpd/ssl_error_log',
+			'/var/log/nginx/access.log',
+			'/var/log/nginx/error.log',
 		],
 	},
 
@@ -56,21 +58,27 @@ return {
 	# Apache設定
 	# ----------
 	APACHE => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		PUBLIC_PATH => 'public_html',
-		HTTP_PORT   => '80:80',
-		HTTPS_PORT  => '443:443',
-		# BANDWIDTH   => 100,
 		# NO_CACHE    => 1,
+		# BANDWIDTH   => 100,
+		HTTP_PORT   => 80,
+		HTTPS_PORT  => 443,
+		BIND_PORTS  => [
+			'80:80',
+			'443:443',
+		]
 	},
 
 	# Nginx設定
 	# ---------
 	NGINX => {
-		ENABLED => 1,
-		PUBLIC_PATH => 'public_html',
-		HTTP_PORT   => '80:80',
-		HTTPS_PORT  => '443:443',
+		# ENABLED => 1,
+		PUBLIC_PATH => 'public_html/test',
+		HTTP_PORT   => 8080,
+		BIND_PORTS  => [
+			'8080:8080',
+		]
 	},
 
 	# Postfix設定
@@ -83,7 +91,7 @@ return {
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',
@@ -95,7 +103,9 @@ return {
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 3,
 			# 	PORT       => '13306',
-			# 	# HOST_PORT  => '3308',
+			# 	BIND_PORTS => [
+			# 		'3308:13306'
+			# 	],
 			# },
 			# {
 			# 	LABEL      => 'db2',
@@ -105,9 +115,11 @@ return {
 			# 	USER       => 'genie_user2',
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
-			# 	DUMP_GENEL => 3,
+			# 	DUMP_GENEL => 1,
 			# 	PORT       => '23306',
-			# 	# HOST_PORT  => '3309',
+			# 	BIND_PORTS => [
+			# 		'3309:23306'
+			# 	],
 			# },
 			# {
 			# 	LABEL      => 'db3',
@@ -117,9 +129,11 @@ return {
 			# 	USER       => 'genie_user3',
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
-			# 	DUMP_GENEL => 3,
+			# 	DUMP_GENEL => 1,
 			# 	PORT       => '23306',
-			# 	# HOST_PORT  => '3310',
+			# 	BIND_PORTS => [
+			# 		'3310:23306'
+			# 	],
 			# },
 			{
 				LABEL      => 'wp',
@@ -129,9 +143,11 @@ return {
 				USER       => 'wp',
 				PASS       => '123456',
 				CHARSET    => 'utf8',
-				DUMP_GENEL => 3,
+				DUMP_GENEL => 2,
 				PORT       => '13306',
-				HOST_PORT  => '3306',
+				BIND_PORTS => [
+					'13306'
+				],
 			},
 		],
 	},
@@ -142,18 +158,20 @@ return {
 	POSTGRESQL => {
 		# ENABLED => 1,
 		DATABASES => [
-			{
-				LABEL      => 'db1',
-				REPOSITORY => 'postgres:9.4',
-				HOST       => 'db1.com',
-				NAME       => 'genie_db1',
-				USER       => 'genie_user1',
-				PASS       => '123456789',
-				LOCALE     => 'ja_JP.UTF-8',
-				DUMP_GENEL => 3,
-				PORT       => '54321',
-				HOST_PORT  => '5432',
-			},
+			# {
+			# 	LABEL      => 'db1',
+			# 	REPOSITORY => 'postgres:9.4',
+			# 	HOST       => 'db1.com',
+			# 	NAME       => 'genie_db1',
+			# 	USER       => 'genie_user1',
+			# 	PASS       => '123456789',
+			# 	LOCALE     => 'ja_JP.UTF-8',
+			# 	DUMP_GENEL => 3,
+			# 	PORT       => '54321',
+			# 	BIND_PORTS => [
+			# 		'5432:54321'
+			# 	],
+			# },
 			{
 				LABEL      => 'test-db',
 				REPOSITORY => 'postgres:9.3',
@@ -162,9 +180,11 @@ return {
 				USER       => 'genie_user2',
 				PASS       => '123456789',
 				LOCALE     => 'ja_JP.UTF-8',
-				DUMP_GENEL => 3,
+				DUMP_GENEL => 1,
 				PORT       => '55432',
-				# HOST_PORT  => '5432',
+				BIND_PORTS => [
+					'55432'
+				],
 			},
 		],
 	},

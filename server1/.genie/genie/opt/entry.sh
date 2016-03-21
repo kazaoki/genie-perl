@@ -117,6 +117,13 @@ fi
 
 # -- Apache
 if [[ $GENIE_APACHE_ENABLED ]]; then
+  if [[ $GENIE_APACHE_HTTP_PORT ]]; then
+    sed -i "s/Listen 80/Listen $GENIE_APACHE_HTTP_PORT/" /etc/httpd/conf/httpd.conf
+  fi
+  if [[ $GENIE_APACHE_HTTPS_PORT ]]; then
+    sed -i "s/Listen 443/Listen $GENIE_APACHE_HTTPS_PORT/" /etc/httpd/conf.d/ssl.conf
+    sed -i "s/_default_:443/_default_:$GENIE_APACHE_HTTPS_PORT/" /etc/httpd/conf.d/ssl.conf
+  fi
   if [[ $GENIE_APACHE_BANDWIDTH ]]; then
     sed -i "/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
 \ \ # <__BANDWIDTH__>\n\
@@ -154,7 +161,10 @@ fi
 
 # -- Nginx
 if [[ $GENIE_NGINX_ENABLED ]]; then
-    /usr/sbin/nginx
+  if [[ $GENIE_NGINX_HTTP_PORT ]]; then
+    sed -i "s/80 default_server/$GENIE_NGINX_HTTP_PORT default_server/" /etc/nginx/nginx.conf
+  fi
+  /usr/sbin/nginx
   echo 'Nginx setup done.' >> /var/log/entry.log
 fi
 
