@@ -10,7 +10,7 @@ use Encode qw/encode decode/;
 use Data::Dumper;
 use Getopt::Long qw/GetOptions/;
 use Cwd;
-$| = 1;
+use HTTP::Date;
 
 # -- 許可する第一引数の正規表現
 my $ok_args = join('|', qw/
@@ -34,6 +34,7 @@ my $ok_args = join('|', qw/
 	psql
 	open
 	logs
+	ftpsync
 /);
 # -- 設定ファイルが無くても実行可能な第一引数の正規表現
 my $noconf_args = join('|', qw/
@@ -1624,4 +1625,48 @@ sub logs {
 		my $cmd = qq|docker exec -ti $config{DOCKER}->{NAME} script /dev/null -qc "multitail $log_files"|;
 		system $cmd;
 	}
+}
+
+# --------------------------------------------------------------------
+# genie ftpsync                                          ftpsyncを実行
+# --------------------------------------------------------------------
+sub ftpsync {
+	if(
+		   $config{FTPSYNC}->{REMOTE_HOST}
+		&& $config{FTPSYNC}->{REMOTE_USER}
+		&& $config{FTPSYNC}->{REMOTE_PASS}
+		&& $config{FTPSYNC}->{REMOTE_DIR}
+		&& $config{FTPSYNC}->{LOCAL_DIR}
+	) {
+		# -- 指定があればgitから最終コミット時間を拾ってくる
+		if($config{FTPSYNC}->{LFTP_NEWER_THAN_LAST_COMMIT}) {
+			# -- gitコマンドが使える場合のみ
+			`where git $hide_all`;
+			if(!$?){
+				foreach(`git log -n 1`) {
+					if($_ =~ /^Date:\s+(.+?)(?:\ \+\d{4})?$/) {
+						$config{FTPSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($1))/60)+1).'minutes';
+						last;
+					}
+				}
+			}
+		}
+		# -- 新たなコンテナを作成してlftpを実行。そして自動的に終了する。
+		my $local_dir_path = ($config{FTPSYNC}->{LOCAL_DIR} =~ /^\//)
+			? $config{FTPSYNC}->{LOCAL_DIR}
+			: $config{GENERAL}->{home_dir} .'/'. $config{FTPSYNC}->{LOCAL_DIR}
+		;
+		my $envs = join(' ', map { "-e GENIE_FTPSYNC_$_=\"" . $config{FTPSYNC}->{$_} . '"' } keys %{$config{FTPSYNC}} );
+		my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
+		my $cmd =
+			"docker run --rm -it".
+			" -e GENIE_RUNMODE=ftpsync".
+			" $envs".
+			" -v $letter$local_dir_path:/sync".
+			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
+			" $config{DOCKER}->{IMAGE}"
+		;
+		system $cmd;
+	}
+	return;
 }

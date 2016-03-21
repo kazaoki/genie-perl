@@ -196,4 +196,21 @@ return {
 		SUBDOMAIN => '',
 	},
 
+	# ftpsync設定
+	# -----------
+	FTPSYNC => {
+		REMOTE_HOST  => '(HOST)',
+		REMOTE_USER  => '(USER)',
+		REMOTE_PASS  => '(PASS)',
+		REMOTE_DIR   => '/public_html',
+		LOCAL_DIR    => 'public_html', # ホームパスからの相対です
+		LFTP_CHARSET => 'utf8', # utf8, sjis 等
+		# -- mirror時のオプション（http://lftp.yar.ru/lftp-man.html）
+		LFTP_OPTION  => '--verbose --delete',
+		# LFTP_OPTION  => '--verbose --delete --only-newer', # 新しいタイムスタンプのファイルのみDL（gitブランチ切り替えなどでローカルファイルが新しくなるので注意）
+		# LFTP_OPTION  => '--verbose --delete --ignore-time', # サイズが違うファイルのみDL（変更有りでも同サイズの場合があるので注意）
+		# LFTP_OPTION  => '--verbose --delete --newer-than=now-10days', # 10日前からのファイルを同期
+		LFTP_NEWER_THAN_LAST_COMMIT => 1, # この値が1ならば、現在のgitコミットの最終日から変更されたファイルのみをダウンロード対象にします。（--newer-than=now-XXdays の日付を自動算出します）
+	},
+
 };

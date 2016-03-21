@@ -23,6 +23,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         php php-mbstring php-pdo php-mysql php-pgsql php-gd php-xml \
         php-soap php-Smarty re2c libxml2-devel bison bison-devel \
         perl-libwww-perl perl-Crypt-SSLeay \
+        perl-String-CRC32 gnutls \
         ImageMagick ImageMagick-perl \
         postfix \
         libffi-devel \
@@ -110,6 +111,10 @@ RUN mkdir /tmp/ngrok/ \
     && mv ngrok /usr/local/bin \
     && rm -fr /tmp/ngrok/ \
     && cd
+
+# Install lftp
+# ------------
+RUN rpm -ivh http://lftp.yar.ru/ftp/binaries/lftp-4.6.5-1.x86_64.rpm
 
 # Entry point
 # -----------
