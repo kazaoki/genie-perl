@@ -196,4 +196,17 @@ return {
 		SUBDOMAIN => '',
 	},
 
+	# ftpsync設定
+	# -----------
+	FTPSYNC => {
+		HOST                => "hogehoge.com",
+		USER                => "user",
+		PASS                => "password",
+		REMOTE_DIR          => "/public_html",
+		LOCAL_DIR           => "hogehoge.com",
+		NOEXIST_DELETE      => "1",
+		NOEXIST_DELETE_ONLY => "0",
+		OPTIONS             => "-X .git,.svn",
+	},
+
 };
