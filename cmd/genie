@@ -10,7 +10,7 @@ use Encode qw/encode decode/;
 use Data::Dumper;
 use Getopt::Long qw/GetOptions/;
 use Cwd;
-$| = 1;
+use HTTP::Date;
 
 # -- 許可する第一引数の正規表現
 my $ok_args = join('|', qw/
@@ -1638,6 +1638,20 @@ sub ftpsync {
 		&& $config{FTPSYNC}->{REMOTE_DIR}
 		&& $config{FTPSYNC}->{LOCAL_DIR}
 	) {
+		# -- 指定があればgitから最終コミット時間を拾ってくる
+		if($config{FTPSYNC}->{LFTP_NEWER_THAN_LAST_COMMIT}) {
+			# -- gitコマンドが使える場合のみ
+			`where git $hide_all`;
+			if($?){
+				foreach(`git log -n 1`) {
+					if($_ =~ /^Date:\s+(.+)$/) {
+						$config{FTPSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($1))/60/60/24)+1).'days';
+						last;
+					}
+				}
+			}
+		}
+
 		# -- 新たなコンテナを作成してlftpを実行。そして自動的に終了する。
 		my $local_dir_path = ($config{FTPSYNC}->{LOCAL_DIR} =~ /^\//)
 			? $config{FTPSYNC}->{LOCAL_DIR}

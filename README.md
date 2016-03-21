@@ -5,6 +5,8 @@
 ## 必要環境
 - perl
 - docker（Toolbox可）
+- gitコマンドにパスが通ってると尚良（ftpsyncの LFTP_NEWER_THAN_LAST_COMMIT オプションが利用できるようになる）
+
 
 Windows, MacどっちでもOK
 
