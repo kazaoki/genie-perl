@@ -11,6 +11,7 @@ use Data::Dumper;
 use Getopt::Long qw/GetOptions/;
 use Cwd;
 use HTTP::Date;
+$| = 1;
 
 # -- 許可する第一引数の正規表現
 my $ok_args = join('|', qw/
