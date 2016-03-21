@@ -31,8 +31,8 @@ return {
 			# '/var/log/httpd/ssl_access_log',
 			# '/var/log/httpd/ssl_request_log',
 			# '/var/log/httpd/ssl_error_log',
-			'/var/log/nginx/access.log',
-			'/var/log/nginx/error.log',
+			# '/var/log/nginx/access.log',
+			# '/var/log/nginx/error.log',
 		],
 	},
 
@@ -60,7 +60,7 @@ return {
 	APACHE => {
 		ENABLED => 1,
 		PUBLIC_PATH => 'public_html',
-		# NO_CACHE    => 1,
+		NO_CACHE    => 1,
 		# BANDWIDTH   => 100,
 		HTTP_PORT   => 80,
 		HTTPS_PORT  => 443,
@@ -91,7 +91,7 @@ return {
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',
@@ -187,6 +187,13 @@ return {
 				],
 			},
 		],
+	},
+
+	# ngrok設定
+	# ---------
+	NGROK => {
+		AUTHTOKEN => '',
+		SUBDOMAIN => '',
 	},
 
 };

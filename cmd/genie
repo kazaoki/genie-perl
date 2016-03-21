@@ -1282,7 +1282,7 @@ sub config {
 }
 
 # --------------------------------------------------------------------
-# genie httpd             簡易ローカルWebサーバ起動（設定ファイル不必要）
+# genie httpd            簡易ローカルWebサーバ起動（設定ファイル不要）
 # --------------------------------------------------------------------
 sub httpd {
 
@@ -1418,7 +1418,9 @@ sub ruby {
 # genie ngrok                                          ngrokを利用する
 # --------------------------------------------------------------------
 sub ngrok {
-	system "docker exec -it $config{DOCKER}->{NAME} ngrok http 80";
+	my $token = $config{NGROK}->{AUTHTOKEN} ? "--authtoken=$config{NGROK}->{AUTHTOKEN}" : '';
+	my $subdomain = $config{NGROK}->{SUBDOMAIN} ? "--subdomain=$config{NGROK}->{SUBDOMAIN}" : '';
+	system "docker exec -it $config{DOCKER}->{NAME} ngrok http 80 $token $subdomain";
 }
 
 # --------------------------------------------------------------------
