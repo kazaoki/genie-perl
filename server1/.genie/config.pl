@@ -199,9 +199,9 @@ return {
 	# ftpsync設定
 	# -----------
 	FTPSYNC => {
-		REMOTE_HOST  => '(HOST)',
-		REMOTE_USER  => '(USER)',
-		REMOTE_PASS  => '(PASS)',
+		REMOTE_HOST  => '',
+		REMOTE_USER  => '',
+		REMOTE_PASS  => '',
 		REMOTE_DIR   => '/public_html',
 		LOCAL_DIR    => 'public_html', # ホームパスからの相対です
 		LFTP_CHARSET => 'utf8', # utf8, sjis 等
