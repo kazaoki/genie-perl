@@ -1466,12 +1466,12 @@ sub mysql {
 			foreach my $gen (reverse 1..$max_gen) {
 				my $gen_str = $gen==1 ? '' : ".$gen";
 				if($gen==$max_gen) {
-					my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "rm /opt/dumps/$db->{LABEL}.sql$gen_str"|;
+					my $cmd = qq|docker exec $label sh -c "rm /opt/dumps/$db->{LABEL}.sql$gen_str"|;
 					`$cmd $hide_all`;
 					next;
 				}
 				my $next = $gen + 1;
-				my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd /opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
+				my $cmd = qq|docker exec $label sh -c "cd /opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
 				`$cmd $hide_all`;
 			}
 
@@ -1552,12 +1552,12 @@ sub psql {
 			foreach my $gen (reverse 1..$max_gen) {
 				my $gen_str = $gen==1 ? '' : ".$gen";
 				if($gen==$max_gen) {
-					my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "rm /opt/dumps/$db->{LABEL}.sql$gen_str"|;
+					my $cmd = qq|docker exec $label sh -c "rm /opt/dumps/$db->{LABEL}.sql$gen_str"|;
 					`$cmd $hide_all`;
 					next;
 				}
 				my $next = $gen + 1;
-				my $cmd = qq|docker exec $config{DOCKER}->{NAME} sh -c "cd /opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
+				my $cmd = qq|docker exec $label sh -c "cd /opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
 				`$cmd $hide_all`;
 			}
 
