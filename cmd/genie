@@ -883,6 +883,18 @@ sub up {
 			}
 		}
 
+		# -- VOLUMES
+		my $volumes;
+		if(ref $config{DOCKER}->{VOLUMES} && @{$config{DOCKER}->{VOLUMES}}){
+			# $volumes .= join('', map { " -v $_" } @{$config{DOCKER}->{VOLUMES}} );
+			foreach my $volume (@{$config{DOCKER}->{VOLUMES}}) {
+				if($volume !~ /^\//){
+					$volume = $letter . $config{GENERAL}->{home_dir} . '/' . $volume;
+					$volumes .= " -v $volume";
+				}
+			}
+		}
+
 		# -- runコマンドの作成
 		my $cmd =
 			'docker run -d -it'.
@@ -894,6 +906,7 @@ sub up {
 			$apache_option.
 			$nginx_option.
 			$add_host.
+			$volumes.
 			" --name=$config{DOCKER}->{NAME}".
 			" $envs".
 			($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').

@@ -12,6 +12,10 @@ return {
 			'genie.kazaoki.jp:127.0.0.1',
 		],
 		# HOST_IP_FORCE => '192.168.99.100',
+		VOLUMES => [ # ホスト側(左側)を/以外で始めるとホームパスからの指定になります。
+			# 'app:/app',
+			# 'home-data:/home/xxx/',
+		],
 	},
 
 	# ブラウザ設定
