@@ -61,7 +61,7 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
 fi
 
 # -- Install perl modules from cpanfile
-if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /opt/cpanfile ]]; then
+if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /opt/perl/cpanfile ]]; then
   mkdir -p /opt/perl
   # -- tar restore
   mkdir -p /perl/cpanfile-modules
@@ -70,7 +70,7 @@ if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /opt/cpanfile ]]; then
     tar xf $tarfile -C /perl/cpanfile-modules
   fi
   # -- install
-  cpanm -nq --installdeps -L /perl/cpanfile-modules/ /opt/
+  cpanm -nq --installdeps -L /perl/cpanfile-modules/ /opt/perl/
   cd /perl/cpanfile-modules
   tar cf $tarfile ./
   echo 'cpanfile setup done.' >> /var/log/entry.log
