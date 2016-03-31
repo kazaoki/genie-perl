@@ -27,8 +27,8 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         ImageMagick ImageMagick-perl \
         postfix \
         libffi-devel \
-        mariadb \
-        postgresql \
+        mariadb mariadb-devel \
+        postgresql postgresql-devel \
         httpd httpd-devel mod_php mod_ssl \
         net-tools sudo multitail zip tar bzip2 patch git \
         nginx \
