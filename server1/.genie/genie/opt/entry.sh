@@ -26,6 +26,7 @@ echo 'entry.sh setup start.' >> /var/log/entry.log
 
 # -- perl setup
 if [[ $GENIE_PERL_VERSION != '' ]]; then
+  mkdir -p /opt/perl
   # -- tar restore
   mkdir -p /perl/versions
   tarfile="/opt/perl/versions.tar"
@@ -61,6 +62,7 @@ fi
 
 # -- Install perl modules from cpanfile
 if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /opt/cpanfile ]]; then
+  mkdir -p /opt/perl
   # -- tar restore
   mkdir -p /perl/cpanfile-modules
   tarfile="/opt/perl/cpanfile-modules.tar"
@@ -76,6 +78,7 @@ fi
 
 # -- php setup
 if [[ $GENIE_PHP_VERSION != '' ]]; then
+  mkdir -p /opt/php
   # -- tar restore
   mkdir -p /php/versions
   tarfile="/opt/php/versions.tar"
@@ -107,6 +110,7 @@ fi
 
 # -- ruby setup
 if [[ $GENIE_RUBY_VERSION != '' ]]; then
+  mkdir -p /opt/ruby
   # -- tar restore
   mkdir -p /ruby/versions
   tarfile="/opt/ruby/versions.tar"
