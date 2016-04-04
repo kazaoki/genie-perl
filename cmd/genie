@@ -723,7 +723,7 @@ sub up {
 	my $mysql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{MYSQL}->{ENABLED}) {
 		# -- スクリプトパーミッション設定
-		chmod 0755, "$config{GENERAL}->{config_dir}/mysql/before-entry.sh";
+		chmod 0755, "$config{GENERAL}->{config_dir}/mysql/opt/before-entry.sh";
 		# -- コンテナ起動
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
@@ -772,7 +772,7 @@ sub up {
 	my $postgresql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{POSTGRESQL}->{ENABLED}) {
 		# -- スクリプトパーミッション設定
-		chmod 0755, "$config{GENERAL}->{home_dir}/$config{GENERAL}->{config_dir}/postgresql/before-entry.sh";
+		chmod 0755, "$config{GENERAL}->{config_dir}/postgresql/opt/before-entry.sh";
 		# -- コンテナ起動
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
 			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
@@ -912,6 +912,10 @@ sub up {
 			($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
 			" $config{DOCKER}->{IMAGE}"
 		;
+
+		# -- スクリプトパーミッション設定
+		chmod 0755, "$config{GENERAL}->{config_dir}/genie/opt/entry.sh";
+		chmod 0755, "$config{GENERAL}->{config_dir}/genie/opt/after.sh";
 
 		# -- runコマンドの実行
 		my $cid = `$cmd`;
