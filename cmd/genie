@@ -1492,7 +1492,7 @@ sub mysql {
 			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd $hide_all`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/mysql/dumps/$db->{LABEL}.sql",1);
+				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql",1);
 			} else {
 				throw('データベースのダンプに失敗しました。', $!);
 			}
@@ -1507,7 +1507,7 @@ sub mysql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker restart $config{DOCKER}->{NAME}-mysql-$db->{LABEL}`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$config{GENERAL}->{config_dir}/mysql/dumps/$db->{LABEL}.sql",1);
+				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql",1);
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
@@ -1578,7 +1578,7 @@ sub psql {
 			my $cmd = qq|docker exec $label sh -c "pg_dump $db->{NAME} -U $db->{USER} -p $db->{PORT} > /opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd`;
 			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/postgresql/dumps/$db->{LABEL}.sql",1);
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/postgresql/opt/dumps/$db->{LABEL}.sql",1);
 			} else {
 				throw('データベースのダンプに失敗しました。', $!);
 			}
@@ -1593,7 +1593,7 @@ sub psql {
 			if($db_number && $db_number!=$count++) { next; }
 			`docker restart $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}`;
 			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n$config{GENERAL}->{config_dir}/postgresql/dbdata_$db->{LABEL}.tar.gz",1)
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n$config{GENERAL}->{config_dir}/postgresql/opt/dumps/$db->{LABEL}.sql",1);
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
