@@ -196,7 +196,9 @@ if($config{ADD_COMMAND} && keys %{$config{ADD_COMMAND}}){
 		exit 1 unless require_up(); # 起動必須
 		my @args = @ARGV;
 		shift @args;
-		my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' ' . $config{ADD_COMMAND}->{$ARGV[0]} . ' ' . join(' ', @args);
+		my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' sh -c "' . $config{ADD_COMMAND}->{$ARGV[0]} . ' ' . join(' ', @args) . '"';
+
+message(info=>$cmd);
 		system($cmd);
 		exit 0;
 	}
