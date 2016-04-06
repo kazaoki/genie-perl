@@ -19,7 +19,6 @@ my $ok_args = join('|', qw/
 	init
 	up
 	down
-	cmd
 	cli
 	config
 	ls
@@ -235,47 +234,115 @@ exit 0;
 
 sub help {
 
+	my $helps = [
+		{
+			label  => "GENERAL\nCOMMANDS",
+			list   => [
+				'init'          => '初期化 - .genieディレクトリを作成',
+				'up'            => '起動 - コンテナを作成、起動済みなら再起動',
+				'down'          => '終了 - コンテナ削除',
+				'config'        => '設定内容の確認',
+				'config open'   => '設定ファイル(config.pl)を標準エディタで開く',
+				'cli'           => 'genieコンテナのCLIにログイン',
+				'cli <command>' => 'genieコンテナ上で指定コマンド<command>実行',
+				'ls'            => 'docker情報を一挙に表示',
+				'reject'        => 'genie管理外のdockerコンテナも全て強制削除',
+				'clean'         => '終了済みコンテナ、<none>イメージ、未参照のDataVolumeの削除',
+				'clean locked'  => '`locked-`から始まるDataVolumeも削除',
+				'php'           => 'PHPの指定可能なバージョンリストと現在のphpenv選択バージョンの表示',
+				'perl'          => 'Perlの指定可能なバージョンリストと現在のperlenv選択バージョンの表示',
+				'ruby'          => 'Rubyの指定可能なバージョンリストと現在のrubyenv選択バージョンの表示',
+				'build'         => '.genie/genie/opt/Dockerfileをconfig.pl指定のIMAGE名でビルド実行',
+				'build nocache' => '↑これをキャッシュを使用せずにビルド実行',
+				'demo'          => 'デモモード',
+			],
+		},
+		{
+			label => "DATABASE\nCOMMANDS",
+			list  => [
+				'mysql <num>'         => 'MySQLコンテナのmysqlに入る（<num>で設定番号指定可）',
+				'mysql ls <num>'      => 'MySQLの設定番号を確認する',
+				'mysql cli <num>'     => 'MySQLコンテナのbashに入る（<num>で設定番号指定可）',
+				'mysql dump <num>'    => 'MySQLのダンプを取る（<num>で設定番号指定可）',
+				'mysql restore <num>' => 'MySQLのリストアを行う（<num>で設定番号指定可）',
+				'psql <num>'          => 'PostgreSQLコンテナのpsqlに入る（<num>で設定番号指定可）',
+				'psql ls <num>'       => 'PostgreSQLの設定番号を確認する',
+				'psql cli <num>'      => 'PostgreSQLコンテナのbashに入る（<num>で設定番号指定可）',
+				'psql dump <num>'     => 'PostgreSQLのダンプを取る（<num>で設定番号指定可）',
+				'psql restore <num>'  => 'PostgreSQLのリストアを行う（<num>で設定番号指定可）',
+			],
+		},
+		{
+			label => "DEVELOP\nCOMMANDS",
+			list  => [
+				'open'    => 'ブラウザを開く',
+				'ngrok'   => 'ngrok起動',
+				'logs'    => 'ログファイルをtailする',
+				'ftpsync' => 'FTPサーバからファイルを同期',
+				'httpd'   => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
+			],
+		},
+	];
+
+	my $label_width   = 10;
+	my $command_width = 25;
+
 	echo "\n";
 	echo "Usage: genie COMMAND [arg...] [OPTIONS]\n";
+	foreach my $help (@{$helps}) {
+		echo "\n";
+		my @label_line = split("\n", $help->{label});
+		my @list = @{$help->{list}};
+		my $count = 0;
+		while(@list){
+			echo sprintf("\x1b[36m%-".$label_width."s\x1b[0m | ", $label_line[$count++]);
+			my($command, $desc) = splice(@list, 0, 2);
+			my $before_command = $command;
+			$command =~ s/(\<.+\>)/\x1b[90m$1\x1b[0m/g;
+			echo sprintf("%-".($command_width+(length($command)-length($before_command)))."s%s\n", $command, $desc);
+		}
+	}
 	echo "\n";
-	echo <<HELP;
-\x1b[36mGENERAL\x1b[0m  | up                    起動（コンテナ作成）＆再起動
-\x1b[36mCOMMANDS\x1b[0m | down                  終了（コンテナ削除）
-         | version               kazaoki/genieのバージョンを表示
-         | info                  詳細を表示
-         | upgrade               kazaoki/genieのアップグレード
-         | config                設定値を表示する
-         | ip                    ホストIPを表示する
-         | cli                   コマンドラインに入る
-         | logs                  主要ログを表示する
-         | htop                  htop実行
-         | ngrok                 ngrokを使って外部に公開
-         | cmd                   コンテナ内でコマンドを実行
-         | build                 独自Dockerfileをビルドする
-         | clean                 不要なコンテナ、<none>イメージ、未参照のデータボリュームを削除
-         | -m [RUNMODE]          実行モード：product|develop
-         | -c [CONFIG TYPE]      設定タイプ：標準は general
 
-\x1b[36mDATABASE\x1b[0m | mysql                 mysql実行
-\x1b[36mCOMMANDS\x1b[0m | psql                  psql実行
-         | dump                  ダンプ
-         | restore               リストア
-         | -d [DB CONNECT ID]    DB接続ID
-         | -f [DB DUMP FILE]     対象のDBダンプファイル
 
-\x1b[36mBROWSER\x1b[0m  | open                  ブラウザ起動
-\x1b[36mCOMMANDS\x1b[0m | -s [URI SCHEMA]       httpかhttpsかを指定（未指定ならhttp）
-         | -p [WEB PORT]         ポートを指定
-         | -u [URL PATH]         パスを指定
+# 	echo <<HELP;
+# \x1b[36mGENERAL\x1b[0m  | up                    起動（コンテナ作成）＆再起動
+# \x1b[36mCOMMANDS\x1b[0m | down                  終了（コンテナ削除）
+#          | version               kazaoki/genieのバージョンを表示
+#          | info                  詳細を表示
+#          | upgrade               kazaoki/genieのアップグレード
+#          | config                設定値を表示する
+#          | ip                    ホストIPを表示する
+#          | cli                   コマンドラインに入る
+#          | logs                  主要ログを表示する
+#          | htop                  htop実行
+#          | ngrok                 ngrokを使って外部に公開
+#          | cmd                   コンテナ内でコマンドを実行
+#          | build                 独自Dockerfileをビルドする
+#          | clean                 不要なコンテナ、<none>イメージ、未参照のデータボリュームを削除
+#          | -m [RUNMODE]          実行モード：product|develop
+#          | -c [CONFIG TYPE]      設定タイプ：標準は general
 
-\x1b[36mTEST\x1b[0m     | test [FEATURES]       テストを実行
-\x1b[36mCOMMANDS\x1b[0m | -r [REPORT MAIL TO]   実行後のレポートHTMLの送り先
+# \x1b[36mDATABASE\x1b[0m | mysql                 mysql実行
+# \x1b[36mCOMMANDS\x1b[0m | psql                  psql実行
+#          | dump                  ダンプ
+#          | restore               リストア
+#          | -d [DB CONNECT ID]    DB接続ID
+#          | -f [DB DUMP FILE]     対象のDBダンプファイル
 
-\x1b[36mOTHER\x1b[0m    | ftpsync               指定のFTPからDL同期
-\x1b[36mCOMMANDS\x1b[0m | deploy                指定のGitリポジトリからpull同期
-         | rmi-none              <none>状態のdockerイメージを全て削除
+# \x1b[36mBROWSER\x1b[0m  | open                  ブラウザ起動
+# \x1b[36mCOMMANDS\x1b[0m | -s [URI SCHEMA]       httpかhttpsかを指定（未指定ならhttp）
+#          | -p [WEB PORT]         ポートを指定
+#          | -u [URL PATH]         パスを指定
 
-HELP
+# \x1b[36mTEST\x1b[0m     | test [FEATURES]       テストを実行
+# \x1b[36mCOMMANDS\x1b[0m | -r [REPORT MAIL TO]   実行後のレポートHTMLの送り先
+
+# \x1b[36mOTHER\x1b[0m    | ftpsync               指定のFTPからDL同期
+# \x1b[36mCOMMANDS\x1b[0m | deploy                指定のGitリポジトリからpull同期
+#          | rmi-none              <none>状態のdockerイメージを全て削除
+
+# HELP
 
 	}
 
@@ -703,7 +770,7 @@ sub demo {
 	message(default=>"1箇所なら\nライン入れも\n可能であります。",2);
 
 	# -- 入力BOX
-	my $input = input('入力BOX：');
+	my $input = input('入力BOX（入力文字を発音しますのでご注意）：');
 	print "\n";
 	message(default=>"入力された文字：$input");
 
