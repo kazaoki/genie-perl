@@ -217,4 +217,11 @@ return {
 		LFTP_NEWER_THAN_LAST_COMMIT => 1, # この値が1ならば、現在のgitコミットの最終日から変更されたファイルのみをダウンロード対象にします。（--newer-than=now-XXdays の日付を自動算出します）
 	},
 
+	# 追加コマンド設定
+	# ----------------
+	ADD_COMMAND => {
+		htop => 'htop',
+		ll => 'ls -la',
+	}
+
 };

@@ -85,12 +85,6 @@ elsif($is_linux) {
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 
-# -- 正しい第一引数かチェック
-if($ARGV[0] !~ /^$ok_args$/) {
-	help();
-	exit 0;
-}
-
 # -- 設定値変数
 my %config;
 
@@ -150,7 +144,6 @@ foreach my $db_type (qw|MYSQL POSTGRESQL|) {
 	throw("${db_type}の設定で、重複するラベルがあります。", join("\n", @err)) if @err;
 }
 
-
 # --------------------------------------------------------------------
 # Dockerマシーン環境用意
 # ※設定がされていたら。
@@ -197,8 +190,26 @@ if($is_docker_machine && $config{DOCKER}->{MACHINE} ne '') {
 # 処理分け
 # --------------------------------------------------------------------
 
+# -- 追加コマンドの指定があればそっちを実行
+if($config{ADD_COMMAND} && keys %{$config{ADD_COMMAND}}){
+	if($config{ADD_COMMAND}->{$ARGV[0]} ne '') {
+		exit 1 unless require_up(); # 起動必須
+		my @args = @ARGV;
+		shift @args;
+		my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' ' . $config{ADD_COMMAND}->{$ARGV[0]} . ' ' . join(' ', @args);
+		system($cmd);
+		exit 0;
+	}
+}
+
+# -- 正しい第一引数かチェック
+if($ARGV[0] !~ /^(?:$ok_args)$/) {
+	help();
+	exit 0;
+}
+
 # -- 第一引数により関数にジャンプ
-if( $ARGV[0] =~ /^$ok_args$/ ){
+if( $ARGV[0] =~ /^(?:$ok_args)$/ ){
 	no strict;
 	$ARGV[0]->();
 
