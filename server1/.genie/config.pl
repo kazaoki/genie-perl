@@ -196,8 +196,10 @@ return {
 	# ngrok設定
 	# ---------
 	NGROK => {
-		AUTHTOKEN => '',
-		SUBDOMAIN => '',
+		AUTHTOKEN  => '',
+		SUBDOMAIN  => '',
+		BASIC_USER => '',
+		BASIC_PASS => '',
 	},
 
 	# ftpsync設定

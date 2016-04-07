@@ -1519,7 +1519,8 @@ sub ruby {
 sub ngrok {
 	my $token = $config{NGROK}->{AUTHTOKEN} ? "--authtoken=$config{NGROK}->{AUTHTOKEN}" : '';
 	my $subdomain = $config{NGROK}->{SUBDOMAIN} ? "--subdomain=$config{NGROK}->{SUBDOMAIN}" : '';
-	system "docker exec -it $config{DOCKER}->{NAME} ngrok http 80 $token $subdomain";
+	my $basicauth = ($config{NGROK}->{BASIC_USER} ne '' && $config{NGROK}->{BASIC_PASS} ne '') ? '-auth "' . $config{NGROK}->{BASIC_USER} . ':' . $config{NGROK}->{BASIC_PASS} . '"' : '';
+	system "docker exec -it $config{DOCKER}->{NAME} ngrok http 80 $token $subdomain $basicauth";
 }
 
 # --------------------------------------------------------------------
