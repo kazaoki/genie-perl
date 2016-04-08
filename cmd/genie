@@ -251,8 +251,8 @@ sub help {
 				'php'           => 'PHPの指定可能なバージョンリストと現在のphpenv選択バージョンの表示',
 				'perl'          => 'Perlの指定可能なバージョンリストと現在のperlenv選択バージョンの表示',
 				'ruby'          => 'Rubyの指定可能なバージョンリストと現在のrubyenv選択バージョンの表示',
-				'build'         => '.genie/genie/opt/Dockerfileをconfig.pl指定のIMAGE名でビルド実行',
-				'build nocache' => '↑これをキャッシュを使用せずにビルド実行',
+				'build'         => 'config.pl指定のIMAGE名でビルド実行',
+				'build nocache' => 'config.pl指定のIMAGE名でキャッシュを使用せずにビルド実行',
 				'demo'          => 'デモモード',
 			],
 		},
@@ -279,7 +279,8 @@ sub help {
 				'logs'                     => 'ログファイルをtailする',
 				'ftpsync'                  => 'FTPサーバからファイルを同期',
 				'httpd'                    => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
-				'spec <feature dir/files>' => 'PhantomJSを使ったSPECテストを実行（`spec all`で全て実行）'
+				'spec <feature dir/files>' => 'PhantomJSを使ったSPECテストを実行'
+				'spec all'                 => 'PhantomJSを使ったSPECテストを全て実行'
 			],
 		},
 	];
