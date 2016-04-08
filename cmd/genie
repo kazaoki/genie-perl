@@ -35,6 +35,7 @@ my $ok_args = join('|', qw/
 	open
 	logs
 	ftpsync
+	spec
 /);
 # -- 設定ファイルが無くても実行可能な第一引数の正規表現
 my $noconf_args = join('|', qw/
@@ -275,11 +276,12 @@ sub help {
 		{
 			label => "DEVELOP\nCOMMANDS",
 			list  => [
-				'open'    => 'ブラウザを開く',
-				'ngrok'   => 'ngrok起動',
-				'logs'    => 'ログファイルをtailする',
-				'ftpsync' => 'FTPサーバからファイルを同期',
-				'httpd'   => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
+				'open'                     => 'ブラウザを開く',
+				'ngrok'                    => 'ngrok起動',
+				'logs'                     => 'ログファイルをtailする',
+				'ftpsync'                  => 'FTPサーバからファイルを同期',
+				'httpd'                    => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
+				'spec <feature dir/files>' => 'PhantomJSを使ったSPECテストを実行（`spec all`で全て実行）'
 			],
 		},
 	];
@@ -303,48 +305,7 @@ sub help {
 		}
 	}
 	echo "\n";
-
-
-# 	echo <<HELP;
-# \x1b[36mGENERAL\x1b[0m  | up                    起動（コンテナ作成）＆再起動
-# \x1b[36mCOMMANDS\x1b[0m | down                  終了（コンテナ削除）
-#          | version               kazaoki/genieのバージョンを表示
-#          | info                  詳細を表示
-#          | upgrade               kazaoki/genieのアップグレード
-#          | config                設定値を表示する
-#          | ip                    ホストIPを表示する
-#          | cli                   コマンドラインに入る
-#          | logs                  主要ログを表示する
-#          | htop                  htop実行
-#          | ngrok                 ngrokを使って外部に公開
-#          | cmd                   コンテナ内でコマンドを実行
-#          | build                 独自Dockerfileをビルドする
-#          | clean                 不要なコンテナ、<none>イメージ、未参照のデータボリュームを削除
-#          | -m [RUNMODE]          実行モード：product|develop
-#          | -c [CONFIG TYPE]      設定タイプ：標準は general
-
-# \x1b[36mDATABASE\x1b[0m | mysql                 mysql実行
-# \x1b[36mCOMMANDS\x1b[0m | psql                  psql実行
-#          | dump                  ダンプ
-#          | restore               リストア
-#          | -d [DB CONNECT ID]    DB接続ID
-#          | -f [DB DUMP FILE]     対象のDBダンプファイル
-
-# \x1b[36mBROWSER\x1b[0m  | open                  ブラウザ起動
-# \x1b[36mCOMMANDS\x1b[0m | -s [URI SCHEMA]       httpかhttpsかを指定（未指定ならhttp）
-#          | -p [WEB PORT]         ポートを指定
-#          | -u [URL PATH]         パスを指定
-
-# \x1b[36mTEST\x1b[0m     | test [FEATURES]       テストを実行
-# \x1b[36mCOMMANDS\x1b[0m | -r [REPORT MAIL TO]   実行後のレポートHTMLの送り先
-
-# \x1b[36mOTHER\x1b[0m    | ftpsync               指定のFTPからDL同期
-# \x1b[36mCOMMANDS\x1b[0m | deploy                指定のGitリポジトリからpull同期
-#          | rmi-none              <none>状態のdockerイメージを全て削除
-
-# HELP
-
-	}
+}
 
 # --------------------------------------------------------------------
 # ヘルパー関数
@@ -1768,4 +1729,51 @@ sub ftpsync {
 		system $cmd;
 	}
 	return;
+}
+
+# --------------------------------------------------------------------
+# genie spec                                            SPECを実行する
+# --------------------------------------------------------------------
+sub spec {
+
+	# -- featureファイルの一覧表示のみ
+	if($ARGV[1] eq '') {
+		my @list = &_spec_files($config{GENERAL}->{config_dir} . '/spec/features');
+		my $list = "Please specify the feature files or 'all' words.\n";
+		foreach my $feature_file (@list) {
+			$feature_file =~ s/^$config{GENERAL}->{config_dir}\/spec\/features\///;
+			$list .= "$feature_file\n";
+		}
+		message(info=>$list, 1);
+	}
+
+	# -- 全てのテストを実行
+	elsif($ARGV[1] eq 'all') {
+message(warning=>'still: all');
+	}
+
+	# -- 指定のfeatureのテストを実行
+	else {
+message(warning=>'still: '.$ARGV[1]);
+	}
+}
+# spec用featureファイルの検出（再帰的）
+# -------------------------------------
+sub _spec_files {
+	my ($path, $filter) = @_;
+	my @list;
+	opendir my $dh, $path;
+	while(my $file = readdir $dh){
+		next if $file =~ /^\.+$/;
+		my $dirfile = "$path/$file";
+		if(-d $dirfile) {
+			push @list, &_spec_files($dirfile, $filter);
+		} else {
+			next if $dirfile !~ /\.feature$/;
+			next if $filter ne '' && index($dirfile, $config{GENERAL}->{config_dir}.'/spec/features/'.$filter)!=0; # 前方一致検索
+			push @list, $dirfile;
+		}
+	}
+	closedir $dh;
+	return @list;
 }

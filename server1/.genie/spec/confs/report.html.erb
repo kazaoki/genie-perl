@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <title><%= title %></title>
+    <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <style type="text/css">
+      body { background-color: #ececec; }
+      ul.nav.nav-list.affix {
+        width: 280px;
+        height: 100%;
+        overflow-y: auto;
+      }
+      @media (min-width: 500px) and (max-width: 1200px) {
+        ul.nav.nav-list.affix {
+          width: 230px;
+      }
+      @media (min-width: 500px) and (max-width: 992px) {
+        ul.nav.nav-list.affix {
+          width: auto;
+          position: initial;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+        <a class="navbar-brand" href="#" title="<%= title %>">
+          <span class="navbar-brand-left-color"><%= title %></span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <ul class="nav nav-list affix">
+            <% features.each do |feature| %>
+              <li>
+              <a href="#<%= feature.description %>">
+                <%= feature.description %>
+                <% if feature.all_passed %>
+                  <span class="label label-success">all passed</span>
+                <% end %>
+                <% if feature.num_failed > 0 %>
+                  <span class="badge alert-danger"><%= feature.num_failed %></span>
+                <% end %>
+                <% if feature.num_pending > 0 %>
+                  <span class="badge alert-warning"><%= feature.num_pending %></span>
+                <% end %>
+              </a>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+        <div class="col-md-9">
+          <!-- Test Report -->
+          <div class="page-header">
+            <h1><%= title %> <small>test report</small></h1>
+          </div>
+          <% features.each do |feature| %>
+            <section id="<%= feature.description %>">
+              <h2><%= feature.description %></h2>
+              <ol>
+                <% feature.scenarios.each do |scenario| %>
+                  <li>
+                  <a href="#<%= scenario.hash %>">
+                    <%= scenario.description %>
+                    <% if scenario.status == :passed %>
+                      <span class="label label-success">passed</span>
+                    <% elsif scenario.status == :pending %>
+                      <span class="label label-warning">pending</span>
+                    <% else %>
+                      <span class="label label-danger">failed</span>
+                    <% end %>
+                  </a>
+                  </li>
+                <% end %>
+              </ol>
+              <% feature.scenarios.each do |scenario| %>
+                <section id="<%= scenario.hash %>">
+                  <h3><%= scenario.description %></h3>
+                  <% scenario.steps.each_with_index do |step, index| %>
+                    <div class="row <%= (scenario.step_count - 1 == index)? background_by_status(scenario.status) : "" %>">
+                      <div class="col-md-6">
+                        <a href="./<%= scenario.hash %>-<%= index + 1 %>.png">
+                          <img class="img-thumbnail" height="256" wedth="320" src="./<%= scenario.hash %>-<%= index + 1 %>.png">
+                        </a>
+                      </div>
+                      <div class="col-md-6">
+                        <p><%= step.description %><p>
+                        <% if ((scenario.step_count - 1) == index) && scenario.status == :failed && !scenario.exception.nil? %>
+                            <p><%= scenario.exception.to_s %></p>
+                        <% end %>
+                      </div>
+                    </div><!-- row -->
+                    <hr />
+                  <% end %>
+                </section>
+              <% end %>
+            </section>
+          <% end %>
+          <!-- Test Report -->
+        </div>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  </body>
+</html>
