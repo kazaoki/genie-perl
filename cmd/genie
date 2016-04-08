@@ -197,8 +197,6 @@ if($config{ADD_COMMAND} && keys %{$config{ADD_COMMAND}}){
 		my @args = @ARGV;
 		shift @args;
 		my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' sh -c "' . $config{ADD_COMMAND}->{$ARGV[0]} . ' ' . join(' ', @args) . '"';
-
-message(info=>$cmd);
 		system($cmd);
 		exit 0;
 	}
@@ -747,8 +745,12 @@ sub demo {
 # --------------------------------------------------------------------
 sub up {
 
+	# -- 引数に 'spec' が指定されていればSPECモードでコンテナを起動する
+	my $is_spec = shift eq 'spec' ? 'spec' : undef;
+	my $container_name_base = ($is_spec ? 'SPEC-' : '') . $config{DOCKER}->{NAME};
+
 	# -- 既存のシステムを終了させる
-	down();
+	down($is_spec);
 
 	# -- 起動
 	if(!-s "$config{GENERAL}->{config_dir}/genie/opt/entry.sh"){
@@ -756,7 +758,7 @@ sub up {
 	}
 	echo "  Starting containers\n";
 
-	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必用なので）
+	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必要なので）
 	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
 
 	# -- MySQL起動
@@ -767,7 +769,7 @@ sub up {
 		chmod 0755, "$config{GENERAL}->{config_dir}/mysql/opt/before-entry.sh";
 		# -- コンテナ起動
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
-			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $db->{LABEL};
+			my $label = $container_name_base . "-mysql-" . $db->{LABEL};
 			$mysql_last_label = $label;
 			my $cmd =
 				"docker run -d -it --name $label".
@@ -788,6 +790,12 @@ sub up {
 				" mysqld"
 			;
 			`$cmd`;
+
+			# -- SPEC用の引数調整
+			if($is_spec) {
+				# -- ポートバインドを消す
+				$cmd =~ s/ \-p [^ ]+//g;
+			}
 
 			# -- 起動開始のプログレス
 			wait_container ({
@@ -816,7 +824,7 @@ sub up {
 		chmod 0755, "$config{GENERAL}->{config_dir}/postgresql/opt/before-entry.sh";
 		# -- コンテナ起動
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
-			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $db->{LABEL};
+			my $label = $container_name_base . "-postgresql-" . $db->{LABEL};
 			$postgresql_last_label = $label;
 			my $cmd =
 				"docker run -d -it --name $label".
@@ -838,6 +846,12 @@ sub up {
 				" postgres"
 			;
 			`$cmd`;
+
+			# -- SPEC用の引数調整
+			if($is_spec) {
+				# -- ポートバインドを消す
+				$cmd =~ s/ \-p [^ ]+//g;
+			}
 
 			# -- 起動開始のプログレス
 			wait_container ({
@@ -948,11 +962,25 @@ sub up {
 			$nginx_option.
 			$add_host.
 			$volumes.
-			" --name=$config{DOCKER}->{NAME}".
+			" --name=$container_name_base".
 			" $envs".
 			($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
 			" $config{DOCKER}->{IMAGE}"
 		;
+
+		# -- SPEC用の引数調整
+		if($is_spec) {
+			# -- ポートバインドを消す
+			$cmd =~ s/ \-p [^ ]+//g;
+			# -- 環境変数設定
+			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -e GENIE_RUNMODE="spec" $config{DOCKER}->{IMAGE}/;
+			# -- マウントを「/_/*」に変える（entry.sh時に正式なディレクトリにコピーする）
+			$cmd =~ s/( \-v [^ ]+\:)([^ ]+)/$1\/_$2/g;
+			# -- /spec/をマウントする
+			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec:\/spec -v $letter$config{GENERAL}->{config_dir}\/spec\/confs:\/turnip\/spec $config{DOCKER}->{IMAGE}/;
+			# -- エントリポイントの場所修正
+			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ \-\-entrypoint\=\"\/_\/opt\/entry\.sh\" $config{DOCKER}->{IMAGE}/;
+		}
 
 		# -- スクリプトパーミッション設定
 		chmod 0755, "$config{GENERAL}->{config_dir}/genie/opt/entry.sh";
@@ -969,18 +997,18 @@ sub up {
 		# -- 起動プログレスまとめ（各コンテナは並行処理なのでウェイト処理はここでまとめる）
 		{
 
-			# -- kazaoki/genie本体
+			# -- kazaoki/genie本体：起動開始
 			wait_container ({
-				container_name => $config{DOCKER}->{NAME},
+				container_name => $container_name_base,
 				log_file       => '/var/log/entry.log',
 				stop_word      => 'entry.sh setup start.',
-				label          => "Genie container start ($config{DOCKER}->{NAME})",
+				label          => "Genie container start ($container_name_base)",
 			});
 
 			# -- entry.sh：Perl
 			if($config{PERL}->{VERSION}){
 				wait_container ({
-					container_name => $config{DOCKER}->{NAME},
+					container_name => $container_name_base,
 					log_file       => '/var/log/entry.log',
 					stop_word      => 'Perl setup done.',
 					label          => "Perl setup (version $config{PERL}->{VERSION})",
@@ -990,7 +1018,7 @@ sub up {
 			# -- entry.sh：cpanfile
 			if($config{PERL}->{CPANFILE_ENABLED}){
 				wait_container ({
-					container_name => $config{DOCKER}->{NAME},
+					container_name => $container_name_base,
 					log_file       => '/var/log/entry.log',
 					stop_word      => 'cpanfile setup done.',
 					label          => "cpanfile setup",
@@ -1000,7 +1028,7 @@ sub up {
 			# -- entry.sh：PHP
 			if($config{PHP}->{VERSION}){
 				wait_container ({
-					container_name => $config{DOCKER}->{NAME},
+					container_name => $container_name_base,
 					log_file       => '/var/log/entry.log',
 					stop_word      => 'PHP setup done.',
 					label          => "PHP setup (version $config{PHP}->{VERSION})",
@@ -1010,7 +1038,7 @@ sub up {
 			# -- entry.sh：Ruby
 			if($config{RUBY}->{VERSION}){
 				wait_container ({
-					container_name => $config{DOCKER}->{NAME},
+					container_name => $container_name_base,
 					log_file       => '/var/log/entry.log',
 					stop_word      => 'Ruby setup done.',
 					label          => "Ruby setup (version $config{RUBY}->{VERSION})",
@@ -1020,7 +1048,7 @@ sub up {
 			# -- entry.sh：Apache
 			if($config{APACHE}->{ENABLED}) {
 				wait_container ({
-					container_name => $config{DOCKER}->{NAME},
+					container_name => $container_name_base,
 					log_file       => '/var/log/entry.log',
 					stop_word      => 'Apache setup done.',
 					label          => "Apache setup",
@@ -1030,7 +1058,7 @@ sub up {
 			# -- entry.sh：Nginx
 			if($config{NGINX}->{ENABLED}) {
 				wait_container ({
-					container_name => $config{DOCKER}->{NAME},
+					container_name => $container_name_base,
 					log_file       => '/var/log/entry.log',
 					stop_word      => 'Nginx setup done.',
 					label          => "Nginx setup",
@@ -1040,7 +1068,7 @@ sub up {
 			# -- entry.sh：Postfix
 			if($config{POSTFIX}->{ENABLED}){
 				wait_container ({
-					container_name => $config{DOCKER}->{NAME},
+					container_name => $container_name_base,
 					log_file       => '/var/log/entry.log',
 					stop_word      => 'Postfix setup done.',
 					label          => "Postfix setup",
@@ -1049,7 +1077,7 @@ sub up {
 
 			# -- after.sh
 			wait_container ({
-				container_name => $config{DOCKER}->{NAME},
+				container_name => $container_name_base,
 				log_file       => '/var/log/entry.log',
 				stop_word      => 'after.sh setup done.',
 				label          => "after.sh setup",
@@ -1073,11 +1101,19 @@ sub up {
 				});
 			}
 
+			# -- kazaoki/genie本体：起動完了
+			wait_container ({
+				container_name => $container_name_base,
+				log_file       => '/var/log/entry.log',
+				stop_word      => 'daemon loop start.',
+				label          => "Genie container ready",
+			});
+
 			print "\n";
 		}
 
 		# -- コンテナの情報からブラウザを起動
-		if($config{BROWSER}->{OPEN_AT_UPPED}){
+		if($config{BROWSER}->{OPEN_AT_UPPED} && !$is_spec){
 			&open();
 		}
 
@@ -1089,14 +1125,18 @@ sub up {
 # --------------------------------------------------------------------
 sub down {
 
+	# -- 引数に 'spec' が指定されていればSPECモードでコンテナを終了する
+	my $is_spec = shift eq 'spec';
+
 	# -- 対象コンテナピックアップ
 	my @exist_containers;
 	my @rm_volumes;
+	my $container_name_base = ($is_spec ? 'SPEC-' : '') . $config{DOCKER}->{NAME};
 
 	# -- MySQL
 	if(ref $config{MYSQL}->{DATABASES}) {
 		foreach(@{$config{MYSQL}->{DATABASES}}){
-			my $label = $config{DOCKER}->{NAME} . "-mysql-" . $_->{LABEL};
+			my $label = $container_name_base . "-mysql-" . $_->{LABEL};
 			if(is_exist($label)){
 				push @exist_containers, $label;
 				push @rm_volumes, get_data_volume_name($label);
@@ -1107,7 +1147,7 @@ sub down {
 	# -- PostgreSQL
 	if(ref $config{POSTGRESQL}->{DATABASES}) {
 		foreach(@{$config{POSTGRESQL}->{DATABASES}}){
-			my $label = $config{DOCKER}->{NAME} . "-postgresql-" . $_->{LABEL};
+			my $label = $container_name_base . "-postgresql-" . $_->{LABEL};
 			if(is_exist($label)){
 				push @exist_containers, $label;
 				push @rm_volumes, get_data_volume_name($label);
@@ -1116,9 +1156,9 @@ sub down {
 	}
 
 	# -- genie本体
-	if(is_exist($config{DOCKER}->{NAME})){
-		push @exist_containers, $config{DOCKER}->{NAME};
-		push @rm_volumes, get_data_volume_name($config{DOCKER}->{NAME});
+	if(is_exist($container_name_base)){
+		push @exist_containers, $container_name_base;
+		push @rm_volumes, get_data_volume_name($container_name_base);
 	}
 
 	# -- 削除開始
@@ -1145,6 +1185,7 @@ sub down {
 			`$cmd`;
 		}
 	}
+
 }
 
 # --------------------------------------------------------------------
@@ -1749,7 +1790,14 @@ sub spec {
 
 	# -- 全てのテストを実行
 	elsif($ARGV[1] eq 'all') {
-message(warning=>'still: all');
+		# -- 別コンテナとしてspec用環境を構築する
+		&up('spec');
+
+		# -- ここで実行？コンテナ内で実行？
+		# 
+
+		# -- コンテナを終了
+		&down('spec');
 	}
 
 	# -- 指定のfeatureのテストを実行

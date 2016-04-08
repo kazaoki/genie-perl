@@ -3,6 +3,11 @@
 # -- general
 echo ". /etc/bashrc" >> /root/.bashrc
 
+# -- SPEC mode (dir copy)
+if [[ $GENIE_RUNMODE == 'spec' ]]; then
+  rsync -rltD /_/* /
+fi
+
 # -- ftpsync mode
 if [[ $GENIE_RUNMODE == 'ftpsync' ]]; then
   rm -f /tmp/mirror.cmd
@@ -226,6 +231,7 @@ echo 'entry.sh setup done.' >> /var/log/entry.log
 /opt/after.sh
 
 # -- daemon loop start
+echo 'daemon loop start.' >> /var/log/entry.log
 while true
 do
     sleep 60

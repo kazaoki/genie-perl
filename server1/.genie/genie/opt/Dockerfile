@@ -33,7 +33,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         httpd httpd-devel mod_php mod_ssl \
         net-tools sudo multitail zip tar bzip2 patch git \
         nginx \
-        ruby \
+        ruby ruby-devel rubygem-bundler \
     && yum clean all
 
 # Install anyenv
@@ -56,6 +56,20 @@ RUN cd /root/ \
     && mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin \
     && rm -fr phantomjs-2.1.1-linux-x86_64* \
     && cd
+
+# Turnip, Capybara, Poltergeist, CapturefulFormatter(for report)
+# -----------------------------
+ADD Gemfile.lock /turnip/Gemfile.lock
+ADD Gemfile /turnip/Gemfile
+RUN . /root/.bashrc && \
+    cd /turnip && \
+    bundle install --path=vendor/bundle && \
+    echo '-r turnip/rspec' > .rspec && \
+    echo '--format Fuubar' >> .rspec && \
+    echo '-r turnip_formatter' >> .rspec && \
+    echo '--format RSpecTurnipFormatter' >> .rspec && \
+    echo '--out /spec/report.html' >> .rspec && \
+    mkdir spec
 
 # Setup default PHP
 # -----------------

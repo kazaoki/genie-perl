@@ -4,7 +4,8 @@
 機能:トップページ /
 
 	シナリオ:基本URLを設定する
-		* 基本URLを"http://genie-test.com"にする
+		# * 基本URLを"http://genie-test.com"にする
+		* 基本URLを"http://localhost"にする
 
 	# ----------------------------------------------------------------------------------------------
 	シナリオ:コンテンツ検証
@@ -16,7 +17,7 @@
 				| リンク   | PHP info          | ul#links |
 				| リンク   | CGIのテストページ | ul#links |
 				| リンク   | WordPressテスト   | ul#links |
-			* リンク先を検証する
+			* リンクを検証する
 				| PHP info          | info.php | ul#links |
 				| CGIのテストページ | test.cgi | ul#links |
 				| WordPressテスト   | /wp/     | ul#links |

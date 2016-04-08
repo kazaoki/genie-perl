@@ -12,7 +12,7 @@ base_wait_time = 60
 # --------------------------------------------------------------------
 # 基本設定
 # --------------------------------------------------------------------
-Dir.glob('/opt/spec/steps/*steps.rb') { |f| load f, true }
+Dir.glob('/spec/steps/*steps.rb') { |f| load f, true }
 Capybara.default_driver = :poltergeist
 # Capybara.default_driver = :remote_browser
 Capybara.default_max_wait_time = base_wait_time
@@ -30,7 +30,7 @@ Capybara.register_driver :poltergeist do |app|
       js_errors:         ENV['SPEC_JS_ERRORS']=="1",
       window_size:       [ENV['SPEC_CAPTURE_WIDTH'], 1024],
       timeout:           base_wait_time,
-      phantomjs_options: ["--config=/opt/spec/confs/config.json"]
+      phantomjs_options: ["--config=/spec/confs/config.json"]
     })
   if ENV['SPEC_USER_AGENT'] != "" then
     ghost_busters.headers = { 'User-Agent' => ENV['SPEC_USER_AGENT'] }
@@ -61,7 +61,7 @@ end
 if ENV['SPEC_HTML_REPORT'] == "1" then
   TurnipFormatter.configure do |config|
     config.title = ENV['SPEC_CONTAINER'] + ' report'
-    config.add_stylesheet '/opt/spec/confs/report-add.css'
+    config.add_stylesheet '/spec/confs/report-add.css'
   end
   Gnawrnip.configure do |config|
     config.make_animation = true

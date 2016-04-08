@@ -1,0 +1,11 @@
+source "https://rubygems.org"
+gem 'turnip'
+gem 'capybara'
+gem 'capybara-user_agent'
+gem 'poltergeist'
+gem 'fuubar'
+gem 'turnip_formatter'
+gem 'gnawrnip'
+gem 'addressable'
+gem 'selenium-webdriver'
+gem 'json'
