@@ -279,7 +279,7 @@ sub help {
 				'logs'                     => 'ログファイルをtailする',
 				'ftpsync'                  => 'FTPサーバからファイルを同期',
 				'httpd'                    => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
-				'spec <feature dir/files>' => 'PhantomJSを使ったSPECテストを実行'
+				'spec <feature dir/files>' => 'PhantomJSを使ったSPECテストを実行',
 				'spec all'                 => 'PhantomJSを使ったSPECテストを全て実行'
 			],
 		},
