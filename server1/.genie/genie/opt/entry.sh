@@ -231,7 +231,6 @@ echo 'entry.sh setup done.' >> /var/log/entry.log
 /opt/after.sh
 
 # -- daemon loop start
-echo 'daemon loop start.' >> /var/log/entry.log
 while true
 do
     sleep 60

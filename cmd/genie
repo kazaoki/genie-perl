@@ -1105,7 +1105,7 @@ sub up {
 			wait_container ({
 				container_name => $container_name_base,
 				log_file       => '/var/log/entry.log',
-				stop_word      => 'daemon loop start.',
+				stop_word      => 'entry.sh setup done.',
 				label          => "Genie container ready",
 			});
 
@@ -1793,11 +1793,14 @@ sub spec {
 		# -- 別コンテナとしてspec用環境を構築する
 		&up('spec');
 
-		# -- ここで実行？コンテナ内で実行？
-		# 
+		# -- SPECを実行
+		my $container_name = 'SPEC-'.$config{DOCKER}->{NAME};
+		my $cmd = "docker exec -it $container_name sh -c \"cd /turnip/ && bundle exec rspec --color /spec/features/\"";
+		system $cmd;
+		echo "\n";
 
 		# -- コンテナを終了
-		&down('spec');
+		# &down('spec');
 	}
 
 	# -- 指定のfeatureのテストを実行
