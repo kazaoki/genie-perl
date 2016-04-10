@@ -1781,7 +1781,7 @@ sub spec {
 	# -- featureファイルの一覧表示のみ
 	if($ARGV[1] eq '') {
 		my @list = &_spec_files($config{GENERAL}->{config_dir} . '/spec/features');
-		my $list = "Please specify the feature files or 'all' words.\n";
+		my $list = "featureファイル名（前方一致）を指定するか `all` を指定してください。\n";
 		foreach my $feature_file (@list) {
 			$feature_file =~ s/^$config{GENERAL}->{config_dir}\/spec\/features\///;
 			$list .= "$feature_file\n";
@@ -1789,16 +1789,41 @@ sub spec {
 		message(info=>$list, 1);
 	}
 
-	# -- 全てのテストを実行
-	elsif($ARGV[1] eq 'all') {
-		# -- 別コンテナとしてspec用環境を構築する
+	# -- 引数指定
+	else {
+		my $files_args = '/spec/features/';
+		# -- all指定
+		if($ARGV[1] eq 'all') {
+			message(info=>'全てのfeatureファイルをテストします。');
+		}
+		# -- featureファイル指定
+		elsif($ARGV[1] ne 'all') {
+			my @files_show;
+			my @files_args;
+			foreach( &_spec_files($config{GENERAL}->{config_dir} . '/spec/features', $ARGV[1]) ){
+				$_ =~ s/^$config{GENERAL}->{config_dir}\/spec\/features\///;
+				push @files_show, $_;
+				push @files_args, "/spec/features/$_";
+			}
+			if(!scalar(@files_show)){
+				message(danger=>"ご指定のfeatureファイルは見つかりませんでした。\n$ARGV[1]", 1);
+				return;
+			}
+			message(info=>"以下のfeatureファイルをテストします。\n" . join("\n", @files_show), 1);
+			$files_args = join(' ', @files_args);
+		}
+
+		# -- SPEC用コンテナを起動
 		&up('spec');
 
 		# -- SPECを実行
 		my $container_name = 'SPEC-'.$config{DOCKER}->{NAME};
-		my $cmd = "docker exec -it $container_name sh -c \"source /root/.bashrc && cd /turnip/ && bundle exec rspec --color /spec/features/\"";
+		my $cmd = "docker exec -it $container_name sh -c \"source /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
 		system $cmd;
 		echo "\n";
+
+		# -- アナウンス
+		say('スペックテストが完了しましたのでレポートを開きます。');
 
 		# -- ブラウザでレポートを開く
 		my $report = "$config{GENERAL}->{config_dir}/spec/report.html";
@@ -1808,14 +1833,12 @@ sub spec {
 		$cmd = "$open_cmd $report";
 		`$cmd`;
 
-		# -- コンテナを終了
+		# -- SPEC用コンテナを終了
 		&down('spec');
+
 	}
 
-	# -- 指定のfeatureのテストを実行
-	else {
-message(warning=>'still: '.$ARGV[1]);
-	}
+	return 1;
 }
 # spec用featureファイルの検出（再帰的）
 # -------------------------------------
@@ -1830,6 +1853,7 @@ sub _spec_files {
 			push @list, &_spec_files($dirfile, $filter);
 		} else {
 			next if $dirfile !~ /\.feature$/;
+
 			next if $filter ne '' && index($dirfile, $config{GENERAL}->{config_dir}.'/spec/features/'.$filter)!=0; # 前方一致検索
 			push @list, $dirfile;
 		}
