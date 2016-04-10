@@ -1800,6 +1800,14 @@ sub spec {
 		system $cmd;
 		echo "\n";
 
+		# -- ブラウザでレポートを開く
+		my $report = "$config{GENERAL}->{config_dir}/spec/report.html";
+		if($is_win) {
+			$report = "$config{GENERAL}->{drive_letter}\:$report";
+		}
+		$cmd = "$open_cmd $report";
+		`$cmd`;
+
 		# -- コンテナを終了
 		&down('spec');
 	}
