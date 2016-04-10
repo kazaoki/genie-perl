@@ -5,7 +5,7 @@ echo ". /etc/bashrc" >> /root/.bashrc
 
 # -- SPEC mode (dir copy)
 if [[ $GENIE_RUNMODE == 'spec' ]]; then
-  rsync -rltD /_/* /
+  \cp -rpdfa /_/* /
 fi
 
 # -- ftpsync mode
