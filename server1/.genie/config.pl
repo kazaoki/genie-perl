@@ -9,7 +9,7 @@ return {
 		OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
 		OPTIONS_BUILD => '--cpuset-cpus=0-1', # `docker build` 時に渡す追加引数
 		HOSTS         => [
-			'genie.kazaoki.jp:127.0.0.1',
+			'genie-test.com:127.0.0.1',
 		],
 		# HOST_IP_FORCE => '192.168.99.100',
 		VOLUMES => [ # ホスト側(左側)を/以外で始めるとホームパスからの指定になります。
@@ -217,6 +217,14 @@ return {
 		# LFTP_OPTION  => '--verbose --delete --ignore-time', # サイズが違うファイルのみDL（変更有りでも同サイズの場合があるので注意）
 		# LFTP_OPTION  => '--verbose --delete --newer-than=now-10days', # 10日前からのファイルを同期
 		LFTP_NEWER_THAN_LAST_COMMIT => 1, # この値が1ならば、現在のgitコミットの最終日から変更されたファイルのみをダウンロード対象にします。（--newer-than=now-XXdays の日付を自動算出します）
+	},
+
+	# SPEC設定
+	# --------
+	SPEC => {
+		HOSTS         => [
+			'genie-test.com:127.0.0.1',
+		],
 	},
 
 	# 追加コマンド設定

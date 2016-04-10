@@ -979,6 +979,12 @@ sub up {
 			$cmd =~ s/( \-v [^ ]+\:)([^ ]+)/$1\/_$2/g;
 			# -- /spec/をマウントする
 			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec:\/spec -v $letter$config{GENERAL}->{config_dir}\/spec\/confs:\/turnip\/spec $config{DOCKER}->{IMAGE}/;
+			# -- SPEC用のHOSTSを追加
+			if(ref $config{SPEC}->{HOSTS} eq 'ARRAY'){
+				foreach(@{$config{SPEC}->{HOSTS}}){
+					$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ --add-host="$_" $config{DOCKER}->{IMAGE}/;
+				}
+			}
 			# -- エントリポイントの場所修正
 			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ \-\-entrypoint\=\"\/_\/opt\/entry\.sh\" $config{DOCKER}->{IMAGE}/;
 		}
