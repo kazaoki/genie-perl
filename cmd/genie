@@ -1811,14 +1811,16 @@ sub spec {
 		elsif($ARGV[1] ne 'all') {
 			my @files_show;
 			my @files_args;
-			foreach( &_spec_files($config{GENERAL}->{config_dir} . '/spec/features', $ARGV[1]) ){
-				$_ =~ s/^$config{GENERAL}->{config_dir}\/spec\/features\///;
-				push @files_show, $_;
-				push @files_args, "/spec/features/$_";
-			}
-			if(!scalar(@files_show)){
-				message(danger=>"ご指定のfeatureファイルは見つかりませんでした。\n$ARGV[1]", 1);
-				return;
+			foreach my $num (1..$#ARGV){
+				foreach( &_spec_files($config{GENERAL}->{config_dir} . '/spec/features', $ARGV[$num]) ){
+					$_ =~ s/^$config{GENERAL}->{config_dir}\/spec\/features\///;
+					push @files_show, $_;
+					push @files_args, "/spec/features/$_";
+				}
+				if(!scalar(@files_show)){
+					message(danger=>"ご指定のfeatureファイルは見つかりませんでした。\n$ARGV[$num]", 1);
+					return;
+				}
 			}
 			message(info=>"以下のfeatureファイルをテストします。\n" . join("\n", @files_show), 1);
 			$files_args = join(' ', @files_args);
@@ -1845,7 +1847,7 @@ sub spec {
 		`$cmd`;
 
 		# -- SPEC用コンテナを終了
-		# &down('spec');
+		&down('spec');
 
 	}
 
