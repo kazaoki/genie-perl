@@ -14,7 +14,7 @@ step 'ページ:pathを表示する' do |path|
 end
 
 step ':filenameにキャプチャする' do |filename|
-  page.save_screenshot('/opt/spec/captures/'+filename, :full => true)
+  page.save_screenshot('/spec/captures/'+filename, :full => true)
 end
 
 # // 簡易キャプチャ（自動ファイル名付け）
@@ -22,7 +22,7 @@ capcount = 0
 step 'cap' do
   capcount += 1
   filename = Time.now.strftime('%Y%m%d-%H%M%S') + '_' + capcount.to_s + '.png'
-  page.save_screenshot('/opt/spec/captures/'+filename, :full => true)
+  page.save_screenshot('/spec/captures/'+filename, :full => true)
 end
 
 step '戻る' do
@@ -239,7 +239,7 @@ step 'セレクトボックス:nameの:valueを選択する @:scope' do |name, v
 end
 
 step 'ファイル選択:nameに:filenameを選択する' do |name, filename|
-  page.attach_file(name, '/opt/spec/resources/'+filename)
+  page.attach_file(name, '/spec/resources/'+filename)
 end
 step 'ファイル選択:nameに:filenameを選択する @:scope' do |name, filename, scope|
   within scope do

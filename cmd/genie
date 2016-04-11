@@ -1382,6 +1382,8 @@ sub clean {
 # --------------------------------------------------------------------
 sub config {
 
+	return if !$open_cmd;
+
 	# -- エディタオープン
 	if ($ARGV[1] eq 'open') {
 		my $conf = $config{GENERAL}->{config_file};
@@ -1839,12 +1841,14 @@ sub spec {
 		say('レポートを開きます。');
 
 		# -- ブラウザでレポートを開く
-		my $report = "$config{GENERAL}->{config_dir}/spec/report.html";
-		if($is_win) {
-			$report = "$config{GENERAL}->{drive_letter}\:$report";
+		if($open_cmd){
+			my $report = "$config{GENERAL}->{config_dir}/spec/report.html";
+			if($is_win) {
+				$report = "$config{GENERAL}->{drive_letter}\:$report";
+			}
+			$cmd = "$open_cmd $report";
+			`$cmd`;
 		}
-		$cmd = "$open_cmd $report";
-		`$cmd`;
 
 		# -- SPEC用コンテナを終了
 		&down('spec');
