@@ -955,6 +955,8 @@ sub up {
 		my $cmd =
 			'docker run -d -it'.
 			' -e TERM=xterm'.
+			' -e LANG=ja_JP.UTF-8'.
+			' -e LC_ALL=ja_JP.UTF-8'.
 			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
 			" -v $letter$config{GENERAL}->{config_dir}/genie:/host".
 			$mysql_option.
@@ -1824,12 +1826,12 @@ sub spec {
 
 		# -- SPECを実行
 		my $container_name = 'SPEC-'.$config{DOCKER}->{NAME};
-		my $cmd = "docker exec -it $container_name sh -c \"source /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
+		my $cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
 		system $cmd;
 		echo "\n";
 
 		# -- アナウンス
-		say('スペックテストが完了しましたのでレポートを開きます。');
+		say('レポートを開きます。');
 
 		# -- ブラウザでレポートを開く
 		my $report = "$config{GENERAL}->{config_dir}/spec/report.html";
@@ -1840,7 +1842,7 @@ sub spec {
 		`$cmd`;
 
 		# -- SPEC用コンテナを終了
-		&down('spec');
+		# &down('spec');
 
 	}
 

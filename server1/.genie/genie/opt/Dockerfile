@@ -39,6 +39,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         net-tools sudo multitail zip tar bzip2 patch git \
         nginx \
         ruby ruby-devel rubygem-bundler \
+        ibus-kkc vlgothic-* \
     && yum clean all
 
 # Install anyenv

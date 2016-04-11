@@ -3,9 +3,13 @@
 # -- general
 echo ". /etc/bashrc" >> /root/.bashrc
 
-# -- SPEC mode (dir copy)
+# -- SPEC mode
 if [[ $GENIE_RUNMODE == 'spec' ]]; then
+  # -- dir copy
   \cp -rpdfa /_/* /
+  # -- ENV modify ('SPEC_' del)
+  perl -e 'map{$_=~/^SPEC_(.+)$/&&print "export $1\n"}split("\n", `env`)' > /tmp/nospec.env
+  . /tmp/nospec.env
 fi
 
 # -- ftpsync mode
