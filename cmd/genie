@@ -790,13 +790,14 @@ sub up {
 				" $db->{REPOSITORY}".
 				" mysqld"
 			;
-			`$cmd`;
-
 			# -- SPEC用の引数調整
 			if($is_spec) {
 				# -- ポートバインドを消す
 				$cmd =~ s/ \-p [^ ]+//g;
 			}
+
+			# -- コンテナ実行
+			`$cmd`;
 
 			# -- 起動開始のプログレス
 			wait_container ({
@@ -846,13 +847,15 @@ sub up {
 				" $db->{REPOSITORY}".
 				" postgres"
 			;
-			`$cmd`;
 
 			# -- SPEC用の引数調整
 			if($is_spec) {
 				# -- ポートバインドを消す
 				$cmd =~ s/ \-p [^ ]+//g;
 			}
+
+			# -- コンテナ実行
+			`$cmd`;
 
 			# -- 起動開始のプログレス
 			wait_container ({
