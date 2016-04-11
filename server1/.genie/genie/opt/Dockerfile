@@ -6,11 +6,6 @@ MAINTAINER kazaoki lab.
 RUN cp /etc/localtime /etc/localtime.org \
     && ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
 
-# Set locale
-# ----------
-RUN echo 'LANG="ja_JP.utf8"' > /etc/locale.conf \
-    && source /etc/locale.conf
-
 # Add packages
 # ------------
 RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
@@ -41,6 +36,11 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         ruby ruby-devel rubygem-bundler \
         ibus-kkc vlgothic-* \
     && yum clean all
+
+# Set locale
+# ----------
+RUN echo 'LANG="ja_JP.utf8"' > /etc/locale.conf \
+    && source /etc/locale.conf
 
 # Install anyenv
 # --------------
