@@ -12,15 +12,15 @@ if [[ $GENIE_RUNMODE == 'spec' ]]; then
   . /tmp/nospec.env
 fi
 
-# -- ftpsync mode
-if [[ $GENIE_RUNMODE == 'ftpsync' ]]; then
+# -- dlsync mode
+if [[ $GENIE_RUNMODE == 'dlsync' ]]; then
   rm -f /tmp/mirror.cmd
   echo "set file:charset utf8" >> /tmp/mirror.cmd
-  echo "set ftp:charset $GENIE_FTPSYNC_LFTP_CHARSET" >> /tmp/mirror.cmd
+  echo "set ftp:charset $GENIE_DLSYNC_LFTP_CHARSET" >> /tmp/mirror.cmd
   echo "set ftp:list-options -a" >> /tmp/mirror.cmd
   echo "set ssl:verify-certificate no" >> /tmp/mirror.cmd
-  echo "open -u $GENIE_FTPSYNC_REMOTE_USER,$GENIE_FTPSYNC_REMOTE_PASS $GENIE_FTPSYNC_REMOTE_HOST" >> /tmp/mirror.cmd
-  echo "mirror $GENIE_FTPSYNC_LFTP_OPTION $GENIE_FTPSYNC_REMOTE_DIR /sync" >> /tmp/mirror.cmd
+  echo "open -u $GENIE_DLSYNC_REMOTE_USER,$GENIE_DLSYNC_REMOTE_PASS $GENIE_DLSYNC_REMOTE_HOST" >> /tmp/mirror.cmd
+  echo "mirror $GENIE_DLSYNC_LFTP_OPTION $GENIE_DLSYNC_REMOTE_DIR /sync" >> /tmp/mirror.cmd
   echo "close" >> /tmp/mirror.cmd
   echo "quit" >> /tmp/mirror.cmd
   echo "--------------------------------------------------------------"

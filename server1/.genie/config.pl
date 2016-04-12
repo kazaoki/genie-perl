@@ -202,9 +202,9 @@ return {
 		BASIC_PASS => '',
 	},
 
-	# ftpsync設定
+	# dlsync設定
 	# -----------
-	FTPSYNC => {
+	DLSYNC => {
 		REMOTE_HOST  => '',
 		REMOTE_USER  => '',
 		REMOTE_PASS  => '',

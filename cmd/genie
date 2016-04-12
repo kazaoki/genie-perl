@@ -8,7 +8,7 @@ use strict;
 use utf8;
 use Encode qw/encode decode/;
 use Data::Dumper;
-use Getopt::Long qw/GetOptions/;
+use Getopt::Long qw(:config no_auto_abbrev no_ignore_case gnu_compat );
 use Cwd;
 use HTTP::Date;
 $| = 1;
@@ -34,7 +34,7 @@ my $ok_args = join('|', qw/
 	psql
 	open
 	logs
-	ftpsync
+	dlsync
 	spec
 /);
 # -- 設定ファイルが無くても実行可能な第一引数の正規表現
@@ -95,11 +95,15 @@ print "\n";
 # --------------------------------------------------------------------
 
 # -- コマンドオプション設定
+my %options;
 if($ARGV[0] ne 'cli') {
 	# -- cli の時は `genie cli ls -la` などの引数をそのまま渡したいので無効に。
 	GetOptions(
 		'm=s' => \$config{GENERAL}->{runmode},
 		'c=s' => \$config{GENERAL}->{config_name},
+		'all' => \$options{all}, # specやdlsyncで使用
+		'now-branch-later'    => \$options{'now-branch-later'}, # dlsyncで使用
+		'oldest-branch-later' => \$options{'oldest-branch-later'}, # dlsyncで使用
 	);
 }
 $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。
@@ -277,7 +281,7 @@ sub help {
 				'open'                     => 'ブラウザを開く',
 				'ngrok'                    => 'ngrok起動',
 				'logs'                     => 'ログファイルをtailする',
-				'ftpsync'                  => 'FTPサーバからファイルを同期',
+				'dlsync <timing of later>' => 'FTPサーバからファイルをダウンロード同期：引数無しでヘルプ表示',
 				'httpd'                    => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
 				'spec <feature dir/files>' => 'PhantomJSを使ったSPECテストを実行',
 				'spec all'                 => 'PhantomJSを使ったSPECテストを全て実行'
@@ -1743,45 +1747,117 @@ sub logs {
 }
 
 # --------------------------------------------------------------------
-# genie ftpsync                                          ftpsyncを実行
+# genie dlsync                                            dlsyncを実行
 # --------------------------------------------------------------------
-sub ftpsync {
+sub dlsync {
 	if(
-		   $config{FTPSYNC}->{REMOTE_HOST}
-		&& $config{FTPSYNC}->{REMOTE_USER}
-		&& $config{FTPSYNC}->{REMOTE_PASS}
-		&& $config{FTPSYNC}->{REMOTE_DIR}
-		&& $config{FTPSYNC}->{LOCAL_DIR}
+		   $config{DLSYNC}->{REMOTE_HOST}
+		&& $config{DLSYNC}->{REMOTE_USER}
+		&& $config{DLSYNC}->{REMOTE_PASS}
+		&& $config{DLSYNC}->{REMOTE_DIR}
+		&& $config{DLSYNC}->{LOCAL_DIR}
 	) {
-		# -- 指定があればgitから最終コミット時間を拾ってくる
-		if($config{FTPSYNC}->{LFTP_NEWER_THAN_LAST_COMMIT}) {
-			# -- gitコマンドが使える場合のみ
-			`where git $hide_all`;
-			if(!$?){
-				foreach(`git log -n 1`) {
-					if($_ =~ /^Date:\s+(.+?)(?:\ \+\d{4})?$/) {
-						$config{FTPSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($1))/60)+1).'minutes';
-						last;
-					}
-				}
+
+		# -- 標準引数を適用（直接引数が指定されていればそちらを優先）
+		if((!($ARGV[1]||$options{all}||$options{'now-branch-later'}||$options{'oldest-branch-later'})) && $config{DLSYNC}->{DEFAULT_LATER}){
+			if($config{DLSYNC}->{DEFAULT_LATER} =~ /\-\-?(all|now\-branch\-later|oldest\-branch\-later)/){
+				$options{$1} = 1;
+			} else {
+				$config{DLSYNC}->{DEFAULT_LATER} =~ s/^\s+//;
+				$config{DLSYNC}->{DEFAULT_LATER} =~ s/\s+$//;
+				@ARGV = ( $ARGV[0], split(/\s+/, $config{DLSYNC}->{DEFAULT_LATER}));
 			}
 		}
-		# -- 新たなコンテナを作成してlftpを実行。そして自動的に終了する。
-		my $local_dir_path = ($config{FTPSYNC}->{LOCAL_DIR} =~ /^\//)
-			? $config{FTPSYNC}->{LOCAL_DIR}
-			: $config{GENERAL}->{home_dir} .'/'. $config{FTPSYNC}->{LOCAL_DIR}
-		;
-		my $envs = join(' ', map { "-e GENIE_FTPSYNC_$_=\"" . $config{FTPSYNC}->{$_} . '"' } keys %{$config{FTPSYNC}} );
-		my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
-		my $cmd =
-			"docker run --rm -it".
-			" -e GENIE_RUNMODE=ftpsync".
-			" $envs".
-			" -v $letter$local_dir_path:/sync".
-			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
-			" $config{DOCKER}->{IMAGE}"
-		;
-		system $cmd;
+
+		# -- all：全てダウンロード
+		if($options{all}) {
+			message(warning=>'all');
+		}
+
+		# -- now-branch-later：現在のGitブランチのコミット日付以降のファイルをダウンロード
+		elsif($options{'now-branch-later'}) {
+			;
+			message(warning=>'now-branch-later');
+		}
+
+		# -- oldest-branch-later：一番古いGitブランチのコミット日付以降のファイルをダウンロード
+		elsif($options{'oldest-branch-later'}) {
+			;
+			message(warning=>'oldest-branch-later');
+		}
+
+		# -- 引数が1つのみのパターン
+		elsif($ARGV[1] && $ARGV[2] eq '') {
+			;
+			message(warning=>'引数が1つのみのパターン');
+		}
+
+		# -- 引数が2つあるパターン
+		elsif($ARGV[1] && $ARGV[2]) {
+			;
+			message(warning=>'引数が2つあるパターン');
+		}
+
+		# -- 引数なし：引数のヘルプ
+		else {
+			message(info=>
+				"dlsyncには以下の引数が指定できます。必ずどれか指定してください。\n".
+				"指定のGitブランチまたはコミット以降のファイルをDLする。\n".
+				"  - genie dlsync master\n".
+				"  - genie dlsync develop\n".
+				"  - genie dlsync ad2ef84s\n".
+				"現在のGitブランチの最終コミット日付以降のファイルをDLする。\n".
+				"  - genie dlsync --now-branch-later\n".
+				"一番古いGitブランチの最終コミット日付以降のファイルをDLする。\n".
+				"  - genie dlsync --oldest-branch-later\n".
+				"指定の年月日以降のファイルをDLする。\n".
+				"  - genie dlsync 20160412\n".
+				"  - genie dlsync 2016-04-12\n".
+				"  - genie dlsync 2016-4-12\n".
+				"  - genie dlsync 2016/04/12\n".
+				"指定の過去以降のファイルをDLする。\n".
+				"  - genie dlsync 1 years\n".
+				"  - genie dlsync 12 months\n".
+				"  - genie dlsync 52 weeks\n".
+				"  - genie dlsync 365 days\n".
+				"  - genie dlsync a day\n".
+				"全ファイルをDLする。\n".
+				"  - genie dlsync --all\n".
+				'※config.plにデフォルトを指定すると引数無しで実行することができます。',
+			1);
+		}
+
+		# # -- 指定があればgitから最終コミット時間を拾ってくる
+		# if($config{DLSYNC}->{LFTP_NEWER_THAN_LAST_COMMIT}) {
+		# 	# -- gitコマンドが使える場合のみ
+		# 	`where git $hide_all`;
+		# 	if(!$?){
+		# 		foreach(`git log -n 1`) {
+		# 			if($_ =~ /^Date:\s+(.+?)(?:\ \+\d{4})?$/) {
+		# 				$config{DLSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($1))/60)+1).'minutes';
+		# 				last;
+		# 			}
+		# 		}
+		# 	}
+		# }
+		# # -- 新たなコンテナを作成してlftpを実行。そして自動的に終了する。
+		# my $local_dir_path = ($config{DLSYNC}->{LOCAL_DIR} =~ /^\//)
+		# 	? $config{DLSYNC}->{LOCAL_DIR}
+		# 	: $config{GENERAL}->{home_dir} .'/'. $config{DLSYNC}->{LOCAL_DIR}
+		# ;
+		# my $envs = join(' ', map { "-e GENIE_DLSYNC_$_=\"" . $config{DLSYNC}->{$_} . '"' } keys %{$config{DLSYNC}} );
+		# my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
+		# my $cmd =
+		# 	"docker run --rm -it".
+		# 	" -e GENIE_RUNMODE=dlsync".
+		# 	" $envs".
+		# 	" -v $letter$local_dir_path:/sync".
+		# 	" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
+		# 	" $config{DOCKER}->{IMAGE}"
+		# ;
+		# system $cmd;
+	} else {
+		message(warning=>'dlsync用の設定をされていないようです。');
 	}
 	return;
 }
