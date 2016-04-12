@@ -107,6 +107,7 @@ RUN mkdir ~/src \
 # Setup Apache
 # ------------
 RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g' /etc/httpd/conf/httpd.conf \
+    && sed -i 's/AddDefaultCharset\ UTF\-8/AddDefaultCharset\ Off/g' /etc/httpd/conf/httpd.conf \
     && echo '<Directory /var/www/html>' >> /etc/httpd/conf/httpd.conf \
     && echo '  Options FollowSymLinks ExecCGI' >> /etc/httpd/conf/httpd.conf \
     && echo '  AllowOverride All' >> /etc/httpd/conf/httpd.conf \
