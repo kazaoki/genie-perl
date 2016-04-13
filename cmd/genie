@@ -1759,13 +1759,13 @@ sub dlsync {
 	) {
 
 		# -- デフォルト引数を適用（直接引数が指定されていればそちらを優先）
-		if((!($ARGV[1]||$options{all}||$options{'now-branch'}||$options{'oldest-branch'})) && $config{DLSYNC}->{DEFAULT_LATER}){
-			if($config{DLSYNC}->{DEFAULT_LATER} =~ /\-\-?(all|now\-branch\-later|oldest\-branch\-later)/){
+		if((!($ARGV[1]||$options{all}||$options{'now-branch'}||$options{'oldest-branch'})) && $config{DLSYNC}->{DEFAULT_ARGV}){
+			if($config{DLSYNC}->{DEFAULT_ARGV} =~ /\-\-?(all|now\-branch|oldest\-branch)/){
 				$options{$1} = 1;
 			} else {
-				$config{DLSYNC}->{DEFAULT_LATER} =~ s/^\s+//;
-				$config{DLSYNC}->{DEFAULT_LATER} =~ s/\s+$//;
-				@ARGV = ( $ARGV[0], split(/\s+/, $config{DLSYNC}->{DEFAULT_LATER}));
+				$config{DLSYNC}->{DEFAULT_ARGV} =~ s/^\s+//;
+				$config{DLSYNC}->{DEFAULT_ARGV} =~ s/\s+$//;
+				@ARGV = ( $ARGV[0], split(/\s+/, $config{DLSYNC}->{DEFAULT_ARGV}));
 			}
 		}
 
