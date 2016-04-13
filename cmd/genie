@@ -102,8 +102,8 @@ if($ARGV[0] ne 'cli') {
 		'm=s' => \$config{GENERAL}->{runmode},
 		'c=s' => \$config{GENERAL}->{config_name},
 		'all' => \$options{all}, # specやdlsyncで使用
-		'now-branch-later'    => \$options{'now-branch-later'}, # dlsyncで使用
-		'oldest-branch-later' => \$options{'oldest-branch-later'}, # dlsyncで使用
+		'now-branch'    => \$options{'now-branch'}, # dlsyncで使用
+		'oldest-branch' => \$options{'oldest-branch'}, # dlsyncで使用
 	);
 }
 $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。
@@ -1758,8 +1758,8 @@ sub dlsync {
 		&& $config{DLSYNC}->{LOCAL_DIR}
 	) {
 
-		# -- 標準引数を適用（直接引数が指定されていればそちらを優先）
-		if((!($ARGV[1]||$options{all}||$options{'now-branch-later'}||$options{'oldest-branch-later'})) && $config{DLSYNC}->{DEFAULT_LATER}){
+		# -- デフォルト引数を適用（直接引数が指定されていればそちらを優先）
+		if((!($ARGV[1]||$options{all}||$options{'now-branch'}||$options{'oldest-branch'})) && $config{DLSYNC}->{DEFAULT_LATER}){
 			if($config{DLSYNC}->{DEFAULT_LATER} =~ /\-\-?(all|now\-branch\-later|oldest\-branch\-later)/){
 				$options{$1} = 1;
 			} else {
@@ -1769,93 +1769,119 @@ sub dlsync {
 			}
 		}
 
+		# -- ブランチ情報を取得
+		my %branch2date;
+		my $oldest_date;
+		my $oldest_branch;
+		my $now_branch;
+		foreach(`git branch -v $hide_err`){
+			my @column = split(/\s+/, $_);
+			if($column[0] =~ /\*/) { $now_branch = $column[1] }
+			my $date;
+			if(`git show $column[1] -q --date=short $hide_err` =~ /Date: *(\d{4}\-\d{2}\-\d{2})/){ $date = $1; }
+			$branch2date{$column[1]} = $date;
+			$date =~ s/\D//g;
+			$oldest_date ||= $date; $oldest_branch ||= $column[1];
+			if($oldest_date>$date) { $oldest_date = $date; $oldest_branch = $column[1]; }
+
+		}
+
 		# -- all：全てダウンロード
-		if($options{all}) {
-			message(warning=>'all');
-		}
-
-		# -- now-branch-later：現在のGitブランチのコミット日付以降のファイルをダウンロード
-		elsif($options{'now-branch-later'}) {
+		if($options{all}){
 			;
-			message(warning=>'now-branch-later');
 		}
-
-		# -- oldest-branch-later：一番古いGitブランチのコミット日付以降のファイルをダウンロード
-		elsif($options{'oldest-branch-later'}) {
-			;
-			message(warning=>'oldest-branch-later');
-		}
-
-		# -- 引数が1つのみのパターン
-		elsif($ARGV[1] && $ARGV[2] eq '') {
-			;
-			message(warning=>'引数が1つのみのパターン');
-		}
-
-		# -- 引数が2つあるパターン
-		elsif($ARGV[1] && $ARGV[2]) {
-			;
-			message(warning=>'引数が2つあるパターン');
-		}
-
-		# -- 引数なし：引数のヘルプ
-		else {
+		# -- 引数なし：引数のヘルプとサンプル
+		elsif(!($ARGV[1]||$options{'now-branch'}||$options{'oldest-branch'})){
 			message(info=>
 				"dlsyncには以下の引数が指定できます。必ずどれか指定してください。\n".
-				"指定のGitブランチまたはコミット以降のファイルをDLする。\n".
+				"指定のGitブランチの最終コミット以降のファイルをDL同期する。\n".
 				"  - genie dlsync master\n".
 				"  - genie dlsync develop\n".
-				"  - genie dlsync ad2ef84s\n".
-				"現在のGitブランチの最終コミット日付以降のファイルをDLする。\n".
-				"  - genie dlsync --now-branch-later\n".
-				"一番古いGitブランチの最終コミット日付以降のファイルをDLする。\n".
-				"  - genie dlsync --oldest-branch-later\n".
-				"指定の年月日以降のファイルをDLする。\n".
+				"指定の年月日以降のファイルをDL同期する。\n".
 				"  - genie dlsync 20160412\n".
 				"  - genie dlsync 2016-04-12\n".
 				"  - genie dlsync 2016-4-12\n".
 				"  - genie dlsync 2016/04/12\n".
-				"指定の過去以降のファイルをDLする。\n".
-				"  - genie dlsync 1 years\n".
-				"  - genie dlsync 12 months\n".
-				"  - genie dlsync 52 weeks\n".
-				"  - genie dlsync 365 days\n".
-				"  - genie dlsync a day\n".
+				"指定の過去日数以降のファイルをDL同期する。\n".
+				"  - genie dlsync 1day\n".
+				"  - genie dlsync 365days\n".
 				"全ファイルをDLする。\n".
 				"  - genie dlsync --all\n".
+				"現在のGitブランチの最終コミット日付以降のファイルをDL同期する。\n".
+				"  - genie dlsync --now-branch\n".
+				"一番古いGitブランチの最終コミット日付以降のファイルをDL同期する。\n".
+				"  - genie dlsync --oldest-branch\n".
 				'※config.plにデフォルトを指定すると引数無しで実行することができます。',
 			1);
+
+			# -- ブランチ参考表示
+			if(scalar(keys %branch2date)){
+				echo "  [hint by branch]\n";
+				my $branch_length = 0;
+				map{$branch_length = ($branch_length<length($_)?length($_):$branch_length)}keys %branch2date;
+				foreach my $branch (sort keys %branch2date){
+					echo sprintf('  $ genie dlsync %-'.($branch_length).'s | %10s | %s',
+						$branch,
+						$branch2date{$branch},
+						join(' ', grep{$_}($branch eq $oldest_branch ? '--oldest-branch':''),($branch eq $now_branch ? '--now-branch':''))
+					);
+					echo "\n";
+				}
+				echo "\n";
+			}
+
+			return;
+
 		}
 
-		# # -- 指定があればgitから最終コミット時間を拾ってくる
-		# if($config{DLSYNC}->{LFTP_NEWER_THAN_LAST_COMMIT}) {
-		# 	# -- gitコマンドが使える場合のみ
-		# 	`where git $hide_all`;
-		# 	if(!$?){
-		# 		foreach(`git log -n 1`) {
-		# 			if($_ =~ /^Date:\s+(.+?)(?:\ \+\d{4})?$/) {
-		# 				$config{DLSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($1))/60)+1).'minutes';
-		# 				last;
-		# 			}
-		# 		}
-		# 	}
-		# }
-		# # -- 新たなコンテナを作成してlftpを実行。そして自動的に終了する。
-		# my $local_dir_path = ($config{DLSYNC}->{LOCAL_DIR} =~ /^\//)
-		# 	? $config{DLSYNC}->{LOCAL_DIR}
-		# 	: $config{GENERAL}->{home_dir} .'/'. $config{DLSYNC}->{LOCAL_DIR}
-		# ;
-		# my $envs = join(' ', map { "-e GENIE_DLSYNC_$_=\"" . $config{DLSYNC}->{$_} . '"' } keys %{$config{DLSYNC}} );
-		# my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
-		# my $cmd =
-		# 	"docker run --rm -it".
-		# 	" -e GENIE_RUNMODE=dlsync".
-		# 	" $envs".
-		# 	" -v $letter$local_dir_path:/sync".
-		# 	" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
-		# 	" $config{DOCKER}->{IMAGE}"
-		# ;
-		# system $cmd;
+		# -- 引数有り
+		else {
+
+			# -- 引数で指定された、現在のブランチ/最古のブランチ名のセット
+			if($options{'now-branch'}) { $ARGV[1] = $now_branch;}
+			elsif($options{'oldest-branch'}) { $ARGV[1] = $oldest_branch;}
+
+			# -- ブランチ名指定
+			if($branch2date{$ARGV[1]}){
+				if($branch2date{$ARGV[1]} =~ /^(\d{4})[\-\/]?(\d{1,2})[\-\/]?(\d{1,2})$/){
+					my $time = sprintf('%04d-%02d-%02d 00:00:00', $1, $2, $3);
+					$config{DLSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($time))/60)+1).'minutes';
+				}
+			}
+			# -- 日付指定
+			elsif($ARGV[1] =~ /^(\d{4})[\-\/]?(\d{1,2})[\-\/]?(\d{1,2})$/){
+				my $time = sprintf('%04d-%02d-%02d 00:00:00', $1, $2, $3);
+				$config{DLSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.(int((time - str2time($time))/60)+1).'minutes';
+			}
+			# -- days指定
+			elsif($ARGV[1] =~ /^(\d+)days?$/){
+				$config{DLSYNC}->{LFTP_OPTION} .= ' --newer-than=now-'.($1*60*60*24).'minutes';
+			}
+			# -- 指定ミス
+			else {
+				message(danger=>'ご指定のブランチが見つからない、または日付の指定が間違っています：'.$ARGV[1]);
+				exit 1;
+			}
+
+		}
+
+		# -- 新たなコンテナを作成してlftpを実行。そして自動的に終了する。
+		my $local_dir_path = ($config{DLSYNC}->{LOCAL_DIR} =~ /^\//)
+			? $config{DLSYNC}->{LOCAL_DIR}
+			: $config{GENERAL}->{home_dir} .'/'. $config{DLSYNC}->{LOCAL_DIR}
+		;
+		my $envs = join(' ', map { "-e GENIE_DLSYNC_$_=\"" . $config{DLSYNC}->{$_} . '"' } keys %{$config{DLSYNC}} );
+		my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
+		my $cmd =
+			"docker run --rm -it".
+			" -e GENIE_RUNMODE=dlsync".
+			" $envs".
+			" -v $letter$local_dir_path:/sync".
+			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
+			" $config{DOCKER}->{IMAGE}"
+		;
+		system $cmd;
+
 	} else {
 		message(warning=>'dlsync用の設定をされていないようです。');
 	}
