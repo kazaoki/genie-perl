@@ -1894,9 +1894,9 @@ sub dlsync {
 sub spec {
 
 	# -- featureファイルの一覧表示のみ
-	if($ARGV[1] eq '') {
+	if(!($options{all}||$ARGV[1] ne '')) {
 		my @list = &_spec_files($config{GENERAL}->{config_dir} . '/spec/features');
-		my $list = "featureファイル名（前方一致）を指定するか `all` を指定してください。\n";
+		my $list = "featureファイル名（前方一致）を指定するか `--all` を指定してください。\n";
 		foreach my $feature_file (@list) {
 			$feature_file =~ s/^$config{GENERAL}->{config_dir}\/spec\/features\///;
 			$list .= "$feature_file\n";
@@ -1908,11 +1908,11 @@ sub spec {
 	else {
 		my $files_args = '/spec/features/';
 		# -- all指定
-		if($ARGV[1] eq 'all') {
+		if($options{all}) {
 			message(info=>'全てのfeatureファイルをテストします。');
 		}
 		# -- featureファイル指定
-		elsif($ARGV[1] ne 'all') {
+		elsif($ARGV[1]) {
 			my @files_show;
 			my @files_args;
 			foreach my $num (1..$#ARGV){
