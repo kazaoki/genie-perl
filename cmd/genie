@@ -687,10 +687,10 @@ EOL
 		close $fh;
 	}
 
-	# -- entry.shの作成
+	# -- entrypoint.shの作成
 	{
-		my $result = open my $fh, '>:raw', "$config{GENERAL}->{config_dir}/entry.sh"
-			or throw("設定ファイル `$config{GENERAL}->{config_dir}/entry.sh` が作成できませんでした。")
+		my $result = open my $fh, '>:raw', "$config{GENERAL}->{config_dir}/entrypoint.sh"
+			or throw("設定ファイル `$config{GENERAL}->{config_dir}/entrypoint.sh` が作成できませんでした。")
 		;
 		print $fh encode('UTF-8', <<'EOL');
 #!/bin/sh
@@ -758,9 +758,6 @@ sub up {
 	down($is_spec);
 
 	# -- 起動
-	if(!-s "$config{GENERAL}->{config_dir}/genie/opt/entry.sh"){
-		throw("$config{GENERAL}->{config_dir}/genie/opt/entry.sh が見当たりませんので起動できません。");
-	}
 	echo "  Starting containers\n";
 
 	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必要なので）
@@ -771,15 +768,14 @@ sub up {
 	my $mysql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{MYSQL}->{ENABLED}) {
 		# -- スクリプトパーミッション設定
-		chmod 0755, "$config{GENERAL}->{config_dir}/mysql/opt/before-entry.sh";
+		chmod 0755, "$config{GENERAL}->{config_dir}/mysql/opt/before-entrypoint.sh";
 		# -- コンテナ起動
 		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 			my $label = $container_name_base . "-mysql-" . $db->{LABEL};
 			$mysql_last_label = $label;
 			my $cmd =
 				"docker run -d -it --name $label".
-				" -v $letter$config{GENERAL}->{config_dir}/mysql/opt:/opt".
-				" -v $letter$config{GENERAL}->{config_dir}/mysql:/host".
+				" -v $letter$config{GENERAL}->{config_dir}/mysql:/mysql".
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -790,7 +786,7 @@ sub up {
 				" -e TERM=xterm".
 				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
-				" --entrypoint=/opt/before-entry.sh".
+				" --entrypoint=/mysql/opt/before-entrypoint.sh".
 				" $db->{REPOSITORY}".
 				" mysqld"
 			;
@@ -827,15 +823,14 @@ sub up {
 	my $postgresql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
 	if($config{POSTGRESQL}->{ENABLED}) {
 		# -- スクリプトパーミッション設定
-		chmod 0755, "$config{GENERAL}->{config_dir}/postgresql/opt/before-entry.sh";
+		chmod 0755, "$config{GENERAL}->{config_dir}/postgresql/opt/before-entrypoint.sh";
 		# -- コンテナ起動
 		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
 			my $label = $container_name_base . "-postgresql-" . $db->{LABEL};
 			$postgresql_last_label = $label;
 			my $cmd =
 				"docker run -d -it --name $label".
-				" -v $letter$config{GENERAL}->{config_dir}/postgresql/opt:/opt".
-				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/host".
+				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/postgresql".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -847,7 +842,7 @@ sub up {
 				" -e POSTGERS_LOCALE=$db->{LOCALE}".
 				" -e TERM=xterm".
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
-				" --entrypoint=/opt/before-entry.sh".
+				" --entrypoint=/postgresql/opt/before-entrypoint.sh".
 				" $db->{REPOSITORY}".
 				" postgres"
 			;
@@ -949,7 +944,6 @@ sub up {
 		# -- VOLUMES
 		my $volumes;
 		if(ref $config{DOCKER}->{VOLUMES} && @{$config{DOCKER}->{VOLUMES}}){
-			# $volumes .= join('', map { " -v $_" } @{$config{DOCKER}->{VOLUMES}} );
 			foreach my $volume (@{$config{DOCKER}->{VOLUMES}}) {
 				if($volume !~ /^\//){
 					$volume = $letter . $config{GENERAL}->{home_dir} . '/' . $volume;
@@ -964,8 +958,9 @@ sub up {
 			' -e TERM=xterm'.
 			' -e LANG=ja_JP.UTF-8'.
 			' -e LC_ALL=ja_JP.UTF-8'.
-			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
-			" -v $letter$config{GENERAL}->{config_dir}/genie:/host".
+			# " -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
+			# " -v $letter$config{GENERAL}->{config_dir}/genie:/host".
+			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
 			$mysql_option.
 			$postgresql_option.
 			$apache_option.
@@ -984,7 +979,7 @@ sub up {
 			$cmd =~ s/ \-p [^ ]+//g;
 			# -- 環境変数設定
 			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -e GENIE_RUNMODE="spec" $config{DOCKER}->{IMAGE}/;
-			# -- マウントを「/_/*」に変える（entry.sh時に正式なディレクトリにコピーする）
+			# -- マウントを「/_/*」に変える（entrypoint.sh時に正式なディレクトリにコピーする）
 			$cmd =~ s/( \-v [^ ]+\:)([^ ]+)/$1\/_$2/g;
 			# -- /spec/をマウントする
 			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec:\/spec -v $letter$config{GENERAL}->{config_dir}\/spec\/confs:\/turnip\/spec $config{DOCKER}->{IMAGE}/;
@@ -999,8 +994,7 @@ sub up {
 		}
 
 		# -- スクリプトパーミッション設定
-		chmod 0755, "$config{GENERAL}->{config_dir}/genie/opt/entry.sh";
-		chmod 0755, "$config{GENERAL}->{config_dir}/genie/opt/after.sh";
+		chmod 0755, "$config{GENERAL}->{config_dir}/genie/opt/init.sh";
 
 		# -- runコマンドの実行
 		my $cid = `$cmd`;
@@ -1016,87 +1010,87 @@ sub up {
 			# -- kazaoki/genie本体：起動開始
 			wait_container ({
 				container_name => $container_name_base,
-				log_file       => '/var/log/entry.log',
-				stop_word      => 'entry.sh setup start.',
+				log_file       => '/var/log/entrypoint.log',
+				stop_word      => 'entrypoint.sh setup start.',
 				label          => "Genie container start ($container_name_base)",
 			});
 
-			# -- entry.sh：Perl
+			# -- entrypoint.sh：Perl
 			if($config{PERL}->{VERSION}){
 				wait_container ({
 					container_name => $container_name_base,
-					log_file       => '/var/log/entry.log',
+					log_file       => '/var/log/entrypoint.log',
 					stop_word      => 'Perl setup done.',
 					label          => "Perl setup (version $config{PERL}->{VERSION})",
 				});
 			}
 
-			# -- entry.sh：cpanfile
+			# -- entrypoint.sh：cpanfile
 			if($config{PERL}->{CPANFILE_ENABLED}){
 				wait_container ({
 					container_name => $container_name_base,
-					log_file       => '/var/log/entry.log',
+					log_file       => '/var/log/entrypoint.log',
 					stop_word      => 'cpanfile setup done.',
 					label          => "cpanfile setup",
 				});
 			}
 
-			# -- entry.sh：PHP
+			# -- entrypoint.sh：PHP
 			if($config{PHP}->{VERSION}){
 				wait_container ({
 					container_name => $container_name_base,
-					log_file       => '/var/log/entry.log',
+					log_file       => '/var/log/entrypoint.log',
 					stop_word      => 'PHP setup done.',
 					label          => "PHP setup (version $config{PHP}->{VERSION})",
 				});
 			}
 
-			# -- entry.sh：Ruby
+			# -- entrypoint.sh：Ruby
 			if($config{RUBY}->{VERSION}){
 				wait_container ({
 					container_name => $container_name_base,
-					log_file       => '/var/log/entry.log',
+					log_file       => '/var/log/entrypoint.log',
 					stop_word      => 'Ruby setup done.',
 					label          => "Ruby setup (version $config{RUBY}->{VERSION})",
 				});
 			}
 
-			# -- entry.sh：Apache
+			# -- entrypoint.sh：Apache
 			if($config{APACHE}->{ENABLED}) {
 				wait_container ({
 					container_name => $container_name_base,
-					log_file       => '/var/log/entry.log',
+					log_file       => '/var/log/entrypoint.log',
 					stop_word      => 'Apache setup done.',
 					label          => "Apache setup",
 				});
 			}
 
-			# -- entry.sh：Nginx
+			# -- entrypoint.sh：Nginx
 			if($config{NGINX}->{ENABLED}) {
 				wait_container ({
 					container_name => $container_name_base,
-					log_file       => '/var/log/entry.log',
+					log_file       => '/var/log/entrypoint.log',
 					stop_word      => 'Nginx setup done.',
 					label          => "Nginx setup",
 				});
 			}
 
-			# -- entry.sh：Postfix
+			# -- entrypoint.sh：Postfix
 			if($config{POSTFIX}->{ENABLED}){
 				wait_container ({
 					container_name => $container_name_base,
-					log_file       => '/var/log/entry.log',
+					log_file       => '/var/log/entrypoint.log',
 					stop_word      => 'Postfix setup done.',
 					label          => "Postfix setup",
 				});
 			}
 
-			# -- after.sh
+			# -- init.sh
 			wait_container ({
 				container_name => $container_name_base,
-				log_file       => '/var/log/entry.log',
-				stop_word      => 'after.sh setup done.',
-				label          => "after.sh setup",
+				log_file       => '/var/log/entrypoint.log',
+				stop_word      => 'init.sh setup done.',
+				label          => "init.sh setup",
 			});
 
 			# -- MySQL
@@ -1120,8 +1114,8 @@ sub up {
 			# -- kazaoki/genie本体：起動完了
 			wait_container ({
 				container_name => $container_name_base,
-				log_file       => '/var/log/entry.log',
-				stop_word      => 'entry.sh setup done.',
+				log_file       => '/var/log/entrypoint.log',
+				stop_word      => 'entrypoint.sh setup done.',
 				label          => "Genie container ready",
 			});
 
@@ -1407,7 +1401,8 @@ sub httpd {
 
 	# -- 公式httpdイメージから起動
 	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
-	my $cmd = "docker run -d -p 80 -v $letter$now_path:/var/www/html/ php:5.6-apache";
+	# my $cmd = "docker run -d -p 80 -v $letter$now_path:/var/www/html/ php:5.6-apache";
+	my $cmd = "docker run -d -p 80 -v $letter$now_path:/var/www/html/ -e GENIE_RUNMODE=httpd kazaoki/genie";
 	my $cid = `$cmd`;
 	if($?) {
 		throw('Webサーバが起動しませんでした。', $cmd);
@@ -1453,7 +1448,7 @@ sub build {
 	my $nocache = '--no-cache' if ($ARGV[1] eq 'nocache');
 
 	# -- .genie/Dockerfileをビルドする
-	my $dockerfile = "$config{GENERAL}->{config_dir}/genie/opt/Dockerfile";
+	my $dockerfile = "$config{GENERAL}->{config_dir}/genie/opt/build/Dockerfile";
 	if(! -s $dockerfile){
 		throw('Dockerfileが見つからないか、空ファイルです。', $dockerfile);
 	}
@@ -1486,7 +1481,7 @@ sub build {
 			"docker build".
 			" -t $config{DOCKER}->{IMAGE}".
 			($config{DOCKER}->{OPTIONS_BUILD} ? " $config{DOCKER}->{OPTIONS_BUILD}" : '').
-			" $nocache $config{GENERAL}->{config_dir}/genie/opt/"
+			" $nocache $config{GENERAL}->{config_dir}/genie/opt/build/"
 		;
 		message(info=>"ビルドを開始します。\n$cmd");
 		my $result = `$cmd`;

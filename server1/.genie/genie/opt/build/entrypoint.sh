@@ -3,7 +3,16 @@
 # -- general
 echo ". /etc/bashrc" >> /root/.bashrc
 
-# -- SPEC mode
+# -- httpd mode
+if [[ $GENIE_RUNMODE == 'httpd' ]]; then
+  sed -i "s/ErrorLog\ \"logs\/error_log\"/ErrorLog\ \"\/proc\/self\/fd\/2\"/" /etc/httpd/conf/httpd.conf
+  sed -i "s/CustomLog\ \"logs\/access_log\"\ combined/CustomLog\ \"\/proc\/self\/fd\/1\"\ combined/" /etc/httpd/conf/httpd.conf
+  /usr/sbin/httpd
+  /loop.sh
+  exit 0
+fi
+
+# -- spec mode
 if [[ $GENIE_RUNMODE == 'spec' ]]; then
   # -- dir copy
   \cp -rpdfa /_/* /
@@ -30,15 +39,15 @@ if [[ $GENIE_RUNMODE == 'dlsync' ]]; then
   exit 0;
 fi
 
-# -- entry.sh started
-echo 'entry.sh setup start.' >> /var/log/entry.log
+# -- entrypoint.sh started
+echo 'entrypoint.sh setup start.' >> /var/log/entrypoint.log
 
 # -- perl setup
 if [[ $GENIE_PERL_VERSION != '' ]]; then
-  mkdir -p /opt/perl
+  mkdir -p /genie/opt/perl
   # -- tar restore
   mkdir -p /perl/versions
-  tarfile="/opt/perl/versions.tar"
+  tarfile="/genie/opt/perl/versions.tar"
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /perl/versions
   fi
@@ -55,7 +64,7 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
     cd /perl/versions
-    tar cf /opt/perl/versions.tar ./
+    tar cf /genie/opt/perl/versions.tar ./
   else
     # -- perl relink
     ln -s ${install_path} ${link_to}
@@ -66,31 +75,31 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     unlink /usr/bin/perl
     ln -s $install_path/bin/perl /usr/bin/perl
   fi
-  echo 'Perl setup done.' >> /var/log/entry.log
+  echo 'Perl setup done.' >> /var/log/entrypoint.log
 fi
 
 # -- Install perl modules from cpanfile
-if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /opt/perl/cpanfile ]]; then
-  mkdir -p /opt/perl
+if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/opt/perl/cpanfile ]]; then
+  mkdir -p /genie/opt/perl
   # -- tar restore
   mkdir -p /perl/cpanfile-modules
-  tarfile="/opt/perl/cpanfile-modules.tar"
+  tarfile="/genie/opt/perl/cpanfile-modules.tar"
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /perl/cpanfile-modules
   fi
   # -- install
-  cpanm -nq --installdeps -L /perl/cpanfile-modules/ /opt/perl/
+  cpanm -nq --installdeps -L /perl/cpanfile-modules/ /genie/opt/perl/
   cd /perl/cpanfile-modules
   tar cf $tarfile ./
-  echo 'cpanfile setup done.' >> /var/log/entry.log
+  echo 'cpanfile setup done.' >> /var/log/entrypoint.log
 fi
 
 # -- php setup
 if [[ $GENIE_PHP_VERSION != '' ]]; then
-  mkdir -p /opt/php
+  mkdir -p /genie/opt/php
   # -- tar restore
   mkdir -p /php/versions
-  tarfile="/opt/php/versions.tar"
+  tarfile="/genie/opt/php/versions.tar"
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /php/versions
   fi
@@ -106,7 +115,7 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
     cd /php/versions
-    tar cf /opt/php/versions.tar ./
+    tar cf /genie/opt/php/versions.tar ./
   else
     # -- php relink
     ln -s ${install_path} ${link_to}
@@ -114,15 +123,15 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
   fi
-  echo 'PHP setup done.' >> /var/log/entry.log
+  echo 'PHP setup done.' >> /var/log/entrypoint.log
 fi
 
 # -- ruby setup
 if [[ $GENIE_RUBY_VERSION != '' ]]; then
-  mkdir -p /opt/ruby
+  mkdir -p /genie/opt/ruby
   # -- tar restore
   mkdir -p /ruby/versions
-  tarfile="/opt/ruby/versions.tar"
+  tarfile="/genie/opt/ruby/versions.tar"
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /ruby/versions
   fi
@@ -136,14 +145,14 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
     cd /ruby/versions
-    tar cf /opt/ruby/versions.tar ./
+    tar cf /genie/opt/ruby/versions.tar ./
   else
     # -- ruby relink
     ln -s ${install_path} ${link_to}
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
   fi
-  echo 'Ruby setup done.' >> /var/log/entry.log
+  echo 'Ruby setup done.' >> /var/log/entrypoint.log
 fi
 
 # -- Apache
@@ -187,7 +196,7 @@ if [[ $GENIE_APACHE_ENABLED ]]; then
   PassEnv $passenv_string\n\
   # </__PASSENV__>" /etc/httpd/conf/httpd.conf
   /usr/sbin/httpd
-  echo 'Apache setup done.' >> /var/log/entry.log
+  echo 'Apache setup done.' >> /var/log/entrypoint.log
 fi
 
 # -- Nginx
@@ -196,7 +205,7 @@ if [[ $GENIE_NGINX_ENABLED ]]; then
     sed -i "s/80 default_server/$GENIE_NGINX_HTTP_PORT default_server/" /etc/nginx/nginx.conf
   fi
   /usr/sbin/nginx
-  echo 'Nginx setup done.' >> /var/log/entry.log
+  echo 'Nginx setup done.' >> /var/log/entrypoint.log
 fi
 
 # -- Postfix
@@ -207,35 +216,33 @@ if [[ $GENIE_POSTFIX_ENABLED ]]; then
     echo "/^.+$/ $GENIE_POSTFIX_FORCE_ENVELOPE" >> /etc/postfix/canonical.regexp
   fi
   /usr/sbin/postfix start
-  echo 'Postfix setup done.' >> /var/log/entry.log
+  echo 'Postfix setup done.' >> /var/log/entrypoint.log
 fi
 
 # -- Copy directories other than /opt/
-rsync -rltD --exclude /opt /host/* /
-if [[ -d /host/etc/httpd ]]; then
+rsync -rltD --exclude /opt /genie/* /
+if [[ -d /genie/etc/httpd ]]; then
   if [[ $GENIE_APACHE_ENABLED ]]; then
     /usr/sbin/httpd -k restart
   fi
 fi
-if [[ -d /host/etc/postfix ]]; then
+if [[ -d /genie/etc/postfix ]]; then
   if [[ $GENIE_POSTFIX_ENABLED ]]; then
     /usr/sbin/postfix reload
   fi
 fi
-if [[ -d /host/etc/nginx ]]; then
+if [[ -d /genie/etc/nginx ]]; then
   if [[ $GENIE_NGINX_ENABLED ]]; then
     /usr/sbin/nginx -s reload
   fi
 fi
 
-# -- entry.sh finished
-echo 'entry.sh setup done.' >> /var/log/entry.log
+# -- entrypoint.sh finished
+echo 'entrypoint.sh setup done.' >> /var/log/entrypoint.log
 
-# -- run after.sh
-/opt/after.sh
+# -- run init.sh
+/genie/opt/init.sh
+echo 'init.sh setup done.' >> /var/log/entrypoint.log
 
 # -- daemon loop start
-while true
-do
-    sleep 60
-done
+/loop.sh

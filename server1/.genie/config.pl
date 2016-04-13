@@ -89,13 +89,13 @@ return {
 	# -----------
 	POSTFIX => {
 		# ENABLED => 1,
-		FORCE_ENVELOPE => 'test@kazaoki.jp',
+		FORCE_ENVELOPE => 'webmaster@kazaoki.jp',
 	},
 
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',
@@ -162,34 +162,34 @@ return {
 	POSTGRESQL => {
 		ENABLED => 1,
 		DATABASES => [
-			# {
-			# 	LABEL      => 'db1',
-			# 	REPOSITORY => 'postgres:9.4',
-			# 	HOST       => 'db1.com',
-			# 	NAME       => 'genie_db1',
-			# 	USER       => 'genie_user1',
-			# 	PASS       => '123456789',
-			# 	LOCALE     => 'ja_JP.UTF-8',
-			# 	DUMP_GENEL => 3,
-			# 	PORT       => '54321',
-			# 	BIND_PORTS => [
-			# 		'5432:54321'
-			# 	],
-			# },
 			{
-				LABEL      => 'test-db',
-				REPOSITORY => 'postgres:9.3',
-				# HOST       => 'localhost',
-				NAME       => 'genie_db2',
-				USER       => 'genie_user2',
+				LABEL      => 'db1',
+				REPOSITORY => 'postgres:9.4',
+				HOST       => 'db1.com',
+				NAME       => 'genie_db1',
+				USER       => 'genie_user1',
 				PASS       => '123456789',
 				LOCALE     => 'ja_JP.UTF-8',
-				DUMP_GENEL => 1,
-				PORT       => '55432',
+				DUMP_GENEL => 3,
+				PORT       => '54321',
 				BIND_PORTS => [
-					'55432'
+					'5432:54321'
 				],
 			},
+			# {
+			# 	LABEL      => 'test-db',
+			# 	REPOSITORY => 'postgres:9.3',
+			# 	# HOST       => 'localhost',
+			# 	NAME       => 'genie_db2',
+			# 	USER       => 'genie_user2',
+			# 	PASS       => '123456789',
+			# 	LOCALE     => 'ja_JP.UTF-8',
+			# 	DUMP_GENEL => 1,
+			# 	PORT       => '55432',
+			# 	BIND_PORTS => [
+			# 		'55432'
+			# 	],
+			# },
 		],
 	},
 

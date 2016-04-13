@@ -138,6 +138,12 @@ RUN mkdir /tmp/ngrok/ \
 # ------------
 RUN rpm -ivh http://lftp.yar.ru/ftp/binaries/lftp-4.6.5-1.x86_64.rpm
 
+# Add files
+# ---------
+ADD loop.sh /loop.sh
+ADD entrypoint.sh /entrypoint.sh
+RUN chmod +x /*.sh
+
 # Entry point
 # -----------
-ENTRYPOINT /opt/entry.sh
+ENTRYPOINT /entrypoint.sh
