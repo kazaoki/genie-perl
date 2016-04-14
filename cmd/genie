@@ -1891,12 +1891,16 @@ sub spec {
 	# -- featureファイルの一覧表示のみ
 	if(!($options{all}||$ARGV[1] ne '')) {
 		my @list = &_spec_files($config{GENERAL}->{config_dir} . '/spec/features');
-		my $list = "featureファイル名（前方一致）を指定するか `--all` を指定してください。\n";
-		foreach my $feature_file (@list) {
-			$feature_file =~ s/^$config{GENERAL}->{config_dir}\/spec\/features\///;
-			$list .= "$feature_file\n";
+		if(@list){
+			my $list = "featureファイル名（前方一致）を指定するか `--all` を指定してください。\n";
+			foreach my $feature_file (@list) {
+				$feature_file =~ s/^$config{GENERAL}->{config_dir}\/spec\/features\///;
+				$list .= "$feature_file\n";
+			}
+			message(info=>$list, 1);
+		} else {
+			message(warning=>"featureファイルがありません。以下のディレクトリを確認してください。\n$config{GENERAL}->{config_dir}/spec/features/", 1);
 		}
-		message(info=>$list, 1);
 	}
 
 	# -- 引数指定
