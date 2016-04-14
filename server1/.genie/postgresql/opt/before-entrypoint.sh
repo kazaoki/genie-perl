@@ -19,19 +19,19 @@ export LANG=$POSTGERS_LOCALE
 
 # Copy shell file
 # ---------------
-cp /opt/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
+cp /postgresql/opt/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
 
 # Copy dump file
 # --------------
-cp /opt/dumps/$POSTGRES_LABEL.sql /docker-entrypoint-initdb.d
+cp /postgresql/opt/dumps/$POSTGRES_LABEL.sql /docker-entrypoint-initdb.d
 
 # Copy directories other than /opt/
 # ---------------------------------
-for target in `ls /host`
+for target in `ls /postgresql`
 do
   if [ $target != 'opt' ]; then
     echo $target
-    \cp -rf /host/$target /
+    \cp -rf /postgresql/$target /
   fi
 done
 
