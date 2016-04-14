@@ -919,7 +919,14 @@ sub up {
 			}
 		};
 		&$make_envs(\%config, 'GENIE');
-		my $envs = join(' ', map { sprintf('-e %s="%s"', $_, $envs{$_}) } sort(keys %envs));
+
+		# -- dockerコンテナに送る環境変数引数を構築
+		my $envs;
+		foreach my $key (sort(keys %envs)){
+			if($key =~ /^GENIE_UPMEMO/) { next ;} # 除外する環境変数名
+			$envs .= ' ' if $envs ne '';
+			$envs .= sprintf('-e %s="%s"', $key, $envs{$key});
+		}
 
 		# -- Apache
 		my $apache_option;
