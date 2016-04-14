@@ -1568,7 +1568,7 @@ sub mysql {
 	elsif($ARGV[1] eq 'dump') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
-		`docker exec $config{DOCKER}->{NAME} mkdir -p /opt/dumps/ $hide_all`;
+		`docker exec $config{DOCKER}->{NAME} mkdir -p /mysql/opt/dumps/ $hide_all`;
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
@@ -1579,17 +1579,17 @@ sub mysql {
 			foreach my $gen (reverse 1..$max_gen) {
 				my $gen_str = $gen==1 ? '' : ".$gen";
 				if($gen==$max_gen) {
-					my $cmd = qq|docker exec $label sh -c "rm /opt/dumps/$db->{LABEL}.sql$gen_str"|;
+					my $cmd = qq|docker exec $label sh -c "rm /mysql/opt/dumps/$db->{LABEL}.sql$gen_str"|;
 					`$cmd $hide_all`;
 					next;
 				}
 				my $next = $gen + 1;
-				my $cmd = qq|docker exec $label sh -c "cd /opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
+				my $cmd = qq|docker exec $label sh -c "cd /mysql/opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
 				`$cmd $hide_all`;
 			}
 
 			# -- ダンプ生成
-			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /opt/dumps/$db->{LABEL}.sql"|;
+			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /mysql/opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd $hide_all`;
 			if(!$?) {
 				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql",1);
@@ -1654,7 +1654,7 @@ sub psql {
 	elsif($ARGV[1] eq 'dump') {
 		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
 		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
-		`docker exec $config{DOCKER}->{NAME} mkdir -p /opt/dumps/ $hide_all`;
+		`docker exec $config{DOCKER}->{NAME} mkdir -p /postgresql/opt/dumps/ $hide_all`;
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
@@ -1665,17 +1665,17 @@ sub psql {
 			foreach my $gen (reverse 1..$max_gen) {
 				my $gen_str = $gen==1 ? '' : ".$gen";
 				if($gen==$max_gen) {
-					my $cmd = qq|docker exec $label sh -c "rm /opt/dumps/$db->{LABEL}.sql$gen_str"|;
+					my $cmd = qq|docker exec $label sh -c "rm /postgresql/opt/dumps/$db->{LABEL}.sql$gen_str"|;
 					`$cmd $hide_all`;
 					next;
 				}
 				my $next = $gen + 1;
-				my $cmd = qq|docker exec $label sh -c "cd /opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
+				my $cmd = qq|docker exec $label sh -c "cd /postgresql/opt/dumps/ && mv $db->{LABEL}.sql$gen_str $db->{LABEL}.sql.$next"|;
 				`$cmd $hide_all`;
 			}
 
 			# -- ダンプ生成
-			my $cmd = qq|docker exec $label sh -c "pg_dump $db->{NAME} -U $db->{USER} -p $db->{PORT} > /opt/dumps/$db->{LABEL}.sql"|;
+			my $cmd = qq|docker exec $label sh -c "pg_dump $db->{NAME} -U $db->{USER} -p $db->{PORT} > /postgresql/opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd`;
 			if(!$?) {
 				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/postgresql/opt/dumps/$db->{LABEL}.sql",1);
