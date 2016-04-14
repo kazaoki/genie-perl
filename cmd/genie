@@ -481,7 +481,7 @@ sub say {
 	return if(!$can_say);
 	my $message = encode($is_win ? 'Shift_JIS' : 'UTF-8', shift);
 	if($is_mac) {
-	    system "start say -r 300 \"$message\"";
+	    system "say -r 300 \"$message\"";
 	} elsif ($is_win) {
 		system "start wscript $config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_dir}/genie/opt/say.js \"$message\"";
 	}
