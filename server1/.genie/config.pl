@@ -1,5 +1,11 @@
 return {
 
+	# 起動時メモ
+	# ----------
+	UPMEMO => [
+		# warning => 'XXX',
+	],
+
 	# Docker設定
 	# ----------
 	DOCKER => {
