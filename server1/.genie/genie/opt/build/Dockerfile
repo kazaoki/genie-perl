@@ -16,7 +16,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         git bzip2 tar patch wget \
         readline readline-devel \
         zlib zlib-devel unzip \
-        curl curl-devel \
+        curl curl-devel psmisc \
         bison bison-devel re2c libxml2-devel autoconf automake \
         libjpeg-devel libpng-devel readline-devel libtidy-devel \
         libxslt-devel libmcrypt libmcrypt-devel php-mcrypt \
@@ -35,6 +35,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         nginx \
         ruby ruby-devel rubygem-bundler \
         ibus-kkc vlgothic-* \
+        xorg-x11-server-Xvfb firefox \
     && yum clean all
 
 # Set locale

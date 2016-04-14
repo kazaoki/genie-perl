@@ -13,7 +13,7 @@ fi
 # -- spec mode
 if [[ $GENIE_RUNMODE == 'spec' ]]; then
   # -- dir copy
-  \cp -rpdfa /_/* /
+  \cp -rpdfL /_/* /
   # -- ENV modify ('SPEC_' del)
   perl -e 'map{$_=~/^SPEC_(.+)$/&&print "export $1\n"}split("\n", `env`)' > /tmp/nospec.env
   . /tmp/nospec.env

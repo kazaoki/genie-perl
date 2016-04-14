@@ -224,6 +224,10 @@ return {
 	# SPEC設定
 	# --------
 	SPEC => {
+		# BROWSER       => 'firefox', # phantomjs | firefox
+		CAPTURE_WIDTH => 1920,
+		JS_ERRORS     => 0, # 現在はphantomjsのみ
+		USER_AGENT    => '', # 現在はphantomjsのみ
 		HOSTS         => [
 			'genie-test.com:127.0.0.1',
 		],
