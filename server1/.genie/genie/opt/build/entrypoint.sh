@@ -5,8 +5,6 @@ echo ". /etc/bashrc" >> /root/.bashrc
 
 # -- httpd mode
 if [[ $GENIE_RUNMODE == 'httpd' ]]; then
-  sed -i "s/ErrorLog\ \"logs\/error_log\"/ErrorLog\ \"\/proc\/self\/fd\/2\"/" /etc/httpd/conf/httpd.conf
-  sed -i "s/CustomLog\ \"logs\/access_log\"\ combined/CustomLog\ \"\/proc\/self\/fd\/1\"\ combined/" /etc/httpd/conf/httpd.conf
   /usr/sbin/httpd
   /loop.sh
   exit 0

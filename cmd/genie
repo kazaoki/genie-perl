@@ -136,7 +136,7 @@ if( -d $config{GENERAL}->{config_dir} ){
 	}
 } else {
 	unless($ARGV[0] eq '' || $ARGV[0] =~ /^$noconf_args$/){
-		throw("設定ファイル（$config{GENERAL}->{config_file}）が先祖パスに見つかりません。\n`genie init`をお忘れではないですか？");
+		throw("設定ディレクトリが先祖パスに見つかりません。`genie init`をお忘れではないですか？");
 	}
 }
 
@@ -989,8 +989,6 @@ sub up {
 					$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ --add-host="$_" $config{DOCKER}->{IMAGE}/;
 				}
 			}
-			# -- エントリポイントの場所修正
-			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ \-\-entrypoint\=\"\/_\/opt\/entry\.sh\" $config{DOCKER}->{IMAGE}/;
 		}
 
 		# -- スクリプトパーミッション設定
@@ -1402,7 +1400,7 @@ sub httpd {
 	# -- 公式httpdイメージから起動
 	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
 	# my $cmd = "docker run -d -p 80 -v $letter$now_path:/var/www/html/ php:5.6-apache";
-	my $cmd = "docker run -d -p 80 -v $letter$now_path:/var/www/html/ -e GENIE_RUNMODE=httpd kazaoki/genie";
+	my $cmd = "docker run -d -t -p 80 -e TERM=xterm -v $letter$now_path:/var/www/html/ -e GENIE_RUNMODE=httpd kazaoki/genie";
 	my $cid = `$cmd`;
 	if($?) {
 		throw('Webサーバが起動しませんでした。', $cmd);
@@ -1419,20 +1417,12 @@ sub httpd {
 			`$open_cmd $url`;
 		}
 
-		# -- Ctrl+C時に自動的にコンテナ削除されるように
-		if($is_win) {
-			# Winの場合
-			$SIG{INT} = sub {
-				print "\nDeleting container $cid ...\n\n";
-				`docker rm -f $cid`;
-			};
-			system("docker logs -f $cid");
-		} else {
-			# Mac/Linuxの場合
-			system("docker logs -f $cid");
-			print "\nDeleting container $cid ...\n\n";
-			`docker rm -f $cid`;
-		}
+		# -- ngrok起動
+		system "docker exec -it $cid ngrok http 80";
+
+		# -- コンテナ削除
+		print "\nDeleting container $cid ...\n\n";
+		`docker rm -f $cid`;
 
 	} else {
 		throw('サーバは起動しましたが、ポートが取得できませんでした。');
