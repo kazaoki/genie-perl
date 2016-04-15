@@ -540,12 +540,12 @@ sub wait_container {
 		throw('停止ワードが指定されていません。');
 	}
 	# -- デフォルト値セット
-	$param->{label}          ||= '';
-	$param->{label_head}     ||= '  | - ';
-	$param->{progress_char}  ||= '.';
-	$param->{result_ok}      ||= 'OK';
-	$param->{result_ng}      ||= 'NG';
-	$param->{sleep_sec}      ||= 1;
+	$param->{label}         = (defined $param->{label}        ) ? $param->{label}         : '';
+	$param->{label_head}    = (defined $param->{label_head}   ) ? $param->{label_head}    : '  | - ';
+	$param->{progress_char} = (defined $param->{progress_char}) ? $param->{progress_char} : '.';
+	$param->{result_ok}     = (defined $param->{result_ok}    ) ? $param->{result_ok}     : 'OK';
+	$param->{result_ng}     = (defined $param->{result_ng}    ) ? $param->{result_ng}     : 'NG';
+	$param->{sleep_sec}     = (defined $param->{sleep_sec}    ) ? $param->{sleep_sec}     : 1;
 
 	# -- ラベル表示
 	echo "$param->{label_head}$param->{label} ";
@@ -816,6 +816,9 @@ sub up {
 				label          => "MySQL container start ($label)",
 			});
 			
+			# -- コンテナ直下に起動用コマンドを記録する（restore用）
+			`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
+
 			# -- 本体からリンク
 			$mysql_option .= " --link $label";
 
@@ -871,6 +874,9 @@ sub up {
 				stop_word      => 'Process start',
 				label          => "PostgreSQL container start ($label)",
 			});
+
+			# -- コンテナ直下に起動用コマンドを記録する（restore用）
+			`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
 
 			# -- 本体からリンク
 			$postgresql_option .= " --link $label";
@@ -1610,9 +1616,44 @@ sub mysql {
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
-			`docker restart $config{DOCKER}->{NAME}-mysql-$db->{LABEL}`;
-			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql",1);
+			my $dumpfile = "$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql";
+			if(!-e $dumpfile) { next; }
+			my $label = "$config{DOCKER}->{NAME}-mysql-$db->{LABEL}";
+
+			# -- コンテナ起動用コマンドを取得
+			my $cmd = `docker exec $label sh -c "cat /docker-run.cmd"`;
+
+			# -- 参照ボリューム名取得
+			my @volumes = &get_data_volume_name($label);
+
+			# -- コンテナ削除とボリューム削除（DataVolume名がlockedだろうと削除します）
+			style(color=>'black', bgcolor=>'dark_black');
+			echo "  Delete MySQL container: $label";
+			`docker rm -f $label $hide_all`;
+			if($?) {
+				style({color=>'red'});
+				echo "NG\n";
+				style({color=>'clear'});
+			} else {
+				echo " deleted\n";
+			}
+			style(color=>'clear', bgcolor=>'clear');
+			map { `docker volume rm $_` } @volumes;
+
+			# -- コンテナを再起動
+			`$cmd`;
+			my $result = $?;
+			`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
+			if(!$result) {
+				# -- 起動開始のプログレス
+				echo "  Restore MySQL container: $label";
+				wait_container ({
+					container_name => $label,
+					stop_word      => 'MySQL init process done. Ready for start up.',
+					label_head     => '',
+					label          => '',
+				});
+				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$dumpfile",1);
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
@@ -1696,9 +1737,44 @@ sub psql {
 		my $count = 1;
 		foreach my $db (@dbs){
 			if($db_number && $db_number!=$count++) { next; }
-			`docker restart $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}`;
-			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n$config{GENERAL}->{config_dir}/postgresql/opt/dumps/$db->{LABEL}.sql",1);
+			my $dumpfile = "$config{GENERAL}->{config_dir}/postgresql/opt/dumps/$db->{LABEL}.sql";
+			if(!-e $dumpfile) { next; }
+			my $label = "$config{DOCKER}->{NAME}-postgresql-$db->{LABEL}";
+
+			# -- コンテナ起動用コマンドを取得
+			my $cmd = `docker exec $label sh -c "cat /docker-run.cmd"`;
+
+			# -- 参照ボリューム名取得
+			my @volumes = &get_data_volume_name($label);
+
+			# -- コンテナ削除とボリューム削除（DataVolume名がlockedだろうと削除します）
+			style(color=>'black', bgcolor=>'dark_black');
+			echo "  Delete PostgreSQL container: $label";
+			`docker rm -f $label $hide_all`;
+			if($?) {
+				style({color=>'red'});
+				echo "NG\n";
+				style({color=>'clear'});
+			} else {
+				echo " deleted\n";
+			}
+			style(color=>'clear', bgcolor=>'clear');
+			map { `docker volume rm $_` } @volumes;
+
+			# -- コンテナを再起動
+			`$cmd`;
+			my $result = $?;
+			`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
+			if(!$result) {
+				# -- 起動開始のプログレス
+				echo "  Restore PostgreSQL container: $label";
+				wait_container ({
+					container_name => $label,
+					stop_word      => 'データベースシステムの接続受付準備が整いました。',
+					label_head     => '',
+					label          => '',
+				});
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n$dumpfile",1);
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}

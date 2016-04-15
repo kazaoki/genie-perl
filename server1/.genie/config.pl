@@ -114,7 +114,7 @@ return {
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 3,
 			# 	BIND_PORTS => [
-			# 		'3306:3306'
+			# 		'3306'
 			# 	],
 			# },
 			# {
@@ -127,7 +127,7 @@ return {
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 1,
 			# 	BIND_PORTS => [
-			# 		'3306:3306'
+			# 		'3306'
 			# 	],
 			# },
 			# {
@@ -140,7 +140,7 @@ return {
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 1,
 			# 	BIND_PORTS => [
-			# 		'3306:3306'
+			# 		'3306'
 			# 	],
 			# },
 			{
@@ -188,7 +188,7 @@ return {
 			# 	LOCALE     => 'ja_JP.UTF-8',
 			# 	DUMP_GENEL => 1,
 			# 	BIND_PORTS => [
-			# 		'5432:5432'
+			# 		'5432'
 			# 	],
 			# },
 		],
