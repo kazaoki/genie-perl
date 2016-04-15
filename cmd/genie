@@ -283,8 +283,8 @@ sub help {
 				'logs'                     => 'ログファイルをtailする',
 				'dlsync <timing of later>' => 'FTPサーバからファイルをダウンロード同期：引数無しでヘルプ表示',
 				'httpd'                    => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
-				'spec <feature dir/files>' => 'PhantomJSを使ったSPECテストを実行',
-				'spec all'                 => 'PhantomJSを使ったSPECテストを全て実行'
+				'spec <feature dir/files>' => 'Capybaraを使用したSPECテストを実行：引数無しでヘルプ表示',
+				'spec --all'               => 'Capybaraを使用したSPECテストを全て実行',
 			],
 		},
 	];
