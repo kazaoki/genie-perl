@@ -847,7 +847,6 @@ sub up {
 				" -e POSTGRES_DB=$db->{NAME}".
 				" -e POSTGRES_USER=$db->{USER}".
 				" -e POSTGRES_PASSWORD=$db->{PASS}".
-				" -e POSTGERS_PORT=$db->{PORT}".
 				" -e POSTGERS_ENCODING=$db->{ENCODING}".
 				" -e POSTGERS_LOCALE=$db->{LOCALE}".
 				" -e TERM=xterm".
@@ -1649,7 +1648,7 @@ sub psql {
 		my $db = $dbs[$db_number-1];
 		my $cmd =
 			qq|docker exec -it $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}|.
-			qq| psql $db->{NAME} -U $db->{USER} -p $db->{PORT}|
+			qq| psql $db->{NAME} -U $db->{USER}|
 		;
 		system $cmd;
 	}

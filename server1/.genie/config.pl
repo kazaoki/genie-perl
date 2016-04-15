@@ -49,8 +49,8 @@ return {
 	# Perl設定
 	# --------
 	PERL => {
-		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
-		# CPANFILE_ENABLED => 1,
+		VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		CPANFILE_ENABLED => 1,
 	},
 
 	# PHP設定
@@ -178,9 +178,8 @@ return {
 				PASS       => '123456789',
 				LOCALE     => 'ja_JP.UTF-8',
 				DUMP_GENEL => 3,
-				PORT       => '54321',
 				BIND_PORTS => [
-					'5432:54321'
+					'5432:5432'
 				],
 			},
 			# {
@@ -192,9 +191,8 @@ return {
 			# 	PASS       => '123456789',
 			# 	LOCALE     => 'ja_JP.UTF-8',
 			# 	DUMP_GENEL => 1,
-			# 	PORT       => '55432',
 			# 	BIND_PORTS => [
-			# 		'55432'
+			# 		'5432:5432'
 			# 	],
 			# },
 		],
