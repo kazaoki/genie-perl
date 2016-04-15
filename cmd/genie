@@ -1161,7 +1161,6 @@ sub down {
 
 	# -- 対象コンテナピックアップ
 	my @exist_containers;
-	my @rm_volumes;
 	my $container_name_base = ($is_spec ? 'SPEC-' : '') . $config{DOCKER}->{NAME};
 
 	# -- MySQL
@@ -1170,7 +1169,6 @@ sub down {
 			my $label = $container_name_base . "-mysql-" . $_->{LABEL};
 			if(is_exist($label)){
 				push @exist_containers, $label;
-				push @rm_volumes, get_data_volume_name($label);
 			}
 		}
 	}
@@ -1181,7 +1179,6 @@ sub down {
 			my $label = $container_name_base . "-postgresql-" . $_->{LABEL};
 			if(is_exist($label)){
 				push @exist_containers, $label;
-				push @rm_volumes, get_data_volume_name($label);
 			}
 		}
 	}
@@ -1189,7 +1186,6 @@ sub down {
 	# -- genie本体
 	if(is_exist($container_name_base)){
 		push @exist_containers, $container_name_base;
-		push @rm_volumes, get_data_volume_name($container_name_base);
 	}
 
 	# -- 削除開始
@@ -1210,11 +1206,6 @@ sub down {
 		style(color=>'clear', bgcolor=>'clear');
 		print "\n";
 
-		# -- ストレージボリュームを削除（未参照状態にならないと消えないので最後に実行）
-		if(@rm_volumes) {
-			my $cmd = 'docker volume rm ' . join(' ', grep { $_ !~ /^locked[\-\_]/ } @rm_volumes) . " $hide_all"; # lockedから始まるものは除外
-			`$cmd`;
-		}
 	}
 
 }
