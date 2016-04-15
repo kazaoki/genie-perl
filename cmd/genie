@@ -786,6 +786,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/mysql:/mysql".
+				($db->{DATA_VOLUME} ? " -v $db->{DATA_VOLUME}:/var/lib/mysql" : '').
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -843,6 +844,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/postgresql".
+				($db->{DATA_VOLUME} ? " -v $db->{DATA_VOLUME}:/var/lib/postgresql/data" : '').
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -1116,7 +1118,7 @@ sub up {
 			if($config{MYSQL}->{ENABLED}) {
 				wait_container ({
 					container_name => $mysql_last_label,
-					stop_word      => 'MySQL init process done. Ready for start up.',
+					stop_word      => 'port: 3306  MySQL Community Server (GPL)',
 					label          => 'MySQL ready',
 				});
 			}
@@ -1210,7 +1212,7 @@ sub down {
 
 		# -- ストレージボリュームを削除（未参照状態にならないと消えないので最後に実行）
 		if(@rm_volumes) {
-			my $cmd = 'docker volume rm ' . join(' ', @rm_volumes) . " $hide_all";
+			my $cmd = 'docker volume rm ' . join(' ', grep { $_ !~ /^locked[\-\_]/ } @rm_volumes) . " $hide_all"; # lockedから始まるものは除外
 			`$cmd`;
 		}
 	}
@@ -1385,7 +1387,7 @@ sub clean {
 					message(success=>"${deleted}個のデータボリュームを削除しました。");
 				}
 				if($undeleted) {
-					message(success=>"${undeleted}個のデータボリュームが設定ファイルでロックされています。");
+					message(warning=>"${undeleted}個のデータボリュームが削除できない名前になっています。（lockedから始まる）\n但し、`genie clean locked` で強制削除できます。");
 				}
 			}
 		} else {
@@ -1649,7 +1651,7 @@ sub mysql {
 				echo "  Restore MySQL container: $label";
 				wait_container ({
 					container_name => $label,
-					stop_word      => 'MySQL init process done. Ready for start up.',
+					stop_word      => 'port: 3306  MySQL Community Server (GPL)',
 					label_head     => '',
 					label          => '',
 				});

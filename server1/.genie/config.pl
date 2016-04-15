@@ -113,6 +113,7 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 3,
+			# 	# DATA_VOLUME => '',
 			# 	BIND_PORTS => [
 			# 		'3306'
 			# 	],
@@ -126,6 +127,7 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 1,
+			# 	# DATA_VOLUME => '',
 			# 	BIND_PORTS => [
 			# 		'3306'
 			# 	],
@@ -139,20 +141,22 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 1,
+			# 	# DATA_VOLUME => '',
 			# 	BIND_PORTS => [
 			# 		'3306'
 			# 	],
 			# },
 			{
-				LABEL      => 'wp',
-				REPOSITORY => 'mysql:5.7',
-				HOST       => 'db-wp.kazaoki.jp',
-				NAME       => 'wp',
-				USER       => 'wp',
-				PASS       => '123456',
-				CHARSET    => 'utf8',
-				DUMP_GENEL => 2,
-				BIND_PORTS => [
+				LABEL       => 'wp',
+				REPOSITORY  => 'mysql:5.7',
+				HOST        => 'db-wp.kazaoki.jp',
+				NAME        => 'wp',
+				USER        => 'wp',
+				PASS        => '123456',
+				CHARSET     => 'utf8',
+				DUMP_GENEL  => 2,
+				# DATA_VOLUME => '',
+				BIND_PORTS  => [
 					'3306:3306'
 				],
 			},
@@ -163,18 +167,19 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			{
-				LABEL      => 'db1',
-				REPOSITORY => 'postgres:9.4',
-				HOST       => 'db1.com',
-				NAME       => 'genie_db1',
-				USER       => 'genie_user1',
-				PASS       => '123456789',
-				LOCALE     => 'ja_JP.UTF-8',
-				DUMP_GENEL => 3,
-				BIND_PORTS => [
+				LABEL       => 'db1',
+				REPOSITORY  => 'postgres:9.4',
+				HOST        => 'db1.com',
+				NAME        => 'genie_db1',
+				USER        => 'genie_user1',
+				PASS        => '123456789',
+				LOCALE      => 'ja_JP.UTF-8',
+				DUMP_GENEL  => 3,
+				# DATA_VOLUME => '',
+				BIND_PORTS  => [
 					'5432:5432'
 				],
 			},
