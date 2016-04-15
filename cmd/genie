@@ -249,7 +249,7 @@ sub help {
 				'cli'           => 'genieコンテナのCLIにログイン',
 				'cli <command>' => 'genieコンテナ上で指定コマンド<command>実行',
 				'ls'            => 'docker情報を一挙に表示',
-				'reject'        => 'genie管理外のdockerコンテナも全て強制削除',
+				'reject'        => 'genie管理外のdockerコンテナも全て強制削除した後、clean実行',
 				'clean'         => '終了済みコンテナ、<none>イメージ、未参照のDataVolumeの削除',
 				'clean locked'  => '`locked-`から始まるDataVolumeも削除',
 				'php'           => 'PHPの指定可能なバージョンリストと現在のphpenv選択バージョンの表示',
@@ -1292,6 +1292,7 @@ sub reject {
 		message(warning=>'コンテナが１つも見つかりませんでした。');
 	}
 
+	&clean();
 }
 
 # --------------------------------------------------------------------
