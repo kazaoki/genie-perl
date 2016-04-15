@@ -69,12 +69,13 @@ return {
 	# ----------
 	APACHE => {
 		ENABLED => 1,
-		PUBLIC_PATH => 'public_html',
-		NO_CACHE    => 1,
-		# BANDWIDTH   => 100,
-		HTTP_PORT   => 80,
-		HTTPS_PORT  => 443,
-		BIND_PORTS  => [
+		PUBLIC_PATH  => 'public_html',
+		# NO_CACHE     => 1,
+		# BANDWIDTH    => 1000,
+		NO_LOG_REGEX => '\.(gif|jpe?g|png|ico)$',
+		HTTP_PORT    => 80,
+		HTTPS_PORT   => 443,
+		BIND_PORTS   => [
 			'80:80',
 			'443:443',
 		]
