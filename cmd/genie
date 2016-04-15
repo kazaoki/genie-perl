@@ -791,7 +791,6 @@ sub up {
 				" -e MYSQL_DATABASE=$db->{NAME}".
 				" -e MYSQL_USER=$db->{USER}".
 				" -e MYSQL_PASSWORD=$db->{PASS}".
-				" -e MYSQL_PORT=$db->{PORT}".
 				" -e MYSQL_CHARSET=$db->{CHARSET}".
 				" -e TERM=xterm".
 				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
@@ -1561,8 +1560,7 @@ sub mysql {
 			qq|docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{LABEL}|.
 			qq| mysql $db->{NAME}|.
 			qq| -u$db->{USER}|.
-			qq| -p$db->{PASS}|.
-			qq| -P$db->{PORT}|
+			qq| -p$db->{PASS}|
 		;
 		system $cmd;
 	}

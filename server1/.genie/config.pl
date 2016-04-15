@@ -102,7 +102,7 @@ return {
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',
@@ -113,9 +113,8 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 3,
-			# 	PORT       => '13306',
 			# 	BIND_PORTS => [
-			# 		'3308:13306'
+			# 		'3306:3306'
 			# 	],
 			# },
 			# {
@@ -127,9 +126,8 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 1,
-			# 	PORT       => '23306',
 			# 	BIND_PORTS => [
-			# 		'3309:23306'
+			# 		'3306:3306'
 			# 	],
 			# },
 			# {
@@ -141,9 +139,8 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 1,
-			# 	PORT       => '23306',
 			# 	BIND_PORTS => [
-			# 		'3310:23306'
+			# 		'3306:3306'
 			# 	],
 			# },
 			{
@@ -155,9 +152,8 @@ return {
 				PASS       => '123456',
 				CHARSET    => 'utf8',
 				DUMP_GENEL => 2,
-				PORT       => '13306',
 				BIND_PORTS => [
-					'13306'
+					'3306:3306'
 				],
 			},
 		],

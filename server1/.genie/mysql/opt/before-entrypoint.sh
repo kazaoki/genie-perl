@@ -13,7 +13,6 @@ echo 'Asia/Tokyo' > /etc/timezone
 # -------------------------
 cp /mysql/opt/conf.d/* /etc/mysql/conf.d
 sed -i "s/<__MYSQL_CHARSET__>/$MYSQL_CHARSET/" /etc/mysql/conf.d/*
-sed -i "s/<__MYSQL_PORT__>/$MYSQL_PORT/" /etc/mysql/conf.d/*
 chmod -R 0660 /etc/mysql/conf.d
 
 # Copy shell file
