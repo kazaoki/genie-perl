@@ -20,7 +20,10 @@ RSpec.configure do |config|
 
   # -- driver
   if ENV['GENIE_SPEC_BROWSER'] == "firefox" then
-    Capybara.default_driver = :headless_forefox
+    Capybara.default_driver = :headless_firefox
+    Capybara.javascript_driver = :headless_firefox
+    headless = Headless.new(dimensions: ENV['GENIE_SPEC_CAPTURE_WIDTH']+"x1080x24")
+    headless.start
   else
     Capybara.default_driver = :poltergeist
   end
@@ -66,9 +69,9 @@ Capybara.register_driver :remote_browser do |app|
 end
 
 # --------------------------------------------------------------------
-# Xvfbを使ったforefoxヘッドレスドライバ
+# Xvfbを使ったfirefoxヘッドレスドライバ
 # --------------------------------------------------------------------
-Capybara.register_driver :headless_forefox do |app|
+Capybara.register_driver :headless_firefox do |app|
   Capybara::Selenium::Driver.new(app, browser: :firefox)
 end
 

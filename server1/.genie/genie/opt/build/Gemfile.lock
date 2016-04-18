@@ -26,6 +26,7 @@ GEM
       capybara (~> 2.2)
       oily_png
       turnip_formatter (~> 0.5.0)
+    headless (2.2.3)
     json (1.8.3)
     mime-types (3.0)
       mime-types-data (~> 3.2015)
@@ -91,6 +92,7 @@ DEPENDENCIES
   capybara-user_agent
   fuubar
   gnawrnip
+  headless
   json
   poltergeist
   selenium-webdriver

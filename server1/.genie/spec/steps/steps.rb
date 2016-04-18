@@ -93,7 +93,7 @@ end
 
 step '最後に開いたウィンドウに移動する' do
   page.driver.browser.switch_to_window(page.driver.browser.window_handles.last)
-  page.driver.resize_window(ENV['SPEC_CAPTURE_WIDTH'], 1)
+  page.driver.resize_window(ENV['GENIE_SPEC_CAPTURE_WIDTH'], 1)
 end
 
 step 'ウィンドウを閉じる' do

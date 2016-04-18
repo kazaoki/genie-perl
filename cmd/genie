@@ -2007,9 +2007,8 @@ sub spec {
 		&up('spec');
 
 		# -- SPECを実行
-		my $spec_shell = $config{SPEC}->{BROWSER} eq 'firefox' ? 'spec-firefox.sh' : 'spec-phantomjs.sh';
 		my $container_name = 'SPEC-'.$config{DOCKER}->{NAME};
-		my $cmd = "docker exec -it $container_name sh -c \"/spec/$spec_shell $files_args\"";
+		my $cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
 		my $res = system $cmd;
 		echo "\n";
 
