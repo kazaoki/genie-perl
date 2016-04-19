@@ -299,11 +299,24 @@ sub help {
 		},
 	];
 
+	# -- 追加サブコマンド用のヘルプ追加
+	if( ref $config{ADD_COMMAND} && %{$config{ADD_COMMAND}} ) {
+		my $list = [];
+		foreach(keys %{$config{ADD_COMMAND}}) {
+			push @$list, $_ => $config{ADD_COMMAND}->{$_};
+		}
+		if(scalar(@$list)<3) { push @$list, '' }
+		push @$helps, {
+			label => "ADD\nCOMMANDS",
+			list  => $list,
+		};
+	}
+
 	my $label_width   = 10;
 	my $command_width = 25;
 
 	echo "\n";
-	echo "Usage: genie COMMAND [arg...] [OPTIONS]\n";
+	echo &gray_brace("Usage: genie [command] <options>\n");
 	foreach my $help (@{$helps}) {
 		echo "\n";
 		my @label_line = split("\n", $help->{label});
@@ -313,11 +326,18 @@ sub help {
 			echo sprintf("\x1b[36m%-".$label_width."s\x1b[0m | ", $label_line[$count++]);
 			my($command, $desc) = splice(@list, 0, 2);
 			my $before_command = $command;
-			$command =~ s/(\<.+\>)/\x1b[90m$1\x1b[0m/g;
+			$command = &gray_brace($command);
 			echo sprintf("%-".($command_width+(length($command)-length($before_command)))."s%s\n", $command, $desc);
 		}
 	}
 	echo "\n";
+}
+
+# -- <>で囲まれた箇所をグレー表示にする
+sub gray_brace {
+	my $str = shift;
+	$str =~ s/(\<.+\>)/\x1b[90m$1\x1b[0m/g;
+	return $str;
 }
 
 # --------------------------------------------------------------------
