@@ -8,7 +8,7 @@ use strict;
 use utf8;
 use Encode qw/encode decode/;
 use Data::Dumper;
-use Getopt::Long qw(:config no_auto_abbrev no_ignore_case gnu_compat );
+use Getopt::Long qw(:config no_auto_abbrev no_ignore_case gnu_compat pass_through);
 use Cwd;
 use HTTP::Date;
 $| = 1;
@@ -200,8 +200,18 @@ if($config{ADD_COMMAND} && keys %{$config{ADD_COMMAND}}){
 		exit 1 unless require_up(); # 起動必須
 		my @args = @ARGV;
 		shift @args;
-		my $cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' sh -c "' . $config{ADD_COMMAND}->{$ARGV[0]} . ' ' . join(' ', @args) . '"';
+		my $in_cmd = $config{ADD_COMMAND}->{$ARGV[0]} . ' ' . join(' ', @args);
+		$in_cmd =~ s/\"/\\\"/g;
+		my $cmd = "docker exec -ti $config{DOCKER}->{NAME} sh -c \"$in_cmd\"";
 		system($cmd);
+
+		# -- 終了処理
+		echo "\n";
+		style(color=>'black', bgcolor=>'dark_black');
+		echo "  EOL\n\n";
+		style(color=>'clear', bgcolor=>'clear');
+
+		# -- genie正常完了
 		exit 0;
 	}
 }
@@ -981,8 +991,7 @@ sub up {
 			' -e TERM=xterm'.
 			' -e LANG=ja_JP.UTF-8'.
 			' -e LC_ALL=ja_JP.UTF-8'.
-			# " -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
-			# " -v $letter$config{GENERAL}->{config_dir}/genie:/host".
+			($config{PERL}->{CPANFILE_ENABLED} ? ' -e PERL5LIB=/perl/cpanfile-modules/lib/perl5' : '').
 			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
 			$mysql_option.
 			$postgresql_option.
