@@ -24,7 +24,6 @@ fi
 # -- dlsync mode
 if [[ $GENIE_RUNMODE == 'dlsync' ]]; then
   rm -f /tmp/mirror.cmd
-  echo "set file:charset utf8" >> /tmp/mirror.cmd
   echo "set ftp:charset $GENIE_DLSYNC_LFTP_CHARSET" >> /tmp/mirror.cmd
   echo "set ftp:list-options -a" >> /tmp/mirror.cmd
   echo "set ssl:verify-certificate no" >> /tmp/mirror.cmd

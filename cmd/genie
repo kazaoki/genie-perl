@@ -546,6 +546,7 @@ sub get_container_ip {
 # &wait_container(
 #     container_name => 'genie-test',
 #     log_file       => '/var/log/apache.log',
+#     proc_command   => 'entrypoint.sh',
 #     stop_word      => 'done',
 #     label          => 'Start',
 #     label_head     => ' ',   # default '  | '
@@ -556,6 +557,7 @@ sub get_container_ip {
 # );
 # `container_name`コンテナ内の`log_file`に`stop_word`が見つかるまでループします。
 # ※log_file未指定の場合は、標準出力(docker logs)の値から探します。
+# ※proc_commandが指定されてた場合は、ログファイルや標準出力ではなく、psコマンドで指定のコマンドが終了して消えるまでループします。
 sub wait_container {
 	my $param = shift;
 	# -- コンテナ名チェック
@@ -565,8 +567,8 @@ sub wait_container {
 	if(!is_up($param->{container_name})){
 		throw("指定のコンテナ `$param->{container_name}` に接続出来ませんでした。")
 	}
-	# -- 停止ワードチェック
-	if(!$param->{stop_word}){
+	# -- 停止ワードチェック（proc_commandが指定されている場合は不必要）
+	if((!$param->{proc_command}) && !$param->{stop_word}){
 		throw('停止ワードが指定されていません。');
 	}
 	# -- デフォルト値セット
@@ -583,11 +585,20 @@ sub wait_container {
 	my $error;
 	my $loop = 1;
 	my $progress_count = 0;
-	my $cmd =
-		$param->{log_file}
-			? qq|docker exec $param->{container_name} sh -c "cat $param->{log_file} 2>/dev/null \| grep '$param->{stop_word}' \| wc -l"|
-			: qq|docker logs $param->{container_name} 2>&1|
-	;
+
+	# -- チェック用コマンド用意
+	my $cmd;
+	if($param->{log_file}) {
+		# -- ログファイルをチェックするコマンド
+		$cmd = qq|docker exec $param->{container_name} sh -c "cat $param->{log_file} 2>/dev/null \| grep '$param->{stop_word}' \| wc -l"|;
+	} elsif($param->{proc_command}) {
+		# -- プロセスから指定コマンドが消えているかチェックするコマンド
+		$cmd = qq/docker exec $param->{container_name} sh -c "ps aux|grep $param->{proc_command}|grep -v grep|wc -l"/;
+	} else {
+		# -- 標準出力をチェックするコマンド
+		$cmd = qq|docker logs $param->{container_name} 2>&1|;
+	}
+		
 	do {
 		# -- 生存確認
 		if(is_up($param->{container_name})){
@@ -596,6 +607,18 @@ sub wait_container {
 				my $hit_count = `$cmd`;
 				chomp $hit_count;
 				if($hit_count) {
+					undef $loop;
+				} else {
+					echo $param->{progress_char};
+					$progress_count ++;
+					sleep $param->{sleep_sec};
+				}
+			}
+			# -- プロセスから指定コマンドが消えているかチェック
+			elsif($param->{proc_command}) {
+				my $hit_count = `$cmd`;
+				chomp $hit_count;
+				if(!$hit_count) {
 					undef $loop;
 				} else {
 					echo $param->{progress_char};
@@ -1147,7 +1170,7 @@ sub up {
 			if($config{MYSQL}->{ENABLED}) {
 				wait_container ({
 					container_name => $mysql_last_label,
-					stop_word      => 'port: 3306  MySQL Community Server (GPL)',
+					proc_command   => 'entrypoint.sh',
 					label          => 'MySQL ready',
 				});
 			}
@@ -1156,7 +1179,7 @@ sub up {
 			if($config{POSTGRESQL}->{ENABLED}) {
 				wait_container ({
 					container_name => $postgresql_last_label,
-					stop_word      => 'データベースシステムの接続受付準備が整いました。',
+					proc_command   => 'entrypoint.sh',
 					label          => 'PostgreSQL ready',
 				});
 			}
@@ -1671,7 +1694,7 @@ sub mysql {
 				echo "  Restore MySQL container: $label";
 				wait_container ({
 					container_name => $label,
-					stop_word      => 'port: 3306  MySQL Community Server (GPL)',
+					proc_command   => 'entrypoint.sh',
 					label_head     => '',
 					label          => '',
 				});
@@ -1792,7 +1815,7 @@ sub psql {
 				echo "  Restore PostgreSQL container: $label";
 				wait_container ({
 					container_name => $label,
-					stop_word      => 'データベースシステムの接続受付準備が整いました。',
+					proc_command   => 'entrypoint.sh',
 					label_head     => '',
 					label          => '',
 				});

@@ -167,7 +167,7 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL       => 'db1',
