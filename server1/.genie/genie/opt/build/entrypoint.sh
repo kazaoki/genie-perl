@@ -24,7 +24,12 @@ fi
 # -- dlsync mode
 if [[ $GENIE_RUNMODE == 'dlsync' ]]; then
   rm -f /tmp/mirror.cmd
-  echo "set ftp:charset $GENIE_DLSYNC_LFTP_CHARSET" >> /tmp/mirror.cmd
+  if [[ $GENIE_DLSYNC_REMOTE_CHARSET ]]; then
+    echo "set ftp:charset $GENIE_DLSYNC_REMOTE_CHARSET" >> /tmp/mirror.cmd
+  fi
+  if [[ $GENIE_DLSYNC_LOCAL_CHARSET ]]; then
+    echo "set file:charset $GENIE_DLSYNC_LOCAL_CHARSET" >> /tmp/mirror.cmd
+  fi
   echo "set ftp:list-options -a" >> /tmp/mirror.cmd
   echo "set ssl:verify-certificate no" >> /tmp/mirror.cmd
   echo "open -u $GENIE_DLSYNC_REMOTE_USER,$GENIE_DLSYNC_REMOTE_PASS $GENIE_DLSYNC_REMOTE_HOST" >> /tmp/mirror.cmd

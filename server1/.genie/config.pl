@@ -216,7 +216,8 @@ return {
 		REMOTE_PASS  => '',
 		REMOTE_DIR   => '/public_html',
 		LOCAL_DIR    => 'public_html', # ホームパスからの相対です
-		LFTP_CHARSET => 'utf8', # utf8, sjis 等
+		# REMOTE_CHARSET => 'utf8', # utf8, sjis 等
+		# LOCAL_CHARSET  => 'sjis',
 		LFTP_OPTION  => '--verbose --delete -X .genie -X .git*', # mirror時のオプション（http://lftp.yar.ru/lftp-man.html）
 		DEFAULT_ARGV => '', # `genie dlsync`の引数が無い時の引数を指定できます。
 	},
