@@ -85,6 +85,13 @@ elsif($is_linux) {
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
 sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 
+# -- 生のsjis文字列をフラグ付きutf8にする
+sub sjis2utf8 {
+	my $str = shift;
+	Encode::from_to($str, 'sjis', 'utf8');
+	return Encode::decode('utf8', $str);
+}
+
 # -- 設定値変数
 my %config;
 
@@ -1648,7 +1655,9 @@ sub mysql {
 			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /mysql/opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd $hide_all`;
 			if(!$?) {
-				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql",1);
+				my $dumpfile = "$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql";
+				if($is_win){ $dumpfile = &sjis2utf8($dumpfile) } # Windowsの場合、パスに日本語が入っている可能性があるので、SJISにする必要がある。
+				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$dumpfile", 1);
 			} else {
 				throw('データベースのダンプに失敗しました。', $!);
 			}
@@ -1667,6 +1676,7 @@ sub mysql {
 
 			# -- コンテナ起動用コマンドを取得
 			my $cmd = `docker exec $label sh -c "cat /docker-run.cmd"`;
+			if($is_win){ Encode::from_to($cmd, 'utf8', 'sjis') } # パスに日本語が入っている場合、Windowsの場合はSJISにする必要がある。
 
 			# -- 参照ボリューム名取得
 			my @volumes = &get_data_volume_name($label);
@@ -1698,7 +1708,8 @@ sub mysql {
 					label_head     => '',
 					label          => '',
 				});
-				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$dumpfile",1);
+				if($is_win){ $dumpfile = &sjis2utf8($dumpfile) } # Windowsの場合、パスに日本語が入っている可能性があるので、SJISにする必要がある。
+				message(success=>"MySQLのデータベース $db->{LABEL} を復元しました。\n$dumpfile", 1);
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
 			}
@@ -1769,7 +1780,9 @@ sub psql {
 			my $cmd = qq|docker exec $label sh -c "pg_dump $db->{NAME} -U $db->{USER} > /postgresql/opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd`;
 			if(!$?) {
-				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL}->{config_dir}/postgresql/opt/dumps/$db->{LABEL}.sql",1);
+				my $dumpfile = "$config{GENERAL}->{config_dir}/postgresql/opt/dumps/$db->{LABEL}.sql";
+				if($is_win){ $dumpfile = &sjis2utf8($dumpfile) } # Windowsの場合、パスに日本語が入っている可能性があるので、SJISにする必要がある。
+				message(success=>"PostgreSQLのデータベース $db->{LABEL} をダンプしました。\n$dumpfile", 1);
 			} else {
 				throw('データベースのダンプに失敗しました。', $!);
 			}
@@ -1819,6 +1832,7 @@ sub psql {
 					label_head     => '',
 					label          => '',
 				});
+				if($is_win){ $dumpfile = &sjis2utf8($dumpfile) } # Windowsの場合、パスに日本語が入っている可能性があるので、SJISにする必要がある。
 				message(success=>"PostgreSQLのデータベース $db->{LABEL} を復元しました。\n$dumpfile",1);
 			} else {
 				throw('データベースの復元に失敗しました。', $!);
