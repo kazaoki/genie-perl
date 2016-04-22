@@ -2017,6 +2017,9 @@ sub dlsync {
 		;
 		system $cmd;
 
+		# -- アナウンス
+		say('ダウンロード同期が完了しました。');
+
 	} else {
 		message(warning=>'dlsync用の設定をされていないようです。');
 	}
