@@ -810,6 +810,10 @@ sub demo {
 # --------------------------------------------------------------------
 sub up {
 
+	# -- 引数に 'spec' が指定されていればSPECモードでコンテナを起動する
+	my $is_spec = shift eq 'spec' ? 'spec' : undef;
+	my $container_name_base = ($is_spec ? 'SPEC-' : '') . $config{DOCKER}->{NAME};
+
 	# -- 起動時メモの表示
 	if(ref $config{UPMEMO}) {
 		my @memolist = @{$config{UPMEMO}};
@@ -819,10 +823,6 @@ sub up {
 			message($key=>$value);
 		}
 	}
-
-	# -- 引数に 'spec' が指定されていればSPECモードでコンテナを起動する
-	my $is_spec = shift eq 'spec' ? 'spec' : undef;
-	my $container_name_base = ($is_spec ? 'SPEC-' : '') . $config{DOCKER}->{NAME};
 
 	# -- 既存のシステムを終了させる
 	down($is_spec);
@@ -846,7 +846,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/mysql:/mysql".
-				" -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/mysql".
+				($is_spec ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/mysql").
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -904,7 +904,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/postgresql".
-				" -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/postgresql/data".
+				($is_spec ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/postgresql/data").
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -1222,12 +1222,16 @@ sub down {
 	my @exist_containers;
 	my $container_name_base = ($is_spec ? 'SPEC-' : '') . $config{DOCKER}->{NAME};
 
+	# -- 参照ボリューム名
+	my @volumes;
+
 	# -- MySQL
 	if(ref $config{MYSQL}->{DATABASES}) {
 		foreach(@{$config{MYSQL}->{DATABASES}}){
 			my $label = $container_name_base . "-mysql-" . $_->{LABEL};
 			if(is_exist($label)){
 				push @exist_containers, $label;
+				push @volumes, &get_data_volume_name($label);
 			}
 		}
 	}
@@ -1238,6 +1242,7 @@ sub down {
 			my $label = $container_name_base . "-postgresql-" . $_->{LABEL};
 			if(is_exist($label)){
 				push @exist_containers, $label;
+				push @volumes, &get_data_volume_name($label);
 			}
 		}
 	}
@@ -1245,9 +1250,10 @@ sub down {
 	# -- genie本体
 	if(is_exist($container_name_base)){
 		push @exist_containers, $container_name_base;
+		push @volumes, &get_data_volume_name($container_name_base);
 	}
 
-	# -- 削除開始
+	# -- コンテナ削除開始
 	if(@exist_containers) {
 		style(color=>'black', bgcolor=>'dark_black');
 		echo "  Deleting exist container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
@@ -1264,7 +1270,11 @@ sub down {
 		}
 		style(color=>'clear', bgcolor=>'clear');
 		print "\n";
+	}
 
+	# -- DataVolume削除（SPEC時のみ）
+	if($is_spec && @volumes) {
+		map { `docker volume rm $_` } @volumes;
 	}
 
 }
