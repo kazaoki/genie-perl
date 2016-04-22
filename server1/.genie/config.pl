@@ -113,7 +113,7 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 3,
-			# 	# DATA_VOLUME => '',
+			# 	# DATA_VOLUME_LOCK => 1,
 			# 	BIND_PORTS => [
 			# 		'3306'
 			# 	],
@@ -127,7 +127,7 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 1,
-			# 	# DATA_VOLUME => '',
+			# 	# DATA_VOLUME_LOCK => 1,
 			# 	BIND_PORTS => [
 			# 		'3306'
 			# 	],
@@ -141,7 +141,7 @@ return {
 			# 	PASS       => '123456789',
 			# 	CHARSET    => 'utf8',
 			# 	DUMP_GENEL => 1,
-			# 	# DATA_VOLUME => '',
+			# 	# DATA_VOLUME_LOCK => 1,
 			# 	BIND_PORTS => [
 			# 		'3306'
 			# 	],
@@ -155,7 +155,7 @@ return {
 				PASS        => '123456',
 				CHARSET     => 'utf8',
 				DUMP_GENEL  => 2,
-				# DATA_VOLUME => '',
+				# DATA_VOLUME_LOCK => 1,
 				BIND_PORTS  => [
 					'3306:3306'
 				],
@@ -178,7 +178,7 @@ return {
 				PASS        => '123456789',
 				LOCALE      => 'ja_JP.UTF-8',
 				DUMP_GENEL  => 3,
-				# DATA_VOLUME => '',
+				# DATA_VOLUME_LOCK => 1,
 				BIND_PORTS  => [
 					'5432:5432'
 				],
