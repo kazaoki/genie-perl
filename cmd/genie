@@ -36,6 +36,7 @@ my $ok_args = join('|', qw/
 	logs
 	dlsync
 	spec
+	zap
 /);
 # -- 設定ファイルが無くても実行可能な第一引数の正規表現
 my $noconf_args = join('|', qw/
@@ -302,6 +303,7 @@ sub help {
 				'httpd'                    => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
 				'spec <feature dir/files>' => 'Capybaraを使用したSPECテストを実行：引数無しでヘルプ表示',
 				'spec --all'               => 'Capybaraを使用したSPECテストを全て実行',
+				'zap <url>'                => 'OWASP/ZAPコンテナを起動して脆弱性をチェック',
 			],
 		},
 	];
@@ -2121,4 +2123,107 @@ sub _spec_files {
 	}
 	closedir $dh;
 	return @list;
+}
+
+# --------------------------------------------------------------------
+# genie zap <url>                                  OWASP/ZAPを実行する
+# --------------------------------------------------------------------
+sub zap {
+	return unless require_up(); # 起動必須
+	my $target = $ARGV[1];
+
+	# -- 既存のZAPコンテナがあれば削除
+	my $zap_container_name = "ZAP-$config{DOCKER}->{NAME}";
+	if(is_exist($zap_container_name)){
+		style(color=>'black', bgcolor=>'dark_black');
+		echo "  Deleting exist container\n";
+		echo "  | - $zap_container_name ";
+		`docker rm -f $zap_container_name $hide_all`;
+		if($?) {
+			style({color=>'red'});
+			echo "NG\n";
+			style({color=>'clear'});
+		} else {
+			echo "deleted\n";
+		}
+		style(color=>'clear', bgcolor=>'clear');
+		print "\n";
+	}
+
+	# -- 引数が無ければヘルプ表示
+	if(!$target){
+		message(info=>
+			"zapには引数が必要です。以下の例をご参照下さい。\n".
+			"- genie zap\n".
+			"- genie zap 80\n".
+			"- genie zap 443\n".
+			"- genie zap 8080 http\n".
+			"- genie zap http://genie-test/form\n".
+			"- genie zap https://genie-test/form\n",
+			1
+		);
+		return;
+	}
+	# -- ポート番号の指定ならそこからURLを生成
+	elsif($target>0){
+		my $scheme;
+		if($ARGV[1] == 80) { $scheme = 'http'; }
+		elsif($ARGV[1] == 443) { $scheme = 'https'; }
+		if($ARGV[2]) { $scheme = $ARGV[2]; }
+		$target = $scheme . '://' . $config{DOCKER}->{NAME} . ":$target";
+	}
+
+	# -- 確認する
+	my $input = input("$target に対して破壊的スキャンが実行される場合がありますがよろしいでしょうか。[y/N]:");
+	if($input !~ /^y$/i ) {
+		return;
+	}
+
+	# -- zapディレクトリ作成
+	mkdir $config{GENERAL}->{config_dir} . '/zap';
+
+	# -- ZAP実行
+	my $cmd = qq|docker run -u zap --link $config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/ZAP_2.4.3/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
+
+	# -- コンテナ実行
+	my $pid = fork;
+	die "Cannot fork: $!" unless defined $pid;
+	if($pid){
+		my $cmd = qq|docker logs $zap_container_name 2>&1|;
+		while(1){
+			sleep 1;
+			my $res = `$cmd`;
+			if($res =~ /ZAP is now listening/){
+				last;
+			}
+		}
+
+		# -- レポートファイルをコピーしてくる
+		my $report = "$config{GENERAL}->{config_dir}/zap/report.xml";
+		if($is_win) {
+			$report = "$config{GENERAL}->{drive_letter}\:$report";
+		}
+		$cmd = qq|docker cp $zap_container_name:/tmp/report.xml $report|;
+		`$cmd`;
+		if($?){
+			message(danger=>'レポートの取得に失敗しました。');
+			return !$?;
+		}
+
+		# -- レポートを開く
+		$cmd = "$open_cmd $report";
+		`$cmd`;
+
+		# -- コンテナを削除
+		`docker rm -f $zap_container_name $hide_all`;
+		wait();
+
+	} else {
+		system($cmd);
+		exit;
+	}
+	print "\n";
+
+	return 1;
+
 }
