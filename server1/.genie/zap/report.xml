@@ -1,4 +1,4 @@
-<?xml version="1.0"?><OWASPZAPReport version="2.4.3" generated="Mon, 25 Apr 2016 08:18:06">
+<?xml version="1.0"?><OWASPZAPReport version="2.4.3" generated="Tue, 26 Apr 2016 05:02:10">
 <site name="http://genie-test" host="genie-test" port="80" ssl="false"><alerts><alertitem>
   <pluginid>10016</pluginid>
   <alert>Web Browser XSS Protection Not Enabled</alert>
@@ -23,13 +23,13 @@
   <uri>http://genie-test/wp/</uri>
   </instance>
   <instance>
+  <uri>http://genie-test/test.cgi</uri>
+  </instance>
+  <instance>
   <uri>http://genie-test/test.php</uri>
   </instance>
   <instance>
   <uri>http://genie-test/info.php?=PHPB8B5F2A0-3C92-11d3-A3A9-4C7B08C10000</uri>
-  </instance>
-  <instance>
-  <uri>http://genie-test/test.cgi</uri>
   </instance>
   </instances>
   <count>8</count>
@@ -63,13 +63,13 @@
   <uri>http://genie-test/wp/</uri>
   </instance>
   <instance>
+  <uri>http://genie-test/test.cgi</uri>
+  </instance>
+  <instance>
   <uri>http://genie-test/test.php</uri>
   </instance>
   <instance>
   <uri>http://genie-test/info.php?=PHPB8B5F2A0-3C92-11d3-A3A9-4C7B08C10000</uri>
-  </instance>
-  <instance>
-  <uri>http://genie-test/test.cgi</uri>
   </instance>
   </instances>
   <count>8</count>
@@ -102,13 +102,13 @@
   <uri>http://genie-test/wp/</uri>
   </instance>
   <instance>
+  <uri>http://genie-test/test.cgi</uri>
+  </instance>
+  <instance>
   <uri>http://genie-test/test.php</uri>
   </instance>
   <instance>
   <uri>http://genie-test/info.php?=PHPB8B5F2A0-3C92-11d3-A3A9-4C7B08C10000</uri>
-  </instance>
-  <instance>
-  <uri>http://genie-test/test.cgi</uri>
   </instance>
   </instances>
   <count>8</count>
@@ -137,7 +137,7 @@
   </instances>
   <count>2</count>
   <solution>&lt;p&gt;Remove the private IP address from the HTTP response body.  For comments, use JSP/ASP comment instead of HTML/JavaScript comment which can be seen by client browsers.&lt;/p&gt;</solution>
-  <otherinfo>&lt;p&gt;192.168.99.100&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.3&lt;/p&gt;&lt;p&gt;172.17.0.4&lt;/p&gt;&lt;p&gt;172.17.0.5&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.2&lt;/p&gt;&lt;p&gt;192.168.99.100&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.3&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;192.168.99.100&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.3&lt;/p&gt;&lt;p&gt;172.17.0.4&lt;/p&gt;&lt;p&gt;172.17.0.5&lt;/p&gt;&lt;p&gt;&lt;/p&gt;</otherinfo>
+  <otherinfo>&lt;p&gt;192.168.99.100&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.3&lt;/p&gt;&lt;p&gt;172.17.0.4&lt;/p&gt;&lt;p&gt;172.17.0.7&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.2&lt;/p&gt;&lt;p&gt;192.168.99.100&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.3&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;192.168.99.100&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2:3306&lt;/p&gt;&lt;p&gt;172.17.0.2&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.3:5432&lt;/p&gt;&lt;p&gt;172.17.0.3&lt;/p&gt;&lt;p&gt;172.17.0.4&lt;/p&gt;&lt;p&gt;172.17.0.7&lt;/p&gt;&lt;p&gt;&lt;/p&gt;</otherinfo>
   <reference>&lt;p&gt;https://tools.ietf.org/html/rfc1918&lt;/p&gt;</reference>
   <cweid>200</cweid>
   <wascid>13</wascid>
