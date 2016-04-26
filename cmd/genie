@@ -2336,7 +2336,8 @@ sub zap {
 		print $fh encode('UTF-8', $html);
 		close $fh;
 		print "\n";
-		message(success=>"レポートを書き出しました。\n$report", 1);
+		say('セキュリティチェックが完了しましたので、レポートを出力しました。');
+		message(success=>"セキュリティレポートを書き出しました。\n$report", 1);
 
 		# -- レポートを開く
 		if($is_win) {
@@ -2353,7 +2354,6 @@ sub zap {
 		system($cmd);
 		exit;
 	}
-	print "\n";
 
 	return 1;
 
