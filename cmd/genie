@@ -304,7 +304,7 @@ sub help {
 				'httpd'                    => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
 				'spec <feature dir/files>' => 'Capybaraを使用したSPECテストを実行：引数無しでヘルプ表示',
 				'spec --all'               => 'Capybaraを使用したSPECテストを全て実行',
-				'zap <url>'                => 'OWASP/ZAPコンテナを起動して脆弱性をチェック',
+				'zap <port/schema/url>'    => 'OWASP/ZAPコンテナを起動して脆弱性をチェック：引数無しでヘルプ表示',
 			],
 		},
 	];
@@ -2245,7 +2245,7 @@ sub zap {
 			$html .= qq|<tr class="$class">|;
 			$html .= qq|<td>$level</td>|;
 			$html .= qq|<td><a href="#issue-$anchor">$item->{alert}</a></td>|;
-			$html .= qq|<td>$item->{count}</td>|;
+			$html .= qq|<td class="text-right">$item->{count}</td>|;
 			$html .= qq|</tr>|;
 			$anchor ++;
 		}
@@ -2307,7 +2307,7 @@ sub zap {
 			foreach(qw/confidence cweid wascid pluginid/){
 				$html .= qq|<tr>|;
 				$html .= qq|<th>$_</th>|;
-				$html .= qq|<td>$item->{$_}</td>|;
+				$html .= qq|<td class="text-right">$item->{$_}</td>|;
 				$html .= qq|</tr>|;
 			}
 			$html .= qq|</table></div></td></tr>|;
