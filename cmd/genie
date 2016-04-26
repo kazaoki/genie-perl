@@ -831,7 +831,7 @@ sub up {
 	down($is_spec);
 
 	# -- 起動
-	echo "  Starting containers\n";
+	echo "  Starting ".($is_spec ? 'SPEC ' : '')."containers\n";
 
 	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必要なので）
 	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
@@ -1259,7 +1259,7 @@ sub down {
 	# -- コンテナ削除開始
 	if(@exist_containers) {
 		style(color=>'black', bgcolor=>'dark_black');
-		echo "  Deleting exist container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
+		echo "  Deleting exist ".($is_spec ? 'SPEC ' : '')."container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
 		foreach my $label (@exist_containers){
 			echo "  | - $label ";
 			`docker rm -f $label $hide_all`;

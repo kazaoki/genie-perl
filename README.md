@@ -2,17 +2,18 @@
 
 ### `ドキュメント準備中...`
 
-dockerオーケストレーションツールの一種で、ジーニーって読んでください。  
-ウェブ制作/開発に特化した開発環境サーバをdockerを利用してローカル上に手軽に構築することができ、ウェブ確認、テスト実行、データベース、セキュリティチェック等のウェブ開発に必要最低限の機能を実行することができます。
+dockerオーケストレーションツールの一種で、ウェブ制作/開発に特化した開発環境サーバをローカル上に展開できます。ジーニーって読んでください。  
+ウェブ確認、テスト実行、データベース、セキュリティチェック等のウェブ開発に必要最低限の機能を実行することができます。
 プロジェクトごとに設定ファイルを調整することで、本番のサーバに近い環境を手軽に準備できます。
 
-dockerイメージ `kazaoki/genie` に `Apache`, `Nginx`, `Perl`, `PHP`, `Ruby`, `Postfix`, 等が用意され、`MySQL`, `PostgreSQL`, `OWASP/ZAP` 等のソフトウェアは外部のオフィシャルdockerイメージを利用してコンテナを起動します。（オーケストレーション）
-
-プロジェクトトップに `init` コマンドで用意した `config.pl` が基本的な設定ファイルで、これで各種サーバ要件を設定できますが、直接サーバに置きたいファイルを用意することもできます。（後述）
+dockerイメージ `kazaoki/genie` に `Apache`, `Nginx`, `Perl`, `PHP`, `Ruby`, `Postfix`, 等が用意され、`MySQL`, `PostgreSQL`, `OWASP/ZAP` 等のソフトウェアはオフィシャルdockerイメージを利用して外部コンテナとして起動します。（dcokerオーケストレーション）
 
 ## 基本的な使い方
 
-	$ genie init →（作成された .genie/config.pl を修正してドキュメントルートなどを正しく指定する ※後述）
+	$ genie init
+
+同ディレクトリに .genie/config.pl が作成されますのでDBアカウント情報やドキュメントルートなどを記述します。
+
 	$ genie up
 
 必要なコンテナが起動して自動で該当のページでブラウザが開くので、開発を進めます。  
@@ -38,7 +39,7 @@ Windows, Mac, Linux どれでもOK。
 Windowsなら [Strawberry Perl for Windows](http://strawberryperl.com/) をおすすめします。
 
 
-## インストール
+## genieコマンドをインストールする
 
 本体のインストールは一度でOKです。
 以下の手順を行うことで、どこからでも `genie` コマンドが打てるようになります。
@@ -57,7 +58,7 @@ Windowsなら [Strawberry Perl for Windows](http://strawberryperl.com/) をお�
 	sudo ln -s $(pwd)/genie /usr/local/bin/genie
 
 
-## アンインストール
+## genieコマンドをアンインストールする
 
 上記でインストールした `genie` ファイルを探して削除してください。
 Windowsの場合は、 `genie.bat` も削除してください。
