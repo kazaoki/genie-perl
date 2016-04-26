@@ -3,6 +3,24 @@
 # -- general
 echo ". /etc/bashrc" >> /root/.bashrc
 
+# -- init mode
+if [[ $GENIE_RUNMODE == 'init' ]]; then
+  cd /work
+  mkdir .genie
+  cd .genie
+  url=https://github.com/kazaoki/genie/tarball/$GENIE_INIT_BRANCH
+  echo "Downloading $url"
+  echo ""
+  curl -s -f -L $url | tar xvz */dist/.genie
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+  dir=`ls`
+  mv ${dir}/dist/.genie/* ./
+  rm -fr ${dir}
+  exit 0
+fi
+
 # -- httpd mode
 if [[ $GENIE_RUNMODE == 'httpd' ]]; then
   /usr/sbin/httpd

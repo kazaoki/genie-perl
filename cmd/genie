@@ -135,17 +135,19 @@ while(@dirs){
 }
 
 # -- 設定ファイルをロード
-if( -d $config{GENERAL}->{config_dir} ){
-	$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/$config{GENERAL}->{config_name}.pl";
-	if(-f $config{GENERAL}->{config_file}) {
-		my $r = require $config{GENERAL}->{config_file};
-		%config = (%config, %$r);
+if($ARGV[0] !~ /^$noconf_args$/){
+	if( -d $config{GENERAL}->{config_dir} ){
+		$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/$config{GENERAL}->{config_name}.pl";
+		if(-f $config{GENERAL}->{config_file}) {
+			my $r = require $config{GENERAL}->{config_file};
+			%config = (%config, %$r);
+		} else {
+			throw("設定ディレクトリ（$config{GENERAL}->{config_dir}）はあるのに設定ファイル（$config{GENERAL}->{config_name}.pl）が見つかりません。");
+		}
 	} else {
-		throw("設定ディレクトリ（$config{GENERAL}->{config_dir}）はあるのに設定ファイル（$config{GENERAL}->{config_name}.pl）が見つかりません。");
-	}
-} else {
-	unless($ARGV[0] eq '' || $ARGV[0] =~ /^$noconf_args$/){
-		throw("設定ディレクトリが先祖パスに見つかりません。`genie init`をお忘れではないですか？");
+		unless($ARGV[0] eq ''){
+			throw("設定ディレクトリが先祖パスに見つかりません。`genie init`をお忘れではないですか？");
+		}
 	}
 }
 
@@ -684,103 +686,34 @@ sub wait_container {
 # --------------------------------------------------------------------
 # genie init                                                    初期化
 # --------------------------------------------------------------------
+# genie init develop でdevelopブランチの.genieを持ってきます。
 sub init {
 
-	### イメージのpullもすべき
-
-	### 各種設定ファイルはサーバ上に上がっているものをDLスべき
-
-	### サーバ設定ファイルなどは一度コンテナを起動しコピーしてくる形がいい
-	#
-	### init postgresql とか init php で、各種設定ファイルを新規一時起動コンテナ側からコピー前状態の設定ファイルをもってくるような（Y/N確認だすといいかも）
-
 	if($config{GENERAL}->{config_dir}) {
-		throw("$config{GENERAL}->{config_dir} ディレクトリが既にあるので処理を中止します。");
-	} else {
-
-		# -- パスの用意
-		$config{GENERAL}->{home_dir}    = $now_path;
-		$config{GENERAL}->{config_dir}  = "$now_path/$config_dir_name";
-		$config{GENERAL}->{config_file} = "$now_path/$config_dir_name/$config{GENERAL}->{config_name}.pl";
-		mkdir $config{GENERAL}->{config_dir};
-
-		# -- config.plの作成
-		my $result = open my $fh, '>:raw', "$config{GENERAL}->{config_dir}/config.pl"
-			or throw("設定ファイル `$config{GENERAL}->{config_dir}/config.pl` が作成できませんでした。")
-		;
-		print $fh encode('UTF-8', <<'EOL');
-return {
-
-	# Docker設定
-	# ----------
-	DOCKER => {
-		IMAGE   => 'kazaoki/genie',
-		MACHINE => '',
-		NAME    => 'genie-test',
-	},
-
-	# ネットワーク設定
-	# ----------------
-	NETWORK => {
-		HOSTS_ME => [
-			'site.com',
-			'www.site.com',
-			'smtp.gmail.com',
-		],
-		HOSTS_ETC => [
-			# {''=>'site.com'},
-		],
-	},
-
-	# Apache設定
-	# ----------
-	APACHE => {
-		PUBLIC_PATH => '../www',
-		BANDWIDTH => '',
-	},
-
-	# Postfix設定
-	# -----------
-	POSTFIX => {
-		FORCE_ENVELOPE => 'xxx@xxx.xxx',
-	},
-
-};
-EOL
-		close $fh;
+		message(danger=>"$config{GENERAL}->{config_dir} ディレクトリが既にあるので処理を中止します。");
+		return;
 	}
 
-	# -- entrypoint.shの作成
-	{
-		my $result = open my $fh, '>:raw', "$config{GENERAL}->{config_dir}/entrypoint.sh"
-			or throw("設定ファイル `$config{GENERAL}->{config_dir}/entrypoint.sh` が作成できませんでした。")
-		;
-		print $fh encode('UTF-8', <<'EOL');
-#!/bin/sh
+	# -- パスの用意
+	$config{GENERAL}->{home_dir}    = $now_path;
+	$config{GENERAL}->{config_dir}  = "$now_path/$config_dir_name";
+	$config{GENERAL}->{config_file} = "$now_path/$config_dir_name/$config{GENERAL}->{config_name}.pl";
 
-# -- daemon loop start
-while true
-do
-    sleep 60
-done
-EOL
-		close $fh;
+	# -- ブランチ指定
+	my $branch = ' -e GENIE_INIT_BRANCH='.($ARGV[1] ne '' ? $ARGV[1] : 'master');
+
+	# -- 一度コンテナを起動してそっちで初期化
+	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
+	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=init $branch kazaoki/genie";
+	system $cmd;
+	if($?){
+		message(danger=>'initに失敗しました。');
+		return;
 	}
 
-	# -- say.jsの作成（Windowsの場合のみ）
-	if($is_win) {
-		my $result = open my $fh, '>:raw', "$config{GENERAL}->{config_dir}/say.js"
-			or throw("`$config{GENERAL}->{config_dir}/say.js` が作成できませんでした。")
-		;
-		print $fh encode('UTF-8', <<'EOL');
-var args = [];
-for(var i = 0; i < WScript.Arguments.length; i++) args.push(WScript.Arguments.Item(i));
-WScript.CreateObject('SAPI.SpVoice').Speak('<volume level="100">'+'<rate speed="2">'+'<pitch middle="0">'+args.join(' ')+'</pitch>'+'</rate>'+'</volume>', 8);
-EOL
-		close $fh;
-	}
-
-	message(success=>"設定ファイルを作成しました。\n$config{GENERAL}->{config_file}", 1);
+	print "\n";
+	message(success=>"設定ファイルを作成しました。\n$config{GENERAL}->{config_dir}", 1);
+	return 1;
 
 }
 
