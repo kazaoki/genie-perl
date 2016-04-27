@@ -46,6 +46,7 @@ my $noconf_args = join('|', qw/
 	reject
 	clean
 	init
+	update
 	ls
 	httpd
 	demo
