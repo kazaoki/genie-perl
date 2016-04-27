@@ -2208,7 +2208,7 @@ sub zap {
 			$html .= qq|<div class="panel panel-$class[$item->{riskcode}]" id="issue-$anchor">|;
 			$html .= qq|<div class="panel-heading">|;
 			$html .= qq|<p class="pull-right">|;
-			$html .= qq|<span class="btn btn-$class[$item->{riskcode}] disabled">$item->{riskdesc}</span>|;
+			$html .= qq|<span class="btn btn-$class[$item->{riskcode}] disabled" style="cursor:default">$item->{riskdesc}</span>|;
 			$html .= qq|</p>|;
 			$html .= qq|<h4>$item->{alert}</h4>|;
 			$html .= qq|</div>|;
