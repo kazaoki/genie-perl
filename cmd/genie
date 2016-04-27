@@ -18,6 +18,7 @@ use XML::Simple;
 my $ok_args = join('|', qw/
 	demo
 	init
+	update
 	up
 	down
 	cli
@@ -479,7 +480,7 @@ sub require_up {
 # ------------------
 sub input {
 	my $string = shift;
-	my $tail_space = shift || 20;
+	my $tail_space = shift || 5;
 	my $len = (length Encode::encode('cp932', $string)) + 2 + $tail_space;
 
 	# -- 末尾だと崩れるので少し行送りしてカーソルを戻る
@@ -495,6 +496,9 @@ sub input {
 	echo ' ' x $len . "\n";
 	style(color=>'white', bgcolor=>'blue');
 	echo "\e[3A\e[".($len-$tail_space)."C";
+
+	# -- 発言
+	say('入力して下さい');
 
 	# -- 入力
 	my $input = <STDIN>;
@@ -684,12 +688,13 @@ sub wait_container {
 }
 
 # --------------------------------------------------------------------
-# genie init                                                    初期化
+# genie init <branch>                                           初期化
 # --------------------------------------------------------------------
 # genie init develop でdevelopブランチの.genieを持ってきます。
 sub init {
 
-	if($config{GENERAL}->{config_dir}) {
+	# -- 設定ディレクトリの存在確認
+	if(-d $config{GENERAL}->{config_dir}) {
 		message(danger=>"$config{GENERAL}->{config_dir} ディレクトリが既にあるので処理を中止します。");
 		return;
 	}
@@ -702,17 +707,59 @@ sub init {
 	# -- ブランチ指定
 	my $branch = ' -e GENIE_INIT_BRANCH='.($ARGV[1] ne '' ? $ARGV[1] : 'master');
 
-	# -- 一度コンテナを起動してそっちで初期化
+	# -- 一時コンテナを起動してそっちで初期化
 	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=init $branch kazaoki/genie";
+	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=init $branch $config{DOCKER}->{IMAGE}";
 	system $cmd;
 	if($?){
-		message(danger=>'initに失敗しました。');
+		message(danger=>'init に失敗しました。');
 		return;
 	}
 
 	print "\n";
 	message(success=>"設定ファイルを作成しました。\n$config{GENERAL}->{config_dir}", 1);
+	return 1;
+
+}
+
+# --------------------------------------------------------------------
+# genie update <branch>                      最新にgenieにアップデート
+# --------------------------------------------------------------------
+# genie update develop でdevelopブランチの.genieを対象にする
+sub update {
+
+	# -- 設定ディレクトリの存在確認
+	if(!-d $config{GENERAL}->{config_dir}) {
+		message(danger=>"$config{GENERAL}->{config_dir} ディレクトリがありません。先に init を実行してください。");
+		return;
+	}
+
+	# -- 確認する
+	message(warning=>
+		"【ご注意】\n".
+		"・updateは、genie本体（共通1箇所）と現在直近の .genie ディレクトリを更新します。\n".
+		"・設定ファイルはGitHub上の初期ファイルに全て上書きされますので、既存の設定は消えます。\n".
+		"・設定ファイルはgitなどでバージョン管理をし、必要箇所を戻すなどしてご利用下さい。\n"
+	, 1);
+	my $input = input("実行してもよろしいでしょうか。 [y/N]: ");
+	if($input !~ /^y$/i ) {
+		return;
+	}
+
+	# -- ブランチ指定
+	my $branch = ' -e GENIE_INIT_BRANCH='.($ARGV[1] ne '' ? $ARGV[1] : 'master');
+
+	# -- 一時コンテナを起動してそっちで初期化
+	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
+	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=update $branch $config{DOCKER}->{IMAGE}";
+	system $cmd;
+	if($?){
+		message(danger=>'update に失敗しました。');
+		return;
+	}
+
+	print "\n";
+	message(success=>"update が完了しました。\n$config{GENERAL}->{config_dir}", 1);
 	return 1;
 
 }
@@ -727,10 +774,10 @@ sub demo {
 		message($_=>$_);
 	}
 	message(warning=>"複数行も\n可能です!!");
-	message(default=>"1箇所なら\nライン入れも\n可能であります。",2);
+	message(default=>"1箇所なら\nライン入れも\n可能であります。", 2);
 
 	# -- 入力BOX
-	my $input = input('入力BOX（入力文字を発音しますのでご注意）：');
+	my $input = input('入力BOX（入力文字を発音しますのでご注意）：', 20);
 	print "\n";
 	message(default=>"入力された文字：$input");
 
@@ -1417,10 +1464,9 @@ sub config {
 # --------------------------------------------------------------------
 sub httpd {
 
-	# -- 公式httpdイメージから起動
+	# -- コンテナ起動
 	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
-	# my $cmd = "docker run -d -p 80 -v $letter$now_path:/var/www/html/ php:5.6-apache";
-	my $cmd = "docker run -d -t -p 80 -e TERM=xterm -v $letter$now_path:/var/www/html/ -e GENIE_RUNMODE=httpd kazaoki/genie";
+	my $cmd = "docker run -d -t -p 80 -e TERM=xterm -v $letter$now_path:/var/www/html/ -e GENIE_RUNMODE=httpd $config{DOCKER}->{IMAGE}";
 	my $cid = `$cmd`;
 	if($?) {
 		throw('Webサーバが起動しませんでした。', $cmd);
@@ -1470,7 +1516,7 @@ sub build {
 		chomp $machine_name;
 		$input = input(
 			sprintf(
-				'%s マシーンに %s イメージをビルドしてもよろしいでしょうか。[y/N]:',
+				'%s マシーンに %s イメージをビルドしてもよろしいでしょうか。[y/N]: ',
 				$machine_name,
 				$config{DOCKER}->{IMAGE},
 			)
@@ -1478,7 +1524,7 @@ sub build {
 	} else {
 		$input = input(
 			sprintf(
-				'%s イメージをビルドしてもよろしいでしょうか。[y/N]:',
+				'%s イメージをビルドしてもよろしいでしょうか。[y/N]: ',
 				$config{DOCKER}->{IMAGE},
 			)
 		);
@@ -2118,7 +2164,7 @@ sub zap {
 	}
 
 	# -- 確認する
-	my $input = input("$target に対して破壊的スキャンが実行される場合がありますがよろしいでしょうか。[y/N]:");
+	my $input = input("$target に対して破壊的スキャンが実行される場合がありますがよろしいでしょうか。[y/N]: ");
 	if($input !~ /^y$/i ) {
 		return;
 	}

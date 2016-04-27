@@ -21,6 +21,25 @@ if [[ $GENIE_RUNMODE == 'init' ]]; then
   exit 0
 fi
 
+# -- update mode
+if [[ $GENIE_RUNMODE == 'update' ]]; then
+  cd /work
+  mkdir .genie_update
+  cd .genie_update
+  url=https://github.com/kazaoki/genie/tarball/$GENIE_INIT_BRANCH
+  echo "Downloading $url"
+  echo ""
+  curl -s -f -L $url | tar xvz */dist/.genie
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+  dir=`ls`
+  \cp -fr ${dir}/dist/.genie/* ../.genie
+  cd ..
+  rm -fr .genie_update
+  exit 0
+fi
+
 # -- httpd mode
 if [[ $GENIE_RUNMODE == 'httpd' ]]; then
   /usr/sbin/httpd
