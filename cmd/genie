@@ -13,6 +13,7 @@ use Cwd;
 use HTTP::Date;
 $| = 1;
 use XML::Simple;
+use LWP::Simple;
 
 # -- 許可する第一引数の正規表現
 my $ok_args = join('|', qw/
@@ -263,23 +264,24 @@ sub help {
 		{
 			label  => "GENERAL\nCOMMANDS",
 			list   => [
-				'init'          => '初期化 - .genieディレクトリを作成',
-				'up'            => '起動 - コンテナを作成、起動済みなら再起動',
-				'down'          => '終了 - コンテナ削除',
-				'config'        => '設定内容の確認',
-				'config open'   => '設定ファイル(config.pl)を標準エディタで開く',
-				'cli'           => 'genieコンテナのCLIにログイン',
-				'cli <command>' => 'genieコンテナ上で指定コマンド<command>実行',
-				'ls'            => 'docker情報を一挙に表示',
-				'reject'        => 'genie管理外のdockerコンテナも全て強制削除した後、clean実行',
-				'clean'         => '終了済みコンテナ、<none>イメージ、未参照のDataVolumeの削除',
-				'clean locked'  => '`LOCKED_`から始まるDataVolumeも削除',
-				'php'           => 'PHPの指定可能なバージョンリストと現在のphpenv選択バージョンの表示',
-				'perl'          => 'Perlの指定可能なバージョンリストと現在のperlenv選択バージョンの表示',
-				'ruby'          => 'Rubyの指定可能なバージョンリストと現在のrubyenv選択バージョンの表示',
-				'build'         => 'config.pl指定のIMAGE名でビルド実行',
-				'build nocache' => 'config.pl指定のIMAGE名でキャッシュを使用せずにビルド実行',
-				'demo'          => 'デモモード',
+				'init <branch>'   => '同ディレクトリに.genieディレクトリを作成',
+				'update <branch>' => '本体の更新、及び.genieディレクトリを更新',
+				'up'              => '起動 - コンテナを作成、起動済みなら再起動',
+				'down'            => '終了 - コンテナ削除',
+				'config'          => '設定内容の確認',
+				'config open'     => '設定ファイル(config.pl)を標準エディタで開く',
+				'cli'             => 'genieコンテナのCLIにログイン',
+				'cli <command>'   => 'genieコンテナ上で指定コマンド<command>実行',
+				'ls'              => 'docker情報を一挙に表示',
+				'reject'          => 'genie管理外のdockerコンテナも全て強制削除した後、clean実行',
+				'clean'           => '終了済みコンテナ、<none>イメージ、未参照のDataVolumeの削除',
+				'clean locked'    => '`LOCKED_`から始まるDataVolumeも削除',
+				'php'             => 'PHPの指定可能なバージョンリストと現在のphpenv選択バージョンの表示',
+				'perl'            => 'Perlの指定可能なバージョンリストと現在のperlenv選択バージョンの表示',
+				'ruby'            => 'Rubyの指定可能なバージョンリストと現在のrubyenv選択バージョンの表示',
+				'build'           => 'config.pl指定のIMAGE名でビルド実行',
+				'build nocache'   => 'config.pl指定のIMAGE名でキャッシュを使用せずにビルド実行',
+				'demo'            => 'デモモード',
 			],
 		},
 		{
@@ -705,11 +707,11 @@ sub init {
 	$config{GENERAL}->{config_file} = "$now_path/$config_dir_name/$config{GENERAL}->{config_name}.pl";
 
 	# -- ブランチ指定
-	my $branch = ' -e GENIE_INIT_BRANCH='.($ARGV[1] ne '' ? $ARGV[1] : 'master');
+	my $branch = $ARGV[1] ne '' ? $ARGV[1] : 'master';
 
 	# -- 一時コンテナを起動してそっちで初期化
 	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=init $branch $config{DOCKER}->{IMAGE}";
+	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=init -e GENIE_INIT_BRANCH=$branch $config{DOCKER}->{IMAGE}";
 	system $cmd;
 	if($?){
 		message(danger=>'init に失敗しました。');
@@ -747,15 +749,25 @@ sub update {
 	}
 
 	# -- ブランチ指定
-	my $branch = ' -e GENIE_INIT_BRANCH='.($ARGV[1] ne '' ? $ARGV[1] : 'master');
+	my $branch = $ARGV[1] ne '' ? $ARGV[1] : 'master';
 
 	# -- 一時コンテナを起動してそっちで初期化
 	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=update $branch $config{DOCKER}->{IMAGE}";
+	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=update -e GENIE_INIT_BRANCH=$branch $config{DOCKER}->{IMAGE}";
 	system $cmd;
 	if($?){
 		message(danger=>'update に失敗しました。');
 		return;
+	}
+
+	# -- genie本体の更新
+	open my $fh, '>', __FILE__ or die $!;
+	print $fh get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie");
+	close $fh;
+	if($is_win){
+		open my $fh, '>', __FILE__.'.bat' or die $!;
+		print $fh get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie.bat");
+		close $fh;
 	}
 
 	print "\n";
