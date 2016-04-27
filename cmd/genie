@@ -135,7 +135,7 @@ while(@dirs){
 }
 
 # -- 設定ファイルをロード
-if($ARGV[0] !~ /^$noconf_args$/){
+if($ARGV[0] !~ /^(?:$noconf_args)$/){
 	if( -d $config{GENERAL}->{config_dir} ){
 		$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/$config{GENERAL}->{config_name}.pl";
 		if(-f $config{GENERAL}->{config_file}) {
