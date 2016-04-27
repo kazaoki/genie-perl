@@ -46,17 +46,20 @@ Windowsなら [Strawberry Perl for Windows](http://strawberryperl.com/) をお�
 
 #### for Window
 
-	curl ...
-	curl ...
+まず、以下のコマンドでファイルを２つダウンロードします。
 
-`genie`, `genie.bat` →PATH通ってるところへ移動してください。またはダウンロードしたPATHを環境変数PATHに追加して再起動してください。
+	perl -e "getprint 'https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie'" -MLWP::Simple > genie
+	perl -e "getprint 'https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie.bat'" -MLWP::Simple > genie.bat
+
+次に、ダウンロードした `genie` と `genie.bat` をPATH通ってるところへ移動してください。またはダウンロードしたPATHを環境変数PATHに追加して再起動してください。
 
 
 #### for Mac, Linux
 
-	curl ...
-	sudo ln -s $(pwd)/genie /usr/local/bin/genie
+MacOSとLinuxは以下のコマンドでOKです。
 
+	curl -o /usr/local/bin/genie https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie
+	chmod +x /usr/local/bin/genie
 
 ## genieコマンドをアンインストールする
 
