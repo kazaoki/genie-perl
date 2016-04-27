@@ -61,7 +61,7 @@ Windowsは perl コマンドでファイルを２つダウンロードします�
 MacOSとLinuxは curl コマンドで１つファイルをダウンロードしてきます。
 
 	sudo curl -o /usr/local/bin/genie https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie
-	sudo chmod +x /usr/local/bin/genie
+	sudo chmod 0777 /usr/local/bin/genie
 
 ## genieコマンドをアンインストールする
 

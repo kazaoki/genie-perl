@@ -767,12 +767,14 @@ sub update {
 
 	# -- genie本体の更新
 	my $data = encode('UTF-8', get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie"));
+	if(!$data) { throw 'ダウンロードに失敗した可能性があります。'; }
 	open my $fh, '>', __FILE__ or die $!;
 	binmode $fh;
 	print $fh $data;
 	close $fh;
 	if($is_win){
 		my $data = encode('UTF-8', get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie.bat"));
+		if(!$data) { throw 'ダウンロードに失敗した可能性があります。'; }
 		open my $fh, '>', __FILE__.'.bat' or die $!;
 		binmode $fh;
 		print $fh $data;
