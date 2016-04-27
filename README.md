@@ -31,7 +31,8 @@ dockerイメージ `kazaoki/genie` に `Apache`, `Nginx`, `Perl`, `PHP`, `Ruby`,
 
 ## 必要環境
 - perl
-	+ XML::Simple (sudo yum install -y perl-XML-Simple)
+	+ 必須モジュール（エラーが出る場合は入れて下さい）
+		* XML::Simple （cpanまたはyumで `sudo yum install -y perl-XML-Simple` ）
 - docker（Toolbox可）
 - git
 
@@ -45,27 +46,26 @@ Windowsなら [Strawberry Perl for Windows](http://strawberryperl.com/) をお�
 本体のインストールは一度でOKです。
 以下の手順を行うことで、どこからでも `genie` コマンドが打てるようになります。
 
-#### for Window
+#### for Windows
 
-まず、以下のコマンドでファイルを２つダウンロードします。
+Windowsは perl コマンドでファイルを２つダウンロードします。
 
-	perl -e "getprint 'https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie'" -MLWP::Simple > genie
-	perl -e "getprint 'https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie.bat'" -MLWP::Simple > genie.bat
+	perl -MLWP::Simple -e "getprint 'https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie'" > genie
+	perl -MLWP::Simple -e "getprint 'https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie.bat'" > genie.bat
 
 次に、ダウンロードした `genie` と `genie.bat` をPATH通ってるところへ移動してください。またはダウンロードしたPATHを環境変数PATHに追加して再起動してください。
 
 
 #### for Mac, Linux
 
-MacOSとLinuxは以下のコマンド wo jikkou shite kudasai.
+MacOSとLinuxは curl コマンドで１つファイルをダウンロードしてきます。
 
 	sudo curl -o /usr/local/bin/genie https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie
 	sudo chmod +x /usr/local/bin/genie
 
 ## genieコマンドをアンインストールする
 
-上記でインストールした `genie` ファイルを探して削除してください。
-Windowsの場合は、 `genie.bat` も削除してください。
+上記でインストールした `genie` ファイルを探して削除してください。Windowsの場合は、 `genie.bat` も削除してください。
 また、後述の `genie init` コマンドで作成された各設定ディレクトリ `.genie` も気になるのであれば削除するといいです。
 
 

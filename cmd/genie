@@ -11,9 +11,9 @@ use Data::Dumper;
 use Getopt::Long qw(:config no_auto_abbrev no_ignore_case gnu_compat pass_through);
 use Cwd;
 use HTTP::Date;
-$| = 1;
 use XML::Simple;
 use LWP::Simple;
+$| = 1;
 
 # -- 許可する第一引数の正規表現
 my $ok_args = join('|', qw/
@@ -730,12 +730,6 @@ sub init {
 # genie update develop でdevelopブランチの.genieを対象にする
 sub update {
 
-	# -- 設定ディレクトリの存在確認
-	if(!-d $config{GENERAL}->{config_dir}) {
-		message(danger=>"$config{GENERAL}->{config_dir} ディレクトリがありません。先に init を実行してください。");
-		return;
-	}
-
 	# -- 確認する
 	message(warning=>
 		"【ご注意】\n".
@@ -751,6 +745,14 @@ sub update {
 
 	# -- 一時コンテナを起動してそっちで設定ファイルコピーしてくる
 	if($input =~ /^y$/i ) {
+	
+		# -- 設定ディレクトリの存在確認
+		if(!-d $config{GENERAL}->{config_dir}) {
+			message(danger=>"$config{GENERAL}->{config_dir} ディレクトリがありません。先に init を実行してください。");
+			return;
+		}
+
+		# -- コンテナ起動
 		my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
 		my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=update -e GENIE_INIT_BRANCH=$branch $config{DOCKER}->{IMAGE}";
 		system $cmd;
