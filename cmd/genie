@@ -702,10 +702,11 @@ sub init {
 		return;
 	}
 
-	# -- パスの用意
+	# -- 必要情報の用意
 	$config{GENERAL}->{home_dir}    = $now_path;
 	$config{GENERAL}->{config_dir}  = "$now_path/$config_dir_name";
 	$config{GENERAL}->{config_file} = "$now_path/$config_dir_name/$config{GENERAL}->{config_name}.pl";
+	$config{DOCKER}->{IMAGE}        = 'kazaoki/genie';
 
 	# -- ブランチ指定
 	my $branch = $ARGV[1] ne '' ? $ARGV[1] : 'master';
@@ -714,10 +715,7 @@ sub init {
 	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
 	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=init -e GENIE_INIT_BRANCH=$branch $config{DOCKER}->{IMAGE}";
 	system $cmd;
-	if($?){
-		message(danger=>'init に失敗しました。');
-		return;
-	}
+	if($?){ throw 'init に失敗しました。'; }
 
 	print "\n";
 	message(success=>"設定ファイルを作成しました。\n$config{GENERAL}->{config_dir}", 1);
