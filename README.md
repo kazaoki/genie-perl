@@ -31,6 +31,7 @@ dockerイメージ `kazaoki/genie` に `Apache`, `Nginx`, `Perl`, `PHP`, `Ruby`,
 
 ## 必要環境
 - perl
+	+ XML::Simple (sudo yum install -y perl-XML-Simple)
 - docker（Toolbox可）
 - git
 
@@ -56,10 +57,10 @@ Windowsなら [Strawberry Perl for Windows](http://strawberryperl.com/) をお�
 
 #### for Mac, Linux
 
-MacOSとLinuxは以下のコマンドでOKです。
+MacOSとLinuxは以下のコマンド wo jikkou shite kudasai.
 
-	curl -o /usr/local/bin/genie https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie
-	chmod +x /usr/local/bin/genie
+	sudo curl -o /usr/local/bin/genie https://raw.githubusercontent.com/kazaoki/genie/master/cmd/genie
+	sudo chmod +x /usr/local/bin/genie
 
 ## genieコマンドをアンインストールする
 
