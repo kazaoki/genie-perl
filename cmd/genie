@@ -743,35 +743,41 @@ sub update {
 		"・設定ファイルはGitHub上の初期ファイルに全て上書きされますので、既存の設定は消えます。\n".
 		"・設定ファイルはgitなどでバージョン管理をし、必要箇所を戻すなどしてご利用下さい。\n"
 	, 1);
-	my $input = input("実行してもよろしいでしょうか。 [y/N]: ");
-	if($input !~ /^y$/i ) {
-		return;
-	}
+	my $input = input("実行してもよろしいでしょうか。またはgenie本体のみ更新=g [y/N/g]: ");
+	return if $input !~ /^(?:y|g)$/i;
 
 	# -- ブランチ指定
 	my $branch = $ARGV[1] ne '' ? $ARGV[1] : 'master';
 
-	# -- 一時コンテナを起動してそっちで初期化
-	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=update -e GENIE_INIT_BRANCH=$branch $config{DOCKER}->{IMAGE}";
-	system $cmd;
-	if($?){
-		message(danger=>'update に失敗しました。');
-		return;
+	# -- 一時コンテナを起動してそっちで設定ファイルコピーしてくる
+	if($input =~ /^y$/i ) {
+		my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
+		my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=update -e GENIE_INIT_BRANCH=$branch $config{DOCKER}->{IMAGE}";
+		system $cmd;
+		if($?){
+			message(danger=>'update に失敗しました。');
+			return;
+		}
+		print "\n";
+		message(success=>"設定ファイルを上書きしました。\n$config{GENERAL}->{config_dir}", 1);
 	}
 
 	# -- genie本体の更新
+	my $data = encode('UTF-8', get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie"));
 	open my $fh, '>', __FILE__ or die $!;
-	print $fh get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie");
+	binmode $fh;
+	print $fh $data;
 	close $fh;
 	if($is_win){
+		my $data = encode('UTF-8', get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie.bat"));
 		open my $fh, '>', __FILE__.'.bat' or die $!;
-		print $fh get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie.bat");
+		binmode $fh;
+		print $fh $data;
 		close $fh;
 	}
-
 	print "\n";
-	message(success=>"update が完了しました。\n$config{GENERAL}->{config_dir}", 1);
+	message(success=>"genie本体を更新しました。\n".__FILE__.($is_win ? "\n".__FILE__.'.bat' : ''), 1);
+
 	return 1;
 
 }
