@@ -2219,7 +2219,7 @@ sub zap {
 		}
 
 		# -- XMLを読み込んでHTMLを生成する
-		my $xml = XMLin("$config{GENERAL}->{config_dir}/zap/report.xml");
+		my $xml = XMLin("$config{GENERAL}->{config_dir}/zap/report.xml", ForceArray=>['site', 'instance'] );
 		my @class = ('', 'default', 'warning', 'danger');
 		my $html;
 		$html .= qq|<!doctype html>|;
@@ -2230,100 +2230,101 @@ sub zap {
 		$html .= qq|</head><body>|;
 		$html .= qq|<div class="container">|;
 		$html .= qq|<div class="page-header"><h1>$config{DOCKER}->{NAME} セキュリティレポート</h1></div>|;
-		$html .= qq|<div class="row">|;
-		$html .= qq|<div class="col-md-6">|;
-		$html .= qq|<table class="table table-bordered">|;
-		$html .= qq|<thead><tr><th>Level</th><th>Alert</th><th>Count</th></tr></thead>|;
-		$html .= qq|<tbody>|;
-		my $anchor = 1;
-		foreach my $item (@{$xml->{site}->{alerts}->{alertitem}}){
-			my $level = ( $item->{riskcode}==1 ? 'Low' : $item->{riskcode}==2 ? 'Medium' : 'High');
-			my $class = ( $item->{riskcode}==1 ? 'default' : $item->{riskcode}==2 ? 'warning' : 'danger');
-			$html .= qq|<tr class="$class">|;
-			$html .= qq|<td>$level</td>|;
-			$html .= qq|<td><a href="#issue-$anchor">$item->{alert}</a></td>|;
-			$html .= qq|<td class="text-right">$item->{count}</td>|;
-			$html .= qq|</tr>|;
-			$anchor ++;
-		}
-		$html .= qq|</tbody>|;
-		$html .= qq|</table>|;
-		$html .= qq|</div>|;
-		$html .= qq|<div class="col-md-6">|;
-		$html .= qq|<dl class="dl-horizontal">|;
-		$html .= qq|<dt>Generate</dt>|;
-		$html .= qq|<dd>$xml->{generated}</dd>|;
-		$html .= qq|<dt>Version</dt>|;
-		$html .= qq|<dd>$xml->{version}</dd>|;
-		$html .= qq|<dt>Host</dt>|;
-		$html .= qq|<dd>$xml->{site}->{host}</dd>|;
-		$html .= qq|<dt>Port</dt>|;
-		$html .= qq|<dd>$xml->{site}->{port}</dd>|;
-		$html .= qq|<dt>SSL</dt>|;
-		$html .= qq|<dd>$xml->{site}->{ssl}</dd>|;
-		$html .= qq|<dt>Name</dt>|;
-		$html .= qq|<dd>$xml->{site}->{name}</dd>|;
-		$html .= qq|</dl>|;
-		$html .= qq|</div>|;
-		$html .= qq|</div>|;
-		$html .= qq|<hr>|;
-		$anchor = 1;
-		foreach my $item (@{$xml->{site}->{alerts}->{alertitem}}){
-			$html .= qq|<div class="panel panel-$class[$item->{riskcode}]" id="issue-$anchor">|;
-			$html .= qq|<div class="panel-heading">|;
-			$html .= qq|<p class="pull-right">|;
-			$html .= qq|<span class="btn btn-$class[$item->{riskcode}] disabled" style="cursor:default">$item->{riskdesc}</span>|;
-			$html .= qq|</p>|;
-			$html .= qq|<h4>$item->{alert}</h4>|;
-			$html .= qq|</div>|;
-			$html .= qq|<div class="panel-body">$item->{desc}</div>|;
-			$html .= qq|<table class="table"><tbody><tr><td><div class="col-md-10">|;
-			$html .= qq|<ul>|;
-			my @list;
-			if(ref $item->{instances}->{instance} eq 'ARRAY'){
-				@list = @{$item->{instances}->{instance}};
-			} else {
-				push @list, $item->{instances}->{instance};
-			}
-			foreach my $inst (@list){
-				$html .= qq|<li>$inst->{uri}|;
-				if(grep { $_ ne 'uri' } keys %{$inst}){
-					$html .= qq|<pre>|;
-					foreach my $key (sort keys %{$inst}){
-						if($key ne 'uri') {
-							$html .= qq|<div><span class="label label-primary">$key</span> <code>| . _h($inst->{$key}) . qq|</code></div>|;
-						}
-					}
-					$html .= qq|</pre>|;
-				}
-				$html .= qq|</li>|;
-			}
-			$html .= qq|</ul>|;
-			$html .= qq|</div><div class="col-md-2">|;
-			$html .= qq|<table class="table table-bordered table-condensed">|;
-			foreach(qw/confidence cweid wascid pluginid/){
-				$html .= qq|<tr>|;
-				$html .= qq|<th>$_</th>|;
-				$html .= qq|<td class="text-right">$item->{$_}</td>|;
+
+		foreach my $url (keys %{$xml->{site}}){
+			my $site = $xml->{site}->{$url};
+			if(!$site->{alerts}->{alertitem}){ next; }
+			$html .= qq|<div class="row">|;
+			$html .= qq|<div class="col-md-6">|;
+			$html .= qq|<table class="table table-bordered">|;
+			$html .= qq|<thead><tr><th>Level</th><th>Alert</th><th>Count</th></tr></thead>|;
+			$html .= qq|<tbody>|;
+			my $anchor = 1;
+			foreach my $item (@{$site->{alerts}->{alertitem}}){
+				my $level = ( $item->{riskcode}==1 ? 'Low' : $item->{riskcode}==2 ? 'Medium' : 'High');
+				my $class = ( $item->{riskcode}==1 ? 'default' : $item->{riskcode}==2 ? 'warning' : 'danger');
+				$html .= qq|<tr class="$class">|;
+				$html .= qq|<td>$level</td>|;
+				$html .= qq|<td><a href="#issue-$anchor">$item->{alert}</a></td>|;
+				$html .= qq|<td class="text-right">$item->{count}</td>|;
 				$html .= qq|</tr>|;
+				$anchor ++;
 			}
-			$html .= qq|</table></div></td></tr>|;
-			$html .= qq|<tr><td><dl>|;
-			foreach(qw/solution otherinfo reference/){
-				my $label = $_;
-				$label =~ s/^(.)/uc $1/e;
-				my $value = $item->{$_};
-				$value =~ s/<!--/\&lt\;\!\-\-/g;
-				$value =~ s/-->/\-\-\&gt\;/g;
-				if($item->{$_} ne ''){
-					$html .= qq|<dt>$label</dt>|;
-					$html .= qq|<dd>$value</dd>|;
-				}
-			}
-			$html .= qq|</dl></td>|;
-			$html .= qq|</tr></tbody></table>|;
+			$html .= qq|</tbody>|;
+			$html .= qq|</table>|;
 			$html .= qq|</div>|;
-			$anchor ++;
+			$html .= qq|<div class="col-md-6">|;
+			$html .= qq|<dl class="dl-horizontal">|;
+			$html .= qq|<dt>Generate</dt>|;
+			$html .= qq|<dd>$xml->{generated}</dd>|;
+			$html .= qq|<dt>Version</dt>|;
+			$html .= qq|<dd>$xml->{version}</dd>|;
+			$html .= qq|<dt>Host</dt>|;
+			$html .= qq|<dd>$site->{host}</dd>|;
+			$html .= qq|<dt>Port</dt>|;
+			$html .= qq|<dd>$site->{port}</dd>|;
+			$html .= qq|<dt>SSL</dt>|;
+			$html .= qq|<dd>$site->{ssl}</dd>|;
+			$html .= qq|<dt>URL</dt>|;
+			$html .= qq|<dd>$url</dd>|;
+			$html .= qq|</dl>|;
+			$html .= qq|</div>|;
+			$html .= qq|</div>|;
+			$html .= qq|<hr>|;
+			$anchor = 1;
+
+			foreach my $item (@{$site->{alerts}->{alertitem}}){
+				$html .= qq|<div class="panel panel-$class[$item->{riskcode}]" id="issue-$anchor">|;
+				$html .= qq|<div class="panel-heading">|;
+				$html .= qq|<p class="pull-right">|;
+				$html .= qq|<span class="btn btn-$class[$item->{riskcode}] disabled" style="cursor:default">$item->{riskdesc}</span>|;
+				$html .= qq|</p>|;
+				$html .= qq|<h4>$item->{alert}</h4>|;
+				$html .= qq|</div>|;
+				$html .= qq|<div class="panel-body">$item->{desc}</div>|;
+				$html .= qq|<table class="table"><tbody><tr><td><div class="col-md-10">|;
+				$html .= qq|<ul>|;
+				my @list = @{$item->{instances}->{instance}};
+				foreach my $inst (@list){
+					$html .= qq|<li>$inst->{uri}|;
+					if(grep { $_ ne 'uri' } keys %{$inst}){
+						$html .= qq|<pre>|;
+						foreach my $key (sort keys %{$inst}){
+							if($key ne 'uri') {
+								$html .= qq|<div><span class="label label-primary">$key</span> <code>| . _h($inst->{$key}) . qq|</code></div>|;
+							}
+						}
+						$html .= qq|</pre>|;
+					}
+					$html .= qq|</li>|;
+				}
+				$html .= qq|</ul>|;
+				$html .= qq|</div><div class="col-md-2">|;
+				$html .= qq|<table class="table table-bordered table-condensed">|;
+				foreach(qw/confidence cweid wascid pluginid/){
+					$html .= qq|<tr>|;
+					$html .= qq|<th>$_</th>|;
+					$html .= qq|<td class="text-right">$item->{$_}</td>|;
+					$html .= qq|</tr>|;
+				}
+				$html .= qq|</table></div></td></tr>|;
+				$html .= qq|<tr><td><dl>|;
+				foreach(qw/solution otherinfo reference/){
+					my $label = $_;
+					$label =~ s/^(.)/uc $1/e;
+					my $value = $item->{$_};
+					$value =~ s/<!--/\&lt\;\!\-\-/g;
+					$value =~ s/-->/\-\-\&gt\;/g;
+					if($item->{$_} ne ''){
+						$html .= qq|<dt>$label</dt>|;
+						$html .= qq|<dd>$value</dd>|;
+					}
+				}
+				$html .= qq|</dl></td>|;
+				$html .= qq|</tr></tbody></table>|;
+				$html .= qq|</div>|;
+				$anchor ++;
+			}
 		}
 		$html .= qq|</div></body></html>|;
 
