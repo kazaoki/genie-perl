@@ -147,7 +147,7 @@ if( -d $config{GENERAL}->{config_dir} ){
 		throw("設定ディレクトリ（$config{GENERAL}->{config_dir}）はあるのに設定ファイル（$config{GENERAL}->{config_name}.pl）が見つかりません。");
 	}
 } else {
-	unless($ARGV[0] eq '' || $ARGV[0] !~ /^(?:$noconf_args)$/){
+	unless($ARGV[0] eq '' || $ARGV[0] =~ /^(?:$noconf_args)$/){
 		throw("設定ディレクトリが先祖パスに見つかりません。`genie init`をお忘れではないですか？");
 	}
 }
