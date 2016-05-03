@@ -1,0 +1,4 @@
+# suPHP_ConfigPath /home/marubunkisen/marubun-kisen.com/xserver_php/
+# AddHandler fcgid-script .php .phps
+# FCGIWrapper "/home/marubunkisen/marubun-kisen.com/xserver_php/php-cgi" .php
+# FCGIWrapper "/home/marubunkisen/marubun-kisen.com/xserver_php/php-cgi" .phps
