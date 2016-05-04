@@ -36,6 +36,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         ruby ruby-devel rubygem-bundler \
         ibus-kkc vlgothic-* \
         xorg-x11-server-Xvfb firefox \
+        rpm-build libtool gcc-c++ \
     && yum clean all
 
 # Set locale
@@ -138,6 +139,13 @@ RUN mkdir /tmp/ngrok/ \
 # Install lftp
 # ------------
 RUN rpm -ivh http://lftp.yar.ru/ftp/binaries/lftp-4.6.5-1.x86_64.rpm
+
+# Install suPHP
+ADD suphp-0.7.2-1.src.rpm /tmp/suphp/suphp-0.7.2-1.src.rpm
+RUN cd /tmp/suphp/ \
+    && rpm -ivh suphp-0.7.2-1.src.rpm \
+    && rpmbuild -ba /root/rpmbuild/SPECS/suphp.spec \
+    && rpm -ivh /root/rpmbuild/RPMS/x86_64/suphp-0.7.2-1.x86_64.rpm
 
 # Add files
 # ---------
