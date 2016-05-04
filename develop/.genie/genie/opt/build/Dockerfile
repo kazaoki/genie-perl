@@ -145,7 +145,8 @@ ADD suphp-0.7.2-1.src.rpm /tmp/suphp/suphp-0.7.2-1.src.rpm
 RUN cd /tmp/suphp/ \
     && rpm -ivh suphp-0.7.2-1.src.rpm \
     && rpmbuild -ba /root/rpmbuild/SPECS/suphp.spec \
-    && rpm -ivh /root/rpmbuild/RPMS/x86_64/suphp-0.7.2-1.x86_64.rpm
+    && rpm -ivh /root/rpmbuild/RPMS/x86_64/suphp-0.7.2-1.x86_64.rpm \
+    && echo 'IncludeOptional /etc/httpd/conf/extra/httpd-suphp.conf' >> /etc/httpd/conf/httpd.conf
 
 # Add files
 # ---------
