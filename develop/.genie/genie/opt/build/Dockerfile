@@ -36,7 +36,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         ruby ruby-devel rubygem-bundler \
         ibus-kkc vlgothic-* \
         xorg-x11-server-Xvfb firefox \
-        rpm-build libtool gcc-c++ \
+        rpm-build libtool gcc-c++ mod_fcgid \
     && yum clean all
 
 # Set locale
