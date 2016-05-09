@@ -106,7 +106,7 @@ return {
 		ENABLED => 1,
 		DATABASES => [
 			{
-				LABEL       => 'db1',
+				LABEL       => 'main',
 				REPOSITORY  => 'mysql:5.7',
 				# HOST        => 'db1.xxx.com',
 				NAME        => 'db1',
@@ -120,7 +120,7 @@ return {
 				],
 			},
 			# {
-			# 	LABEL       => 'db2',
+			# 	LABEL       => 'sub',
 			# 	REPOSITORY  => 'mysql:5.6',
 			# 	# HOST        => 'db2.xxx.com',
 			# 	NAME        => 'db2',
@@ -143,7 +143,7 @@ return {
 		# ENABLED => 1,
 		DATABASES => [
 			{
-				LABEL       => 'pg1',
+				LABEL       => 'main',
 				REPOSITORY  => 'postgres:9.4',
 				HOST        => 'pg1.yyy.com',
 				NAME        => 'pg1',
@@ -157,7 +157,7 @@ return {
 				],
 			},
 			# {
-			# 	LABEL       => 'pg2',
+			# 	LABEL       => 'sub',
 			# 	REPOSITORY  => 'postgres:9.4',
 			# 	HOST        => 'pg2.yyy.com',
 			# 	NAME        => 'pg2',
