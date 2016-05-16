@@ -1606,6 +1606,11 @@ sub ruby {
 # genie ngrok                                          ngrokを利用する
 # --------------------------------------------------------------------
 sub ngrok {
+	# -- QRcode show on browser (if subdomain specified.)
+	if($config{NGROK}->{SUBDOMAIN}){
+		`$open_cmd https://chart.googleapis.com/chart?cht=qr"&"chs=150x150"&"chl=http://$config{NGROK}->{SUBDOMAIN}.ngrok.io`;
+	}
+	# -- start ngrok
 	my $token = $config{NGROK}->{AUTHTOKEN} ? "--authtoken=$config{NGROK}->{AUTHTOKEN}" : '';
 	my $subdomain = $config{NGROK}->{SUBDOMAIN} ? "--subdomain=$config{NGROK}->{SUBDOMAIN}" : '';
 	my $basicauth = ($config{NGROK}->{BASIC_USER} ne '' && $config{NGROK}->{BASIC_PASS} ne '') ? '-auth "' . $config{NGROK}->{BASIC_USER} . ':' . $config{NGROK}->{BASIC_PASS} . '"' : '';
