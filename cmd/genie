@@ -1257,7 +1257,7 @@ sub down {
 	# -- コンテナ削除開始
 	if(@exist_containers) {
 		style(color=>'black', bgcolor=>'dark_black');
-		echo "  Deleting exist ".($is_spec ? 'SPEC ' : '')."container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
+		echo "  Deleting exist \"$config{DOCKER}->{NAME}*\" ".($is_spec ? 'SPEC ' : '')."container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
 		foreach my $label (@exist_containers){
 			echo "  | - $label ";
 			`docker rm -f $label $hide_all`;
@@ -1607,7 +1607,7 @@ sub ruby {
 # --------------------------------------------------------------------
 sub ngrok {
 	# -- QRcode show on browser (if subdomain specified.)
-	if($config{NGROK}->{SUBDOMAIN}){
+	if($open_cmd && $config{NGROK}->{SUBDOMAIN}){
 		`$open_cmd https://chart.googleapis.com/chart?cht=qr"&"chs=150x150"&"chl=http://$config{NGROK}->{SUBDOMAIN}.ngrok.io`;
 	}
 	# -- start ngrok
