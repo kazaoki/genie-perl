@@ -202,6 +202,7 @@ return {
 	# ngrok設定
 	# ---------
 	NGROK => {
+		ARGS       => 'http 80',
 		AUTHTOKEN  => '',
 		SUBDOMAIN  => '',
 		BASIC_USER => '',
