@@ -2181,7 +2181,7 @@ sub zap {
 		if($ARGV[1] == 80) { $scheme = 'http'; }
 		elsif($ARGV[1] == 443) { $scheme = 'https'; }
 		if($ARGV[2]) { $scheme = $ARGV[2]; }
-		$target = $scheme . '://ZAP-' . $config{DOCKER}->{NAME} . ":$target";
+		$target = $scheme . '://' . $config{DOCKER}->{NAME} . ":$target";
 	}
 
 	# -- レポートファイルパス設定
