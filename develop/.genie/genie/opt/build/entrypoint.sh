@@ -55,7 +55,18 @@ if [[ $GENIE_RUNMODE == 'spec' ]]; then
   perl -e 'map{$_=~/^SPEC_(.+)$/&&print "export $1\n"}split("\n", `env`)' > /tmp/nospec.env
   . /tmp/nospec.env
   # -- mount prefix
-  spec_mount=/_
+  prefix_mount=/_
+fi
+
+# -- zap mode
+if [[ $GENIE_RUNMODE == 'zap' ]]; then
+  # -- dir copy
+  \cp -rpdfL /_/* /
+  # -- ENV modify ('ZAP_' del)
+  perl -e 'map{$_=~/^ZAP_(.+)$/&&print "export $1\n"}split("\n", `env`)' > /tmp/nozap.env
+  . /tmp/nozap.env
+  # -- mount prefix
+  prefix_mount=/_
 fi
 
 # -- dlsync mode
@@ -85,7 +96,7 @@ echo 'entrypoint.sh setup start.' >> /var/log/entrypoint.log
 
 # -- perl setup
 if [[ $GENIE_PERL_VERSION != '' ]]; then
-  mkdir -p $spec_mount/genie/opt/perl
+  mkdir -p $prefix_mount/genie/opt/perl
   # -- tar restore
   mkdir -p /perl/versions
   tarfile="/genie/opt/perl/versions.tar"
@@ -105,7 +116,7 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv global $GENIE_PERL_VERSION
     source ~/.bashrc && /root/.anyenv/envs/plenv/bin/plenv rehash
     cd /perl/versions
-    tar cf $spec_mount/genie/opt/perl/versions.tar ./
+    tar cf $prefix_mount/genie/opt/perl/versions.tar ./
   else
     # -- perl relink
     ln -s ${install_path} ${link_to}
@@ -121,7 +132,7 @@ fi
 
 # -- Install perl modules from cpanfile
 if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/opt/perl/cpanfile ]]; then
-  mkdir -p $spec_mount/genie/opt/perl
+  mkdir -p $prefix_mount/genie/opt/perl
   # -- tar restore
   mkdir -p /perl/cpanfile-modules
   tarfile="/genie/opt/perl/cpanfile-modules.tar"
@@ -131,13 +142,13 @@ if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/opt/perl/cpanfile ]]; then
   # -- install
   cpanm -nq --installdeps -L /perl/cpanfile-modules/ /genie/opt/perl/
   cd /perl/cpanfile-modules
-  tar cf $spec_mount$tarfile ./
+  tar cf $prefix_mount$tarfile ./
   echo 'cpanfile setup done.' >> /var/log/entrypoint.log
 fi
 
 # -- php setup
 if [[ $GENIE_PHP_VERSION != '' ]]; then
-  mkdir -p $spec_mount/genie/opt/php
+  mkdir -p $prefix_mount/genie/opt/php
   # -- tar restore
   mkdir -p /php/versions
   tarfile="/genie/opt/php/versions.tar"
@@ -156,7 +167,7 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
     cd /php/versions
-    tar cf $spec_mount/genie/opt/php/versions.tar ./
+    tar cf $prefix_mount/genie/opt/php/versions.tar ./
   else
     # -- php relink
     ln -s ${install_path} ${link_to}
@@ -169,7 +180,7 @@ fi
 
 # -- ruby setup
 if [[ $GENIE_RUBY_VERSION != '' ]]; then
-  mkdir -p $spec_mount/genie/opt/ruby
+  mkdir -p $prefix_mount/genie/opt/ruby
   # -- tar restore
   mkdir -p /ruby/versions
   tarfile="/genie/opt/ruby/versions.tar"
@@ -186,7 +197,7 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv global $GENIE_RUBY_VERSION
     source ~/.bashrc && /root/.anyenv/envs/rbenv/bin/rbenv rehash
     cd /ruby/versions
-    tar cf $spec_mount/genie/opt/ruby/versions.tar ./
+    tar cf $prefix_mount/genie/opt/ruby/versions.tar ./
   else
     # -- ruby relink
     ln -s ${install_path} ${link_to}

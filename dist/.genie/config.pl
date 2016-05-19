@@ -205,9 +205,6 @@ return {
 		CAPTURE_WIDTH => 1280,
 		JS_ERRORS     => 0, # 現在はphantomjsのみ
 		USER_AGENT    => '', # 現在はphantomjsのみ
-		HOSTS         => [
-			'genie-xxx.com:127.0.0.1',
-		],
 	},
 
 	# 追加コマンド設定

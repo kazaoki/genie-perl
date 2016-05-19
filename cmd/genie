@@ -812,9 +812,9 @@ sub demo {
 # --------------------------------------------------------------------
 sub up {
 
-	# -- 引数に 'spec' が指定されていればSPECモードでコンテナを起動する
-	my $is_spec = shift eq 'spec' ? 'spec' : undef;
-	my $container_name_base = ($is_spec ? 'SPEC-' : '') . $config{DOCKER}->{NAME};
+	# -- 個別起動タイプ設定（第一引数に`spec`や`zap`が入ってくると、ボリュームがリンクではなくコピーされ、別途コンテナ空間が用意される）
+	my $alone_mode = shift;
+	my $container_name_base = ($alone_mode ? uc($alone_mode).'-' : '') . $config{DOCKER}->{NAME};
 
 	# -- 起動時メモの表示
 	if(ref $config{UPMEMO}) {
@@ -827,10 +827,10 @@ sub up {
 	}
 
 	# -- 既存のシステムを終了させる
-	down($is_spec);
+	down($alone_mode);
 
 	# -- 起動
-	echo "  Starting ".($is_spec ? 'SPEC ' : '')."containers\n";
+	echo "  Starting ".($alone_mode ? uc($alone_mode).' ' : '')."containers\n";
 
 	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必要なので）
 	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
@@ -848,7 +848,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/mysql:/mysql".
-				($is_spec ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/mysql").
+				($alone_mode ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/mysql").
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -862,8 +862,8 @@ sub up {
 				" $db->{REPOSITORY}".
 				" mysqld"
 			;
-			# -- SPEC用の引数調整
-			if($is_spec) {
+			# -- 個別起動用の引数調整
+			if($alone_mode) {
 				# -- ポートバインドを消す
 				$cmd =~ s/ \-p [^ ]+//g;
 			}
@@ -906,7 +906,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/postgresql".
-				($is_spec ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/postgresql/data").
+				($alone_mode ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/postgresql/data").
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -922,8 +922,8 @@ sub up {
 				" postgres"
 			;
 
-			# -- SPEC用の引数調整
-			if($is_spec) {
+			# -- 個別起動用の引数調整
+			if($alone_mode) {
 				# -- ポートバインドを消す
 				$cmd =~ s/ \-p [^ ]+//g;
 			}
@@ -1057,21 +1057,17 @@ sub up {
 			" $config{DOCKER}->{IMAGE}"
 		;
 
-		# -- SPEC用の引数調整
-		if($is_spec) {
+		# -- 個別起動用の引数調整
+		if($alone_mode) {
 			# -- ポートバインドを消す
 			$cmd =~ s/ \-p [^ ]+//g;
 			# -- 環境変数設定
-			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -e GENIE_RUNMODE="spec" $config{DOCKER}->{IMAGE}/;
+			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -e GENIE_RUNMODE="$alone_mode" $config{DOCKER}->{IMAGE}/;
 			# -- マウントを「/_/*」に変える（entrypoint.sh時に正式なディレクトリにコピーする）
 			$cmd =~ s/( \-v [^ ]+\:)([^ ]+)/$1\/_$2/g;
 			# -- /spec/をマウントする
-			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec:\/spec -v $letter$config{GENERAL}->{config_dir}\/spec\/confs:\/turnip\/spec $config{DOCKER}->{IMAGE}/;
-			# -- SPEC用のHOSTSを追加
-			if(ref $config{SPEC}->{HOSTS} eq 'ARRAY'){
-				foreach(@{$config{SPEC}->{HOSTS}}){
-					$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ --add-host="$_" $config{DOCKER}->{IMAGE}/;
-				}
+			if($alone_mode eq 'spec'){
+				$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec:\/spec -v $letter$config{GENERAL}->{config_dir}\/spec\/confs:\/turnip\/spec $config{DOCKER}->{IMAGE}/;
 			}
 		}
 
@@ -1205,7 +1201,7 @@ sub up {
 		}
 
 		# -- コンテナの情報からブラウザを起動
-		if($config{BROWSER}->{OPEN_AT_UPPED} && !$is_spec){
+		if($config{BROWSER}->{OPEN_AT_UPPED} && !$alone_mode){
 			&open();
 		}
 
@@ -1217,12 +1213,12 @@ sub up {
 # --------------------------------------------------------------------
 sub down {
 
-	# -- 引数に 'spec' が指定されていればSPECモードでコンテナを終了する
-	my $is_spec = shift eq 'spec';
+	# -- 個別起動タイプ指定
+	my $alone_mode = shift;
 
 	# -- 対象コンテナピックアップ
 	my @exist_containers;
-	my $container_name_base = ($is_spec ? 'SPEC-' : '') . $config{DOCKER}->{NAME};
+	my $container_name_base = ($alone_mode ? uc($alone_mode).'-' : '') . $config{DOCKER}->{NAME};
 
 	# -- 参照ボリューム名
 	my @volumes;
@@ -1258,7 +1254,7 @@ sub down {
 	# -- コンテナ削除開始
 	if(@exist_containers) {
 		style(color=>'black', bgcolor=>'dark_black');
-		echo "  Deleting exist \"$config{DOCKER}->{NAME}*\" ".($is_spec ? 'SPEC ' : '')."container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
+		echo "  Deleting exist \"".($alone_mode ? uc($alone_mode).'-':'')."$config{DOCKER}->{NAME}*\" ".($alone_mode ? uc($alone_mode).' ' : '')."container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
 		foreach my $label (@exist_containers){
 			echo "  | - $label ";
 			`docker rm -f $label $hide_all`;
@@ -1274,8 +1270,8 @@ sub down {
 		print "\n";
 	}
 
-	# -- DataVolume削除（SPEC時のみ）
-	if($is_spec && @volumes) {
+	# -- DataVolume削除（個別起動時のみ）
+	if($alone_mode && @volumes) {
 		map { `docker volume rm $_` } @volumes;
 	}
 
@@ -2143,26 +2139,7 @@ sub _spec_files {
 # genie zap <url>                                  OWASP/ZAPを実行する
 # --------------------------------------------------------------------
 sub zap {
-	return unless require_up(); # 起動必須
 	my $target = $ARGV[1];
-
-	# -- 既存のZAPコンテナがあれば削除
-	my $zap_container_name = "ZAP-$config{DOCKER}->{NAME}";
-	if(is_exist($zap_container_name)){
-		style(color=>'black', bgcolor=>'dark_black');
-		echo "  Deleting exist container\n";
-		echo "  | - $zap_container_name ";
-		`docker rm -f $zap_container_name $hide_all`;
-		if($?) {
-			style({color=>'red'});
-			echo "NG\n";
-			style({color=>'clear'});
-		} else {
-			echo "deleted\n";
-		}
-		style(color=>'clear', bgcolor=>'clear');
-		print "\n";
-	}
 
 	# -- 引数が無ければヘルプ表示
 	if(!$target){
@@ -2171,8 +2148,8 @@ sub zap {
 			"- genie zap 80\n".
 			"- genie zap 443\n".
 			"- genie zap 8080 http\n".
-			"- genie zap http://genie-test/form\n".
-			"- genie zap https://genie-test/form\n".
+			"- genie zap http://ZAP-$config{DOCKER}->{NAME}\n".
+			"- genie zap https://ZAP-$config{DOCKER}->{NAME}/\n".
 			"- genie zap xml2html\n",
 			1
 		);
@@ -2184,7 +2161,7 @@ sub zap {
 		if($ARGV[1] == 80) { $scheme = 'http'; }
 		elsif($ARGV[1] == 443) { $scheme = 'https'; }
 		if($ARGV[2]) { $scheme = $ARGV[2]; }
-		$target = $scheme . '://' . $config{DOCKER}->{NAME} . ":$target";
+		$target = $scheme . '://ZAP-' . $config{DOCKER}->{NAME} . ":$target";
 	}
 
 	# -- レポートファイルパス設定
@@ -2204,15 +2181,36 @@ sub zap {
 
 	# -- 確認する
 	my $input = input("$target に対して破壊的スキャンが実行される場合がありますがよろしいでしょうか。[y/N]: ");
-	if($input !~ /^y$/i ) {
-		return;
+	print "\n";
+	return if $input !~ /^y$/i;
+
+	# -- 既存のZAPRUNコンテナがあれば削除
+	my $zap_container_name = "ZAPRUN-$config{DOCKER}->{NAME}";
+	if(is_exist($zap_container_name)){
+		style(color=>'black', bgcolor=>'dark_black');
+		echo "  Deleting exist container\n";
+		echo "  | - $zap_container_name ";
+		`docker rm -f $zap_container_name $hide_all`;
+		if($?) {
+			style({color=>'red'});
+			echo "NG\n";
+			style({color=>'clear'});
+		} else {
+			echo "deleted\n";
+		}
+		style(color=>'clear', bgcolor=>'clear');
+		print "\n";
 	}
 
 	# -- zapディレクトリ作成
 	mkdir $config{GENERAL}->{config_dir} . '/zap';
 
+	# -- ZAP用コンテナを起動
+	&up('zap');
+
 	# -- ZAP実行
-	my $cmd = qq|docker run -u zap --link $config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/ZAP_2.4.3/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
+	my $container_name = 'ZAP-'.$config{DOCKER}->{NAME};
+	my $cmd = qq|docker run -u zap --link $container_name:$container_name --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/ZAP_2.4.3/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
 
 	# -- コンテナ実行
 	my $pid = fork;
@@ -2253,6 +2251,9 @@ sub zap {
 		system($cmd);
 		exit;
 	}
+
+	# -- ZAP用コンテナを終了
+	&down('zap');
 
 	return 1;
 
