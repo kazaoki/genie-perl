@@ -47,24 +47,10 @@ if [[ $GENIE_RUNMODE == 'httpd' ]]; then
   exit 0
 fi
 
-# -- spec mode
-if [[ $GENIE_RUNMODE == 'spec' ]]; then
+# -- spec|zap mode
+if [[ $GENIE_RUNMODE == 'spec' ]] || [[ $GENIE_RUNMODE == 'zap' ]]; then
   # -- dir copy
   \cp -rpdfL /_/* /
-  # -- ENV modify ('SPEC_' del)
-  perl -e 'map{$_=~/^SPEC_(.+)$/&&print "export $1\n"}split("\n", `env`)' > /tmp/nospec.env
-  . /tmp/nospec.env
-  # -- mount prefix
-  prefix_mount=/_
-fi
-
-# -- zap mode
-if [[ $GENIE_RUNMODE == 'zap' ]]; then
-  # -- dir copy
-  \cp -rpdfL /_/* /
-  # -- ENV modify ('ZAP_' del)
-  perl -e 'map{$_=~/^ZAP_(.+)$/&&print "export $1\n"}split("\n", `env`)' > /tmp/nozap.env
-  . /tmp/nozap.env
   # -- mount prefix
   prefix_mount=/_
 fi

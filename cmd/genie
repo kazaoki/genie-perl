@@ -883,7 +883,13 @@ sub up {
 			`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
 
 			# -- 本体からリンク
-			$mysql_option .= " --link $label";
+			if($alone_mode) {
+				my $label_raw = $label;
+				$label_raw =~ s/^$alone_mode-//i;
+				$mysql_option .= " --link $label:$label_raw";
+			} else {
+				$mysql_option .= " --link $label";
+			}
 
 			# -- HOST情報をセット
 			if($db->{HOST}) {
@@ -943,7 +949,13 @@ sub up {
 			`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
 
 			# -- 本体からリンク
-			$postgresql_option .= " --link $label";
+			if($alone_mode) {
+				my $label_raw = $label;
+				$label_raw =~ s/^$alone_mode-//i;
+				$postgresql_option .= " --link $label:$label_raw";
+			} else {
+				$postgresql_option .= " --link $label";
+			}
 
 			# -- HOST情報をセット
 			if($db->{HOST}) {
@@ -1060,7 +1072,7 @@ sub up {
 		# -- 個別起動用の引数調整
 		if($alone_mode) {
 			# -- ポートバインドを消す
-			$cmd =~ s/ \-p [^ ]+//g;
+			$cmd =~ s/( \-p \d+)\:\d+/$1/g;
 			# -- 環境変数設定
 			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -e GENIE_RUNMODE="$alone_mode" $config{DOCKER}->{IMAGE}/;
 			# -- マウントを「/_/*」に変える（entrypoint.sh時に正式なディレクトリにコピーする）
@@ -2148,8 +2160,8 @@ sub zap {
 			"- genie zap 80\n".
 			"- genie zap 443\n".
 			"- genie zap 8080 http\n".
-			"- genie zap http://ZAP-$config{DOCKER}->{NAME}\n".
-			"- genie zap https://ZAP-$config{DOCKER}->{NAME}/\n".
+			"- genie zap http://$config{DOCKER}->{NAME}\n".
+			"- genie zap https://$config{DOCKER}->{NAME}/\n".
 			"- genie zap xml2html\n",
 			1
 		);
@@ -2188,7 +2200,7 @@ sub zap {
 	my $zap_container_name = "ZAPRUN-$config{DOCKER}->{NAME}";
 	if(is_exist($zap_container_name)){
 		style(color=>'black', bgcolor=>'dark_black');
-		echo "  Deleting exist container\n";
+		echo "  Deleting exist ZAPRUN container\n";
 		echo "  | - $zap_container_name ";
 		`docker rm -f $zap_container_name $hide_all`;
 		if($?) {
@@ -2209,8 +2221,7 @@ sub zap {
 	&up('zap');
 
 	# -- ZAP実行
-	my $container_name = 'ZAP-'.$config{DOCKER}->{NAME};
-	my $cmd = qq|docker run -u zap --link $container_name:$container_name --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/ZAP_2.4.3/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
+	my $cmd = qq|docker run -u zap --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/ZAP_2.4.3/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
 
 	# -- コンテナ実行
 	my $pid = fork;
