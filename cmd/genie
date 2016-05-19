@@ -702,7 +702,7 @@ sub init {
 
 	# -- 設定ディレクトリの存在確認
 	if(-d $config{GENERAL}->{config_dir}) {
-		throw('設定ディレクトリが既にあるので処理を中止します。', $config_dir_show);
+		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", $config_dir_show);
 	}
 
 	# -- ブランチ指定
@@ -712,7 +712,15 @@ sub init {
 	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
 	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=init -e GENIE_INIT_BRANCH=$branch kazaoki/genie";
 	system $cmd;
-	if($?){ throw 'init に失敗しました。'; }
+	if($?){
+		rmdir $config_dir_name;
+		throw 'init に失敗しました。';
+	}
+
+	# -- Windowsの場合、隠しフォルダに。
+	if($is_win){
+		`attrib +h $config_dir_name`;
+	}
 
 	print "\n";
 	message(success=>"設定ファイルを作成しました。\n$config_dir_show", 1);
