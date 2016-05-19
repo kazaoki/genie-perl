@@ -15,7 +15,7 @@ return {
 		# OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
 		# OPTIONS_BUILD => '--cpuset-cpus=0-1', # `docker build` 時に渡す追加引数
 		HOSTS         => [
-			'genie-xxx.com:127.0.0.1',
+			# 'genie-xxx.com:127.0.0.1',
 		],
 		# HOST_IP_FORCE => '192.168.99.100',
 		VOLUMES => [ # ホスト側(左側)を/以外で始めるとホームパスからの指定になります。
@@ -36,11 +36,11 @@ return {
 	# --------
 	LOGS => {
 		FILES => [
-			'/var/log/httpd/access_log',
+			# '/var/log/httpd/access_log',
 			'/var/log/httpd/error_log',
 			# '/var/log/httpd/ssl_access_log',
 			# '/var/log/httpd/ssl_request_log',
-			# '/var/log/httpd/ssl_error_log',
+			'/var/log/httpd/ssl_error_log',
 			# '/var/log/nginx/access.log',
 			# '/var/log/nginx/error.log',
 		],
@@ -49,20 +49,20 @@ return {
 	# Perl設定
 	# --------
 	PERL => {
-		# VERSION => '5.12.0', # `plenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '5.12.0', # `genie perl` でリストアップされるバージョン文字列を指定
 		# CPANFILE_ENABLED => 1,
 	},
 
 	# PHP設定
 	# --------
 	PHP => {
-		# VERSION => '5.6.0', # `phpenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '5.6.0', # `genie php` でリストアップされるバージョン文字列を指定
 	},
 
 	# Ruby設定
 	# --------
 	RUBY => {
-		# VERSION => '2.3.0', # `rbenv install -l` でリストアップされるバージョン文字列を指定
+		# VERSION => '2.3.0', # `genie ruby` でリストアップされるバージョン文字列を指定
 	},
 
 	# Apache設定
@@ -76,9 +76,10 @@ return {
 		HTTP_PORT    => 80,
 		HTTPS_PORT   => 443,
 		BIND_PORTS   => [
-			'80',
-			# '80:80',
-			# '443:443',
+			'80:80',
+			'443:443',
+			# '80',
+			# '443',
 		]
 	},
 
@@ -96,7 +97,7 @@ return {
 	# Postfix設定
 	# -----------
 	POSTFIX => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		FORCE_ENVELOPE => 'test@xx.xx',
 	},
 
