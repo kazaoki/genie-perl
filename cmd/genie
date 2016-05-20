@@ -51,6 +51,9 @@ my $noconf_args = join('|', qw/
 	ls
 	httpd
 	demo
+	php
+	perl
+	ruby
 /);
 
 # --------------------------------------------------------------------
@@ -1590,10 +1593,11 @@ sub build {
 # genie php                                                    PHP情報
 # --------------------------------------------------------------------
 sub php {
-	return unless require_up(); # 起動必須
-	print `docker exec -it $config{DOCKER}->{NAME} /root/.anyenv/envs/phpenv/plugins/php-build/bin/php-build --definitions`;
-	print "\n---\n\n";
-	print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && phpenv versions"`;
+	print `docker run --rm --entrypoint=bash kazaoki/genie -c "/root/.anyenv/envs/phpenv/plugins/php-build/bin/php-build --definitions"`;
+	if(&is_up()){
+		print "\n---\n\n";
+		print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && phpenv versions"`;
+	}
 	print "\n";
 }
 
@@ -1601,10 +1605,11 @@ sub php {
 # genie perl                                                  Perl情報
 # --------------------------------------------------------------------
 sub perl {
-	return unless require_up(); # 起動必須
-	print `docker exec -it $config{DOCKER}->{NAME} /root/.anyenv/envs/plenv/plugins/perl-build/perl-build  --definitions`;
-	print "\n---\n\n";
-	print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && plenv versions"`;
+	print `docker run --rm --entrypoint=bash kazaoki/genie -c "/root/.anyenv/envs/plenv/plugins/perl-build/perl-build  --definitions"`;
+	if(&is_up()){
+		print "\n---\n\n";
+		print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && plenv versions"`;
+	}
 	print "\n";
 }
 
@@ -1612,10 +1617,11 @@ sub perl {
 # genie ruby                                                  Ruby情報
 # --------------------------------------------------------------------
 sub ruby {
-	return unless require_up(); # 起動必須
-	print `docker exec -it $config{DOCKER}->{NAME} /root/.anyenv/envs/rbenv/plugins/ruby-build/bin/ruby-build  --definitions`;
-	print "\n---\n\n";
-	print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && rbenv versions"`;
+	print `docker run --rm --entrypoint=bash kazaoki/genie -c "/root/.anyenv/envs/rbenv/plugins/ruby-build/bin/ruby-build  --definitions"`;
+	if(&is_up()){
+		print "\n---\n\n";
+		print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && rbenv versions"`;
+	}
 	print "\n";
 }
 
