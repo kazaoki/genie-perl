@@ -116,7 +116,6 @@ end
 
 step 'ウィンドウの幅を:widthにする' do |width|
   page.driver.resize_window(width, 1)
-  step 'cap' if autocap 
 end
 
 step 'BASIC認証のユーザー名を:user、パスワードを:passにする' do |user, pass|
