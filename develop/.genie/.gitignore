@@ -1,3 +1,4 @@
 genie/opt/*/*.tar
 spec/report.html
 spec/captures/*
+zap/report.*
