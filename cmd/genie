@@ -1486,10 +1486,9 @@ sub clean {
 # --------------------------------------------------------------------
 sub config {
 
-	return if !$open_cmd;
-
 	# -- エディタオープン
 	if ($ARGV[1] eq 'open') {
+		return if !$open_cmd;
 		my $conf = $config{GENERAL}->{config_file};
 		if($is_win) {
 			$conf = "$config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_file}";
