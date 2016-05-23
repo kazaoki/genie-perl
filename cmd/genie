@@ -531,7 +531,7 @@ sub throw {
 # スピーチヘルパー
 # ----------------
 sub say {
-	return if(!$can_say);
+	return if($config{DOCKER}->{NO_SAY} || (!$can_say));
 	my $message = encode($is_win ? 'Shift_JIS' : 'UTF-8', shift);
 	if($is_mac) {
 	    system "say -r 300 \"$message\"";

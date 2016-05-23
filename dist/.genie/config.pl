@@ -22,6 +22,7 @@ return {
 			# 'app:/app',
 			# 'home-data:/home/xxx/',
 		],
+		# NO_SAY => 1, # 有効にすると音声アナウンスしなくなります。
 	},
 
 	# ブラウザ設定
