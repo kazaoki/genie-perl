@@ -102,7 +102,7 @@ return {
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			# {
 			# 	LABEL      => 'db1',
@@ -167,7 +167,7 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL       => 'db1',
@@ -230,9 +230,6 @@ return {
 		CAPTURE_WIDTH => 1280,
 		JS_ERRORS     => 0, # 現在はphantomjsのみ
 		USER_AGENT    => '', # 現在はphantomjsのみ
-		HOSTS         => [
-			'genie-test.com:127.0.0.1',
-		],
 	},
 
 	# 追加コマンド設定

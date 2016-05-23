@@ -120,6 +120,7 @@ if($ARGV[0] ne 'cli') {
 		'all' => \$options{all}, # specやdlsyncで使用
 		'now-branch'    => \$options{'now-branch'}, # dlsyncで使用
 		'oldest-branch' => \$options{'oldest-branch'}, # dlsyncで使用
+		'cap' => \$options{'cap'}, # specで使用
 	);
 }
 $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。
@@ -312,6 +313,7 @@ sub help {
 				'httpd'                    => '実行パス位置でhttpdを立ち上げ（設定ファイルいらず）',
 				'spec <feature dir/files>' => 'Capybaraを使用したSPECテストを実行：引数無しでヘルプ表示',
 				'spec --all'               => 'Capybaraを使用したSPECテストを全て実行',
+				'spec --all --cap'         => '自動的にキャプチャを録ります',
 				'zap <port/schema/url>'    => 'OWASP/ZAPコンテナを起動して脆弱性をチェック：引数無しでヘルプ表示',
 			],
 		},
@@ -1067,6 +1069,7 @@ sub up {
 			' -e LANG=ja_JP.UTF-8'.
 			' -e LC_ALL=ja_JP.UTF-8'.
 			($config{PERL}->{CPANFILE_ENABLED} ? ' -e PERL5LIB=/perl/cpanfile-modules/lib/perl5' : '').
+			($options{cap} ? ' -e GENIE_SPEC_AUTOCAP=1' : '').
 			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
 			$mysql_option.
 			$postgresql_option.
