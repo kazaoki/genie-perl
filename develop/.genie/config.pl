@@ -103,22 +103,22 @@ return {
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		# ENABLED => 1,
+		ENABLED => 1,
 		DATABASES => [
-			# {
-			# 	LABEL      => 'db1',
-			# 	REPOSITORY => 'mysql:5.5',
-			# 	HOST       => 'db1.kazaoki.jp',
-			# 	NAME       => 'genie_db1',
-			# 	USER       => 'genie_user1',
-			# 	PASS       => '123456789',
-			# 	CHARSET    => 'utf8',
-			# 	DUMP_GENEL => 3,
-			# 	# DATA_VOLUME_LOCK => 1,
-			# 	BIND_PORTS => [
-			# 		'3306'
-			# 	],
-			# },
+			{
+				LABEL      => 'db1',
+				REPOSITORY => 'mysql:5.5',
+				HOST       => 'db1.kazaoki.jp',
+				NAME       => 'genie_db1',
+				USER       => 'genie_user1',
+				PASS       => '123456789',
+				CHARSET    => 'utf8',
+				DUMP_GENEL => 3,
+				# DATA_VOLUME_LOCK => 1,
+				BIND_PORTS => [
+					'3306'
+				],
+			},
 			# {
 			# 	LABEL      => 'db2',
 			# 	REPOSITORY => 'mysql:5.6',

@@ -14,6 +14,7 @@ use HTTP::Date;
 use LWP::Simple;
 use XML::Simple; # cpan install XML::Simple
 use Tie::IxHash; # cpan install Tie::IxHash
+use YAML::Tiny; # cpan install YAML::Tiny
 $| = 1;
 
 # -- 許可する第一引数の正規表現
@@ -41,6 +42,7 @@ my $ok_args = join('|', qw/
 	dlsync
 	spec
 	zap
+	compose
 /);
 # -- 設定ファイルが無くても実行可能な第一引数の正規表現
 my $noconf_args = join('|', qw/
@@ -103,6 +105,9 @@ sub sjis2utf8 {
 
 # -- 設定値変数
 my %config;
+
+# -- compose用変数
+my $comp;
 
 print "\n";
 
@@ -715,7 +720,7 @@ sub init {
 
 	# -- 一時コンテナを起動してそっちで初期化
 	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-	my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=init -e GENIE_INIT_BRANCH=$branch kazaoki/genie";
+	my $cmd = "docker run --rm -v $current:/work -e GENIE_PROC=init -e GENIE_INIT_BRANCH=$branch kazaoki/genie";
 	system $cmd;
 	if($?){
 		rmdir $config_dir_name;
@@ -763,7 +768,7 @@ sub update {
 
 		# -- コンテナ起動
 		my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-		my $cmd = "docker run --rm -v $current:/work -e GENIE_RUNMODE=update -e GENIE_INIT_BRANCH=$branch $config{DOCKER}->{IMAGE}";
+		my $cmd = "docker run --rm -v $current:/work -e GENIE_PROC=update -e GENIE_UPDATE_BRANCH=$branch $config{DOCKER}->{IMAGE}";
 		system $cmd;
 		if($?){
 			message(danger=>'update に失敗しました。');
@@ -825,9 +830,9 @@ sub demo {
 # --------------------------------------------------------------------
 sub up {
 
-	# -- 個別起動タイプ設定（第一引数に`spec`や`zap`が入ってくると、ボリュームがリンクではなくコピーされ、別途コンテナ空間が用意される）
-	my $alone_mode = shift;
-	my $container_name_base = ($alone_mode ? uc($alone_mode).'-' : '') . $config{DOCKER}->{NAME};
+	# -- 起動タイプ（spec, zap, compose）
+	my $up_type = shift;
+	my $container_name_base = ($up_type =~ /^(?:spec|zap)$/ ? uc($up_type).'-' : '') . $config{DOCKER}->{NAME};
 
 	# -- 起動時メモの表示
 	if(ref $config{UPMEMO}) {
@@ -840,10 +845,10 @@ sub up {
 	}
 
 	# -- 既存のシステムを終了させる
-	down($alone_mode);
+	down($up_type);
 
 	# -- 起動
-	echo "  Starting ".($alone_mode ? uc($alone_mode).' ' : '')."containers\n";
+	echo "  Starting ".($up_type ? uc($up_type).' ' : '')."containers\n" if $up_type ne 'compose';
 
 	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必要なので）
 	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
@@ -861,7 +866,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/mysql:/mysql".
-				($alone_mode ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/mysql").
+				($up_type =~ /^(?:spec|zap)$/ ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/mysql").
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -875,30 +880,45 @@ sub up {
 				" $db->{REPOSITORY}".
 				" mysqld"
 			;
-			# -- 個別起動用の引数調整
-			if($alone_mode) {
-				# -- ポートバインドを消す
-				$cmd =~ s/ \-p [^ ]+//g;
+
+			if($up_type eq 'compose'){
+
+				# -- compose用情報収集
+				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{image} = $db->{REPOSITORY};
+				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{environment} = [map { $_ } $cmd =~ /\-e ([^\s]+)/g];
+				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{ports} = [map { $_ } $cmd =~ /\-p ([^\s]+)/g];
+				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{volumes} = [map { $_ } $cmd =~ /\-v ([^\s]+)/g];
+				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{entrypoint} = ['/mysql/opt/before-entrypoint.sh'];
+				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{extra_hosts} = ["$db->{HOST}:127.0.0.1"];
+
+			} else {
+
+				# -- 起動タイプの引数調整
+				if($up_type) {
+					# -- ポートバインドを消す
+					$cmd =~ s/ \-p [^ ]+//g;
+				}
+
+				# -- コンテナ実行
+				`$cmd`;
+
+				# -- 起動開始のプログレス
+				wait_container ({
+					container_name => $label,
+					log_file       => '/var/log/init.log',
+					stop_word      => 'Process start',
+					label          => "MySQL container start ($label)",
+				});
+				
+				# -- コンテナ直下に起動用コマンドを記録する（restore用）
+				`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
 			}
 
-			# -- コンテナ実行
-			`$cmd`;
 
-			# -- 起動開始のプログレス
-			wait_container ({
-				container_name => $label,
-				log_file       => '/var/log/init.log',
-				stop_word      => 'Process start',
-				label          => "MySQL container start ($label)",
-			});
-			
-			# -- コンテナ直下に起動用コマンドを記録する（restore用）
-			`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
-
-			# -- 本体からリンク
-			if($alone_mode) {
+			# -- 本体からリンクするための情報
+			if($up_type) {
 				my $label_raw = $label;
-				$label_raw =~ s/^$alone_mode-//i;
+				$label_raw =~ s/^$up_type-//i;
 				$mysql_option .= " --link $label:$label_raw";
 			} else {
 				$mysql_option .= " --link $label";
@@ -925,7 +945,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/postgresql".
-				($alone_mode ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/postgresql/data").
+				($up_type ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/postgresql/data").
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -941,30 +961,46 @@ sub up {
 				" postgres"
 			;
 
-			# -- 個別起動用の引数調整
-			if($alone_mode) {
+			# -- 起動タイプの引数調整
+			if($up_type) {
 				# -- ポートバインドを消す
 				$cmd =~ s/ \-p [^ ]+//g;
 			}
 
-			# -- コンテナ実行
-			`$cmd`;
+			if($up_type eq 'compose'){
 
-			# -- 起動開始のプログレス
-			wait_container ({
-				container_name => $label,
-				log_file       => '/var/log/init.log',
-				stop_word      => 'Process start',
-				label          => "PostgreSQL container start ($label)",
-			});
+				# -- compose用情報収集
+				# $comp->{services}->{$label}->{environment}->[
+				# 	" -e MYSQL_LABEL=$db->{LABEL}",
+				# 	" -e MYSQL_ROOT_PASSWORD=$db->{PASS}",
+				# 	" -e MYSQL_DATABASE=$db->{NAME}",
+				# 	" -e MYSQL_USER=$db->{USER}",
+				# 	" -e MYSQL_PASSWORD=$db->{PASS}",
+				# 	" -e MYSQL_CHARSET=$db->{CHARSET}",
+				# 	" -e TERM=xterm",
+				# ];
 
-			# -- コンテナ直下に起動用コマンドを記録する（restore用）
-			`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
+			} else {
 
-			# -- 本体からリンク
-			if($alone_mode) {
+				# -- コンテナ実行
+				`$cmd`;
+
+				# -- 起動開始のプログレス
+				wait_container ({
+					container_name => $label,
+					log_file       => '/var/log/init.log',
+					stop_word      => 'Process start',
+					label          => "PostgreSQL container start ($label)",
+				});
+
+				# -- コンテナ直下に起動用コマンドを記録する（restore用）
+				`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
+			}
+
+			# -- 本体からリンクするための情報
+			if($up_type) {
 				my $label_raw = $label;
-				$label_raw =~ s/^$alone_mode-//i;
+				$label_raw =~ s/^$up_type-//i;
 				$postgresql_option .= " --link $label:$label_raw";
 			} else {
 				$postgresql_option .= " --link $label";
@@ -1083,18 +1119,34 @@ sub up {
 			" $config{DOCKER}->{IMAGE}"
 		;
 
-		# -- 個別起動用の引数調整
-		if($alone_mode) {
+		# -- 起動タイプの引数調整
+		if($up_type) {
 			# -- ポートバインドを消す
 			$cmd =~ s/( \-p \d+)\:\d+/$1/g;
 			# -- 環境変数設定
-			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -e GENIE_RUNMODE="$alone_mode" $config{DOCKER}->{IMAGE}/;
+			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -e GENIE_PROC="$up_type" $config{DOCKER}->{IMAGE}/;
 			# -- マウントを「/_/*」に変える（entrypoint.sh時に正式なディレクトリにコピーする）
 			$cmd =~ s/( \-v [^ ]+\:)([^ ]+)/$1\/_$2/g;
 			# -- /spec/をマウントする
-			if($alone_mode eq 'spec'){
+			if($up_type eq 'spec'){
 				$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec:\/spec -v $letter$config{GENERAL}->{config_dir}\/spec\/confs:\/turnip\/spec $config{DOCKER}->{IMAGE}/;
 			}
+		}
+
+		if($up_type eq 'compose'){
+
+			# -- compose用情報収集
+			# $comp->{services}->{$label}->{environment}->[
+			# 	" -e MYSQL_LABEL=$db->{LABEL}",
+			# 	" -e MYSQL_ROOT_PASSWORD=$db->{PASS}",
+			# 	" -e MYSQL_DATABASE=$db->{NAME}",
+			# 	" -e MYSQL_USER=$db->{USER}",
+			# 	" -e MYSQL_PASSWORD=$db->{PASS}",
+			# 	" -e MYSQL_CHARSET=$db->{CHARSET}",
+			# 	" -e TERM=xterm",
+			# ];
+
+			return 1;
 		}
 
 		# -- スクリプトパーミッション設定
@@ -1227,7 +1279,7 @@ sub up {
 		}
 
 		# -- コンテナの情報からブラウザを起動
-		if($config{BROWSER}->{OPEN_AT_UPPED} && !$alone_mode){
+		if($config{BROWSER}->{OPEN_AT_UPPED} && !$up_type){
 			&open();
 		}
 
@@ -1239,12 +1291,12 @@ sub up {
 # --------------------------------------------------------------------
 sub down {
 
-	# -- 個別起動タイプ指定
-	my $alone_mode = shift;
+	# -- 起動タイプ
+	my $up_type = shift;
 
 	# -- 対象コンテナピックアップ
 	my @exist_containers;
-	my $container_name_base = ($alone_mode ? uc($alone_mode).'-' : '') . $config{DOCKER}->{NAME};
+	my $container_name_base = ($up_type ? uc($up_type).'-' : '') . $config{DOCKER}->{NAME};
 
 	# -- 参照ボリューム名
 	my @volumes;
@@ -1280,7 +1332,7 @@ sub down {
 	# -- コンテナ削除開始
 	if(@exist_containers) {
 		style(color=>'black', bgcolor=>'dark_black');
-		echo "  Deleting exist \"".($alone_mode ? uc($alone_mode).'-':'')."$config{DOCKER}->{NAME}*\" ".($alone_mode ? uc($alone_mode).' ' : '')."container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
+		echo "  Deleting exist \"".($up_type ? uc($up_type).'-':'')."$config{DOCKER}->{NAME}*\" ".($up_type ? uc($up_type).' ' : '')."container".(scalar(@exist_containers)>1 ? 's' : '') . "\n";
 		foreach my $label (@exist_containers){
 			echo "  | - $label ";
 			`docker rm -f $label $hide_all`;
@@ -1297,7 +1349,7 @@ sub down {
 	}
 
 	# -- DataVolume削除（個別起動時のみ）
-	if($alone_mode && @volumes) {
+	if($up_type && @volumes) {
 		map { `docker volume rm $_` } @volumes;
 	}
 
@@ -1506,7 +1558,7 @@ sub httpd {
 
 	# -- コンテナ起動
 	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
-	my $cmd = "docker run -d -t -p 80 -e TERM=xterm -v $letter$now_path:/var/www/html/ -e GENIE_RUNMODE=httpd $config{DOCKER}->{IMAGE}";
+	my $cmd = "docker run -d -t -p 80 -e TERM=xterm -v $letter$now_path:/var/www/html/ -e GENIE_PROC=httpd $config{DOCKER}->{IMAGE}";
 	my $cid = `$cmd`;
 	if($?) {
 		throw('Webサーバが起動しませんでした。', $cmd);
@@ -2049,7 +2101,7 @@ sub dlsync {
 		my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
 		my $cmd =
 			"docker run --rm -it".
-			" -e GENIE_RUNMODE=dlsync".
+			" -e GENIE_PROC=dlsync".
 			" $envs".
 			" -v $letter$local_dir_path:/sync".
 			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
@@ -2440,4 +2492,33 @@ sub _report_xml2html {
 
 	return 1;
 
+}
+
+# --------------------------------------------------------------------
+# genie compose                             Docker compose用設定を出力
+# --------------------------------------------------------------------
+sub compose {
+
+	# -- 起動に必用な情報を収集してくる
+	&up('compose');
+
+	# -- version
+	$comp->{version} = '2';
+
+	# # -- genieコンテナ
+	# $comp->{services}->{genie}->{image} = 'kazaoki/genie';
+	# $comp->{services}->{genie}->{ports} = [
+	# 	'80:80',
+	# 	'443:443',
+	# 	'8080:8080',
+	# ];
+
+	# # -- 環境変数
+	# $comp->{services}->{genie}->{environment} = [
+	# 	'GENIE_PROC=compose',
+	# ];
+
+	# -- 標準出力に出力
+	echo YAML::Tiny::Dump($comp);
+	exit;
 }

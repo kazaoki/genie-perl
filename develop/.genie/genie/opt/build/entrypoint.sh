@@ -3,8 +3,15 @@
 # -- general
 echo ". /etc/bashrc" >> /root/.bashrc
 
+# -- compose mode
+if [[ $GENIE_PROC == 'compose' ]]; then
+  env|sort
+  /loop.sh
+  exit 0
+fi
+
 # -- init mode
-if [[ $GENIE_RUNMODE == 'init' ]]; then
+if [[ $GENIE_PROC == 'init' ]]; then
   cd /work
   mkdir .genie
   cd .genie
@@ -22,11 +29,11 @@ if [[ $GENIE_RUNMODE == 'init' ]]; then
 fi
 
 # -- update mode
-if [[ $GENIE_RUNMODE == 'update' ]]; then
+if [[ $GENIE_PROC == 'update' ]]; then
   cd /work
   mkdir .genie_update
   cd .genie_update
-  url=https://github.com/kazaoki/genie/tarball/$GENIE_INIT_BRANCH
+  url=https://github.com/kazaoki/genie/tarball/$GENIE_UPDATE_BRANCH
   echo "Downloading $url"
   echo ""
   curl -s -f -L $url | tar xvz */dist/.genie
@@ -41,14 +48,14 @@ if [[ $GENIE_RUNMODE == 'update' ]]; then
 fi
 
 # -- httpd mode
-if [[ $GENIE_RUNMODE == 'httpd' ]]; then
+if [[ $GENIE_PROC == 'httpd' ]]; then
   /usr/sbin/httpd
   /loop.sh
   exit 0
 fi
 
 # -- spec|zap mode
-if [[ $GENIE_RUNMODE == 'spec' ]] || [[ $GENIE_RUNMODE == 'zap' ]]; then
+if [[ $GENIE_PROC == 'spec' ]] || [[ $GENIE_PROC == 'zap' ]]; then
   # -- dir copy
   \cp -rpdfL /_/* /
   # -- mount prefix
@@ -56,7 +63,7 @@ if [[ $GENIE_RUNMODE == 'spec' ]] || [[ $GENIE_RUNMODE == 'zap' ]]; then
 fi
 
 # -- dlsync mode
-if [[ $GENIE_RUNMODE == 'dlsync' ]]; then
+if [[ $GENIE_PROC == 'dlsync' ]]; then
   rm -f /tmp/mirror.cmd
   if [[ $GENIE_DLSYNC_REMOTE_CHARSET ]]; then
     echo "set ftp:charset $GENIE_DLSYNC_REMOTE_CHARSET" >> /tmp/mirror.cmd

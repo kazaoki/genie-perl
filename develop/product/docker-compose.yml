@@ -1,0 +1,48 @@
+
+---
+services:
+  genie-test-mysql-db1:
+    entrypoint:
+      - /mysql/opt/before-entrypoint.sh
+    environment:
+      - MYSQL_LABEL=db1
+      - MYSQL_ROOT_PASSWORD=123456789
+      - MYSQL_DATABASE=genie_db1
+      - MYSQL_USER=genie_user1
+      - MYSQL_PASSWORD=123456789
+      - MYSQL_CHARSET=utf8
+      - TERM=xterm
+    extra_hosts:
+      - db1.kazaoki.jp:127.0.0.1
+    image: mysql:5.5
+    ports:
+      - '3306'
+    volumes:
+      # - /c/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop/.genie/mysql:/mysql
+      - ../.genie/mysql:/mysql
+      - genie-test-mysql-db1:/var/lib/mysql
+  genie-test-mysql-wp:
+    entrypoint:
+      - /mysql/opt/before-entrypoint.sh
+    environment:
+      - MYSQL_LABEL=wp
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=wp
+      - MYSQL_USER=wp
+      - MYSQL_PASSWORD=123456
+      - MYSQL_CHARSET=utf8
+      - TERM=xterm
+    extra_hosts:
+      - db-wp.kazaoki.jp:127.0.0.1
+    image: mysql:5.7
+    ports:
+      - 3306:3306
+    volumes:
+      # - /c/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop/.genie/mysql:/mysql
+      - ../.genie/mysql:/mysql
+      - genie-test-mysql-wp:/var/lib/mysql
+version: '2'
+
+volumes:
+  genie-test-mysql-db1: {}
+  genie-test-mysql-wp: {}
