@@ -5,7 +5,7 @@
 # --------------------------------------------------------------------
 # 初期設定
 # --------------------------------------------------------------------
-dirname = 'cap'+ENV['GENIE_SPEC_CAPTURE_WIDTH']+'-' + Time.now.strftime('%Y%m%d-%H%M%S')
+dirname = 'cap-' + Time.now.strftime('%Y%m%d-%H%M%S')
 autocap= ENV['GENIE_SPEC_AUTOCAP']
 
 # --------------------------------------------------------------------
@@ -118,7 +118,11 @@ step 'ウィンドウの幅を:widthにする' do |width|
   if width == 'default'
     width = ENV['GENIE_SPEC_CAPTURE_WIDTH']
   end
-  page.driver.resize_window(width, 1)
+  if ENV['GENIE_SPEC_BROWSER'] == "firefox" then
+    Capybara.current_session.driver.browser.manage.window.resize_to(width, 1)
+  else
+    page.driver.resize_window(width, 1)
+  end
 end
 
 step 'BASIC認証のユーザー名を:user、パスワードを:passにする' do |user, pass|
@@ -129,11 +133,22 @@ step 'UAを:uaにする' do |ua|
   if ua == 'default'
     ua = ENV['GENIE_SPEC_USER_AGENT']
   end
-  if ua =~ /^(iphone|ipod|ipad|android|android_tablet|windows_phone|black_berry|ie7|ie8|ie9|ie10|chrome)$/
-    # ref: https://github.com/mururu/Capybara-user_agent
-    set_user_agent eval ':'+ua
+
+  if ENV['GENIE_SPEC_BROWSER'] == "firefox" then
+    
+    # Capybara.current_session.driver = Webdriver::UserAgent.driver(:agent => ua)
+    # Capybara.current_session.driver.add_headers('User-Agent' => ua)
+    # Capybara::Selenium::Driver.new app, opts
+    # pp Capybara.current_session.driver.options
+    # Capybara.current_session.driver.header('User-Agent' => ua)
+
   else
-    set_custom_user_agent ua
+    if ua =~ /^(iphone|ipod|ipad|android|android_tablet|windows_phone|black_berry|ie7|ie8|ie9|ie10|chrome)$/
+      # ref: https://github.com/mururu/Capybara-user_agent
+      set_user_agent eval ':'+ua
+    else
+      set_custom_user_agent ua
+    end
   end
 end
 

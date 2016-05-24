@@ -227,7 +227,7 @@ return {
 	# SPEC設定
 	# --------
 	SPEC => {
-		# BROWSER       => 'firefox', # phantomjs | firefox
+		# BROWSER       => 'firefox', # phantomjs | firefox （デフォルトはphantomjs）
 
 		# -- 以下オプションはfeatureファイルの `UAを"default"にする` で使用されます。
 		USER_AGENT    => 'android', # https://github.com/mururu/capybara-user_agent
