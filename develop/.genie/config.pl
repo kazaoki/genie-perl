@@ -227,16 +227,10 @@ return {
 	# SPEC設定
 	# --------
 	SPEC => {
-		# BROWSER       => 'firefox', # phantomjs | firefox （デフォルトはphantomjs）
-
-		# -- 以下オプションはfeatureファイルの `UAを"default"にする` で使用されます。
-		USER_AGENT    => 'android', # https://github.com/mururu/capybara-user_agent
-
-		# -- 以下オプションはfeatureファイルの `ウィンドウの幅を"default"にする` で使用されます。
-		CAPTURE_WIDTH => 320,
-
-		# -- 以下オプションは現在phantomjsのみ対応
-		JS_ERRORS     => 0,
+		# BROWSER               => 'firefox', # phantomjs | firefox （デフォルトはphantomjs）
+		DEFAULT_CAPTURE_WIDTH => 1280,
+		DEFAULT_USER_AGENT    => '', # phantomjsのみ対応  # ref: https://github.com/mururu/capybara-user_agent
+		JS_ERRORS             => 0,  # phantomjsのみ対応
 	},
 
 	# 追加コマンド設定
