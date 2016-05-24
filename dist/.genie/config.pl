@@ -1,4 +1,4 @@
-return {
+﻿return {
 
 	# 起動時メモ
 	# ----------
@@ -202,10 +202,10 @@ return {
 	# SPEC設定
 	# --------
 	SPEC => {
-		# BROWSER       => 'firefox', # phantomjs | firefox
-		CAPTURE_WIDTH => 1280,
-		JS_ERRORS     => 0, # 現在はphantomjsのみ
-		USER_AGENT    => '', # 現在はphantomjsのみ
+		# BROWSER               => 'firefox', # phantomjs | firefox （デフォルトはphantomjs）
+		DEFAULT_CAPTURE_WIDTH => 1280,
+		DEFAULT_USER_AGENT    => '', # phantomjsのみ対応  # ref: https://github.com/mururu/capybara-user_agent
+		JS_ERRORS             => 0,  # phantomjsのみ対応
 	},
 
 	# 追加コマンド設定
