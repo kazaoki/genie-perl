@@ -5,8 +5,8 @@
 # --------------------------------------------------------------------
 # 初期設定
 # --------------------------------------------------------------------
-dirname = 'cap-' + Time.now.strftime('%Y%m%d-%H%M%S')
-autocap = ENV['GENIE_SPEC_AUTOCAP']
+dirname = 'cap'+ENV['GENIE_SPEC_CAPTURE_WIDTH']+'-' + Time.now.strftime('%Y%m%d-%H%M%S')
+autocap= ENV['GENIE_SPEC_AUTOCAP']
 
 # --------------------------------------------------------------------
 # ページナビゲーション：アクション
@@ -18,7 +18,7 @@ end
 
 step 'ページ:pathを表示する' do |path|
   visit (path)
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 
 step ':filenameにキャプチャする' do |filename|
@@ -35,17 +35,17 @@ end
 
 step '戻る' do
   page.go_back();
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 
 step '進む' do
   page.go_forward();
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 
 step 'リロードする' do
   visit current_path
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 
 # --------------------------------------------------------------------
@@ -100,13 +100,13 @@ end
 
 step ':sec秒待つ' do |sec|
   sleep sec.to_i
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 
 step '最後に開いたウィンドウに移動する' do
   page.driver.browser.switch_to_window(page.driver.browser.window_handles.last)
   page.driver.resize_window(ENV['GENIE_SPEC_CAPTURE_WIDTH'], 1)
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 
 step 'ウィンドウを閉じる' do
@@ -115,18 +115,22 @@ step 'ウィンドウを閉じる' do
 end
 
 step 'ウィンドウの幅を:widthにする' do |width|
+  if width == 'default'
+    width = ENV['GENIE_SPEC_CAPTURE_WIDTH']
+  end
   page.driver.resize_window(width, 1)
 end
 
 step 'BASIC認証のユーザー名を:user、パスワードを:passにする' do |user, pass|
   page.driver.basic_authorize(user, pass)
-  step 'cap' if autocap 
 end
 
-step 'UAを:uaに変える' do |ua|
-  # ref: https://github.com/mururu/capybara-user_agent
-  # 別シナリオにするとUAが元に戻ります。
+step 'UAを:uaにする' do |ua|
+  if ua == 'default'
+    ua = ENV['GENIE_SPEC_USER_AGENT']
+  end
   if ua =~ /^(iphone|ipod|ipad|android|android_tablet|windows_phone|black_berry|ie7|ie8|ie9|ie10|chrome)$/
+    # ref: https://github.com/mururu/Capybara-user_agent
     set_user_agent eval ':'+ua
   else
     set_custom_user_agent ua
@@ -139,7 +143,7 @@ end
 
 step ':labelをクリックする' do |label|
   click_on label
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step ':labelをクリックする @:scope' do |label, scope|
   within scope do
@@ -150,7 +154,7 @@ end
 step ':n番目の:labelをクリックする' do |n, label|
   n = n.to_i - 1
   all(:link_or_button, label)[n].click
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step ':n番目の:labelをクリックする @:scope' do |n, label, scope|
   within scope do
@@ -160,7 +164,7 @@ end
 
 step 'セレクタ:selectorをクリックする' do |selector|
   find(selector).click
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'セレクタ:selectorをクリックする @:scope' do |selector, scope|
   within scope do
@@ -175,7 +179,7 @@ end
 # -- input=text
 step 'テキストボックス:nameを:valueにする' do |name, value|
   fill_in name, :with => multi(value)
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'テキストボックス:nameを:valueにする @:scope' do |name, value, scope|
   within scope do
@@ -196,7 +200,7 @@ end
 # -- radio
 step 'ラジオボタン:valueを選択する' do |value|
   choose value
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'ラジオボタン:valueを選択する @:scope' do |value, scope|
   within scope do
@@ -205,19 +209,19 @@ step 'ラジオボタン:valueを選択する @:scope' do |value, scope|
 end
 step 'ラジオボタン:nameの:valueを選択する' do |name, value|
   find("input[name='"+name+"'][value='"+value+"']").set(true)
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'ラジオボタン:nameの:valueを選択する @:scope' do |name, value, scope|
   within scope do
     find("input[name='"+name+"'][value='"+value+"']").set(true)
-    step 'cap' if autocap 
+    step 'cap' if autocap
   end
 end
 
 # -- checkbox
 step 'チェックボックス:valueを選択する' do |value|
   check value
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'チェックボックス:valueを選択する @:scope' do |value, scope|
   within scope do
@@ -226,18 +230,18 @@ step 'チェックボックス:valueを選択する @:scope' do |value, scope|
 end
 step 'チェックボックス:nameの:valueを選択する' do |name, value|
   find("input[name='"+name+"'][value='"+value+"']").set(true)
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'チェックボックス:nameの:valueを選択する @:scope' do |name, value, scope|
   within scope do
     find("input[name='"+name+"'][value='"+value+"']").set(true)
-    step 'cap' if autocap 
+    step 'cap' if autocap
   end
 end
 
 step 'チェックボックス:valueを未選択にする' do |value|
   uncheck value
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'チェックボックス:valueを未選択にする @:scope' do |value, scope|
   within scope do
@@ -246,19 +250,19 @@ step 'チェックボックス:valueを未選択にする @:scope' do |value, sc
 end
 step 'チェックボックス:nameの:valueを未選択にする' do |name, value|
   find("input[name='"+name+"'][value='"+value+"']").set(false)
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'チェックボックス:nameの:valueを未選択にする @:scope' do |name, value, scope|
   within scope do
     find("input[name='"+name+"'][value='"+value+"']").set(false)
-    step 'cap' if autocap 
+    step 'cap' if autocap
   end
 end
 
 # -- select
 step 'セレクトボックス:nameの:valueを選択する' do |name, value|
   select value, from: name
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'セレクトボックス:nameの:valueを選択する @:scope' do |name, value, scope|
   within scope do
@@ -268,7 +272,7 @@ end
 
 step 'ファイル選択:nameに:filenameを選択する' do |name, filename|
   page.attach_file(name, '/spec/resources/'+filename)
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'ファイル選択:nameに:filenameを選択する @:scope' do |name, filename, scope|
   within scope do
@@ -279,7 +283,7 @@ end
 # -- hidden
 step '隠し要素:nameを:valueにする' do |name, value|
   find('input[name='+name+']', visible: false).set(value)
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step '隠し要素:nameを:valueにする @:scope' do |name, value, scope|
   within scope do
@@ -446,7 +450,7 @@ end
 
 step 'セレクタ:selectorをクリックする' do |selector|
   page.execute_script "$('"+selector+"').click();"
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'セレクタ:selectorをクリックする @:scope' do |selector, scope|
   within scope do
@@ -456,7 +460,7 @@ end
 
 step 'セレクタ:selectorを削除する' do |selector|
   page.execute_script "$('"+selector+"').remove();"
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 step 'セレクタ:selectorを削除する @:scope' do |selector, scope|
   within scope do
@@ -466,7 +470,7 @@ end
 
 step 'JS:scriptを実行する' do |script|
   page.execute_script script
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 
 # --------------------------------------------------------------------
@@ -735,7 +739,7 @@ step 'フォームを送信する' do |table|
       end
     end
   end
-  step 'cap' if autocap 
+  step 'cap' if autocap
 end
 
 # --------------------------------------------------------------------

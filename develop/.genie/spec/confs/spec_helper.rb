@@ -8,7 +8,7 @@ require 'addressable/uri'
 require 'selenium-webdriver'
 require 'headless'
 
-base_wait_time = 60
+base_wait_time = 30
 
 # --------------------------------------------------------------------
 # 基本設定

@@ -228,9 +228,15 @@ return {
 	# --------
 	SPEC => {
 		# BROWSER       => 'firefox', # phantomjs | firefox
-		CAPTURE_WIDTH => 1280,
-		JS_ERRORS     => 0, # 現在はphantomjsのみ
-		USER_AGENT    => '', # 現在はphantomjsのみ
+
+		# -- 以下オプションはfeatureファイルの `UAを"default"にする` で使用されます。
+		USER_AGENT    => 'android', # https://github.com/mururu/capybara-user_agent
+
+		# -- 以下オプションはfeatureファイルの `ウィンドウの幅を"default"にする` で使用されます。
+		CAPTURE_WIDTH => 320,
+
+		# -- 以下オプションは現在phantomjsのみ対応
+		JS_ERRORS     => 0,
 	},
 
 	# 追加コマンド設定
