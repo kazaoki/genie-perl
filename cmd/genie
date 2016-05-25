@@ -700,6 +700,16 @@ sub wait_container {
 	return;
 }
 
+# 文字列から引数をリストリファレンスとして返す
+# --------------------------------------------
+# [例] : my $list_ref = &args_to_list('-p', '-p 123:123 -p "555 666"'); # -> ['123:123', '555 666']
+# [例] : my $list_ref = &args_to_list('--add-host', '--add-host="hogehoge:127.0.0.2"'); # -> ['hogehoge:127.0.0.2']
+sub args_to_list($$) {
+	my ($string, $key) = @_;
+	my $list = [map { $_ =~ s/['"]//g; $_ } $string =~ /$key[\s\=]\s*([^\s"]*["][^"]+?["]|[^\s']*['][^']+?[']|[^'"\s]+)/g];
+	return $list;
+}
+
 # --------------------------------------------------------------------
 # genie init <branch>                                           初期化
 # --------------------------------------------------------------------
@@ -887,11 +897,11 @@ sub up {
 				# -- compose用情報収集
 				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"} = {
 					image       => $db->{REPOSITORY},
-					environment => [map { $_ } $cmd =~ /\-e ([^\s]+)/g],
-					ports       => [map { $_ } $cmd =~ /\-p ([^\s]+)/g],
-					volumes     => [map { $_ } $cmd =~ /\-v ([^\s]+)/g],
+					environment => &args_to_list($cmd, '-e'),
+					ports       => &args_to_list($cmd, '-p'),
+					volumes     => &args_to_list($cmd, '-v'),
+					extra_hosts => &args_to_list($cmd, '--add-host'),
 					entrypoint  => ['/mysql/opt/before-entrypoint.sh'],
-					extra_hosts => ["$db->{HOST}:127.0.0.1"],
 					command     => ['mysqld'],
 				};
 				$comp->{volumes}->{$label} = {driver=>'local'};
@@ -971,11 +981,11 @@ sub up {
 				# -- compose用情報収集
 				$comp->{services}->{"$config{DOCKER}->{NAME}-postgresql-$db->{LABEL}"} = {
 					image       => $db->{REPOSITORY},
-					environment => [map { $_ } $cmd =~ /\-e ([^\s]+)/g],
-					ports       => [map { $_ } $cmd =~ /\-p ([^\s]+)/g],
-					volumes     => [map { $_ } $cmd =~ /\-v ([^\s]+)/g],
+					environment => &args_to_list($cmd, '-e'),
+					ports       => &args_to_list($cmd, '-p'),
+					volumes     => &args_to_list($cmd, '-v'),
+					extra_hosts => &args_to_list($cmd, '--add-host'),
 					entrypoint  => ['/postgresql/opt/before-entrypoint.sh'],
-					extra_hosts => ["$db->{HOST}:127.0.0.1"],
 					command     => ['postgres'],
 				};
 				$comp->{volumes}->{$label} = {driver=>'local'};
@@ -1130,11 +1140,11 @@ sub up {
 			# -- compose用情報収集
 			$comp->{services}->{$container_name_base} = {
 				image       => $config{DOCKER}->{IMAGE},
-				environment => [map { $_ } $cmd =~ /\-e ([^\s]+)/g],
-				ports       => [map { $_ } $cmd =~ /\-p ([^\s]+)/g],
-				volumes     => [map { $_ } $cmd =~ /\-v ([^\s]+)/g],
-				extra_hosts => [map { $_ } $cmd =~ /\-\-add\-host\=\"([^\"]+)\"/g],
-				links       => [map { $_ } $cmd =~ /\-\-link ([^\s]+)/g],
+				environment => &args_to_list($cmd, '-e'),
+				ports       => &args_to_list($cmd, '-p'),
+				volumes     => &args_to_list($cmd, '-v'),
+				extra_hosts => &args_to_list($cmd, '--add-host'),
+				links       => &args_to_list($cmd, '--link'),
 			};
 			return 1;
 		}
