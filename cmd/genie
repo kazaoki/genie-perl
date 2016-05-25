@@ -903,6 +903,7 @@ sub up {
 					extra_hosts => &args_to_list($cmd, '--add-host'),
 					entrypoint  => ['/mysql/opt/before-entrypoint.sh'],
 					command     => ['mysqld'],
+					restart     => 'always',
 				};
 				$comp->{volumes}->{$label} = {driver=>'local'};
 
@@ -987,6 +988,7 @@ sub up {
 					extra_hosts => &args_to_list($cmd, '--add-host'),
 					entrypoint  => ['/postgresql/opt/before-entrypoint.sh'],
 					command     => ['postgres'],
+					restart     => 'always',
 				};
 				$comp->{volumes}->{$label} = {driver=>'local'};
 
@@ -1145,6 +1147,7 @@ sub up {
 				volumes     => &args_to_list($cmd, '-v'),
 				extra_hosts => &args_to_list($cmd, '--add-host'),
 				links       => &args_to_list($cmd, '--link'),
+				restart     => 'always',
 			};
 			return 1;
 		}
@@ -2524,7 +2527,6 @@ sub compose {
 
 	# -- 基本設定
 	$comp->{version} = 2;
-	$comp->{restart} = 'always';
 
 	# -- 起動に必用な情報を収集してくる
 	&up('compose');
