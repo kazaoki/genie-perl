@@ -2522,8 +2522,9 @@ sub compose {
 	# -- RUNMODE設定
 	$config{GENERAL}->{runmode} = 'product';
 
-	# -- version設定
+	# -- 基本設定
 	$comp->{version} = 2;
+	$comp->{restart} = 'always';
 
 	# -- 起動に必用な情報を収集してくる
 	&up('compose');

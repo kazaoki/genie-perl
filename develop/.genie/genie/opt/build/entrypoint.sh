@@ -196,11 +196,11 @@ fi
 # -- Apache
 if [[ $GENIE_APACHE_ENABLED ]]; then
   if [[ $GENIE_APACHE_HTTP_PORT ]]; then
-    sed -i "s/Listen 80/Listen $GENIE_APACHE_HTTP_PORT/" /etc/httpd/conf/httpd.conf
+    sed -i "s/Listen 80$/Listen $GENIE_APACHE_HTTP_PORT/" /etc/httpd/conf/httpd.conf
   fi
   if [[ $GENIE_APACHE_HTTPS_PORT ]]; then
-    sed -i "s/Listen 443/Listen $GENIE_APACHE_HTTPS_PORT/" /etc/httpd/conf.d/ssl.conf
-    sed -i "s/_default_:443/_default_:$GENIE_APACHE_HTTPS_PORT/" /etc/httpd/conf.d/ssl.conf
+    sed -i "s/Listen 443 /Listen $GENIE_APACHE_HTTPS_PORT /" /etc/httpd/conf.d/ssl.conf
+    sed -i "s/_default_:443>/_default_:$GENIE_APACHE_HTTPS_PORT>/" /etc/httpd/conf.d/ssl.conf
   fi
   if [[ $GENIE_APACHE_BANDWIDTH ]]; then
     sed -i "/<__BANDWIDTH__>/,/<\/__BANDWIDTH__>/c\
