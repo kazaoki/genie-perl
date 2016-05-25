@@ -128,7 +128,7 @@ if($ARGV[0] ne 'cli') {
 		'cap' => \$options{'cap'}, # specで使用
 	);
 }
-$config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。
+$config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。または、compose実行の場合はproductになります。
 $config{GENERAL}->{config_name} ||= 'config'; # 未指定の場合 `.genie/config.pl` を読み込みます。
 
 # -- .genieディレクトリがあるパスを探して移動する
@@ -284,7 +284,8 @@ sub help {
 				'ls'              => 'docker情報を一挙に表示',
 				'reject'          => 'genie管理外のdockerコンテナも全て強制削除した後、clean実行',
 				'clean'           => '終了済みコンテナ、<none>イメージ、未参照のDataVolumeの削除',
-				'clean locked'    => '`LOCKED_`から始まるDataVolumeも削除',
+				'clean locked'    => '`locked_`から始まるDataVolumeも削除',
+				'clean product'   => '`product_`から始まるDataVolumeも削除',
 				'php'             => 'PHPの指定可能なバージョンリストと現在のphpenv選択バージョンの表示',
 				'perl'            => 'Perlの指定可能なバージョンリストと現在のperlenv選択バージョンの表示',
 				'ruby'            => 'Rubyの指定可能なバージョンリストと現在のrubyenv選択バージョンの表示',
@@ -866,7 +867,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/mysql:/mysql".
-				($up_type =~ /^(?:spec|zap)$/ ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/mysql").
+				($up_type =~ /^(?:spec|zap)$/ ? '' : " -v ".(($up_type ne 'compose' && $db->{DATA_VOLUME_LOCK}) ? 'locked_' : '')."$label:/var/lib/mysql").
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e MYSQL_DATABASE=$db->{NAME}".
@@ -884,12 +885,16 @@ sub up {
 			if($up_type eq 'compose'){
 
 				# -- compose用情報収集
-				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{image} = $db->{REPOSITORY};
-				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{environment} = [map { $_ } $cmd =~ /\-e ([^\s]+)/g];
-				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{ports} = [map { $_ } $cmd =~ /\-p ([^\s]+)/g];
-				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{volumes} = [map { $_ } $cmd =~ /\-v ([^\s]+)/g];
-				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{entrypoint} = ['/mysql/opt/before-entrypoint.sh'];
-				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"}->{extra_hosts} = ["$db->{HOST}:127.0.0.1"];
+				$comp->{services}->{"$config{DOCKER}->{NAME}-mysql-$db->{LABEL}"} = {
+					image       => $db->{REPOSITORY},
+					environment => [map { $_ } $cmd =~ /\-e ([^\s]+)/g],
+					ports       => [map { $_ } $cmd =~ /\-p ([^\s]+)/g],
+					volumes     => [map { $_ } $cmd =~ /\-v ([^\s]+)/g],
+					entrypoint  => ['/mysql/opt/before-entrypoint.sh'],
+					extra_hosts => ["$db->{HOST}:127.0.0.1"],
+					command     => ['mysqld'],
+				};
+				$comp->{volumes}->{$label} = {driver=>'local'};
 
 			} else {
 
@@ -945,7 +950,7 @@ sub up {
 			my $cmd =
 				"docker run -d -it --name $label".
 				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/postgresql".
-				($up_type ? '' : " -v ".($db->{DATA_VOLUME_LOCK} ? 'LOCKED_' : '')."$label:/var/lib/postgresql/data").
+				($up_type =~ /^(?:spec|zap)$/ ? '' : " -v ".(($up_type ne 'compose' && $db->{DATA_VOLUME_LOCK}) ? 'locked_' : '')."$label:/var/lib/postgresql/data").
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
 				" -e POSTGRES_HOST=$db->{HOST}".
@@ -961,26 +966,27 @@ sub up {
 				" postgres"
 			;
 
-			# -- 起動タイプの引数調整
-			if($up_type) {
-				# -- ポートバインドを消す
-				$cmd =~ s/ \-p [^ ]+//g;
-			}
-
 			if($up_type eq 'compose'){
 
 				# -- compose用情報収集
-				# $comp->{services}->{$label}->{environment}->[
-				# 	" -e MYSQL_LABEL=$db->{LABEL}",
-				# 	" -e MYSQL_ROOT_PASSWORD=$db->{PASS}",
-				# 	" -e MYSQL_DATABASE=$db->{NAME}",
-				# 	" -e MYSQL_USER=$db->{USER}",
-				# 	" -e MYSQL_PASSWORD=$db->{PASS}",
-				# 	" -e MYSQL_CHARSET=$db->{CHARSET}",
-				# 	" -e TERM=xterm",
-				# ];
+				$comp->{services}->{"$config{DOCKER}->{NAME}-postgresql-$db->{LABEL}"} = {
+					image       => $db->{REPOSITORY},
+					environment => [map { $_ } $cmd =~ /\-e ([^\s]+)/g],
+					ports       => [map { $_ } $cmd =~ /\-p ([^\s]+)/g],
+					volumes     => [map { $_ } $cmd =~ /\-v ([^\s]+)/g],
+					entrypoint  => ['/postgresql/opt/before-entrypoint.sh'],
+					extra_hosts => ["$db->{HOST}:127.0.0.1"],
+					command     => ['postgres'],
+				};
+				$comp->{volumes}->{$label} = {driver=>'local'};
 
 			} else {
+
+				# -- 起動タイプの引数調整
+				if($up_type) {
+					# -- ポートバインドを消す
+					$cmd =~ s/ \-p [^ ]+//g;
+				}
 
 				# -- コンテナ実行
 				`$cmd`;
@@ -1119,6 +1125,20 @@ sub up {
 			" $config{DOCKER}->{IMAGE}"
 		;
 
+		if($up_type eq 'compose'){
+
+			# -- compose用情報収集
+			$comp->{services}->{$container_name_base} = {
+				image       => $config{DOCKER}->{IMAGE},
+				environment => [map { $_ } $cmd =~ /\-e ([^\s]+)/g],
+				ports       => [map { $_ } $cmd =~ /\-p ([^\s]+)/g],
+				volumes     => [map { $_ } $cmd =~ /\-v ([^\s]+)/g],
+				extra_hosts => [map { $_ } $cmd =~ /\-\-add\-host\=\"([^\"]+)\"/g],
+				links       => [map { $_ } $cmd =~ /\-\-link ([^\s]+)/g],
+			};
+			return 1;
+		}
+
 		# -- 起動タイプの引数調整
 		if($up_type) {
 			# -- ポートバインドを消す
@@ -1131,22 +1151,6 @@ sub up {
 			if($up_type eq 'spec'){
 				$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec:\/spec -v $letter$config{GENERAL}->{config_dir}\/spec\/confs:\/turnip\/spec $config{DOCKER}->{IMAGE}/;
 			}
-		}
-
-		if($up_type eq 'compose'){
-
-			# -- compose用情報収集
-			# $comp->{services}->{$label}->{environment}->[
-			# 	" -e MYSQL_LABEL=$db->{LABEL}",
-			# 	" -e MYSQL_ROOT_PASSWORD=$db->{PASS}",
-			# 	" -e MYSQL_DATABASE=$db->{NAME}",
-			# 	" -e MYSQL_USER=$db->{USER}",
-			# 	" -e MYSQL_PASSWORD=$db->{PASS}",
-			# 	" -e MYSQL_CHARSET=$db->{CHARSET}",
-			# 	" -e TERM=xterm",
-			# ];
-
-			return 1;
 		}
 
 		# -- スクリプトパーミッション設定
@@ -1501,10 +1505,16 @@ sub clean {
 			my $undeleted;
 			foreach my $id (@list) {
 				echo "  $id - ";
-				if( $id =~ /^LOCKED_/i && $ARGV[1] ne 'locked' ){
-					# -- LOCKED_から始まるVolume名は削除しない。ただし「genie clean locked」で完全削除。
+				# -- locked_から始まるVolume名は削除しない。ただし「genie clean locked」で完全削除可能。
+				if( $id =~ /^locked_/i && $ARGV[1] ne 'locked' ){
 					$undeleted ++;
-					style(color=>'yellow'); echo "Locked.\n"; style(color=>'clear');
+					style(color=>'yellow'); echo "locked.\n"; style(color=>'clear');
+					next;
+				}
+				# -- product_から始まるVolume名は削除しない。ただし「genie clean product」で完全削除可能。
+				if( $id =~ /^product_/i && $ARGV[1] ne 'product' ){
+					$undeleted ++;
+					style(color=>'yellow'); echo "product.\n"; style(color=>'clear');
 					next;
 				}
 				`docker volume rm $id`;
@@ -1523,7 +1533,7 @@ sub clean {
 					message(success=>"${deleted}個のデータボリュームを削除しました。");
 				}
 				if($undeleted) {
-					message(warning=>"${undeleted}個のデータボリュームが削除できない名前になっています。（LOCKED_から始まる）\n但し、`genie clean locked` で強制削除できます。");
+					message(warning=>"${undeleted}個のデータボリュームが削除できない名前になっています。（`locked_`または`product_`から始まる）\n但し、`genie clean <locked|product>` で強制削除できます。");
 				}
 			}
 		} else {
@@ -1897,7 +1907,7 @@ sub psql {
 			# -- 参照ボリューム名取得
 			my @volumes = &get_data_volume_name($label);
 
-			# -- コンテナ削除とボリューム削除（DataVolume名がLOCKED_だろうと削除します）
+			# -- コンテナ削除とボリューム削除（DataVolume名が<locked_|product_>だろうと削除します）
 			style(color=>'black', bgcolor=>'dark_black');
 			echo "  Delete PostgreSQL container: $label";
 			`docker rm -f $label $hide_all`;
@@ -2499,26 +2509,40 @@ sub _report_xml2html {
 # --------------------------------------------------------------------
 sub compose {
 
+	# -- RUNMODE設定
+	$config{GENERAL}->{runmode} = 'product';
+
+	# -- version設定
+	$comp->{version} = 2;
+
 	# -- 起動に必用な情報を収集してくる
 	&up('compose');
 
-	# -- version
-	$comp->{version} = '2';
+	# -- 再帰して値のみエスケープする：「$」→「$$」
+	sub subconv{
+		my $data = shift;
+		if(ref $data eq 'HASH'){
+			foreach my $key (keys %{$data}){
+				if(ref $data->{$key}) {
+					&subconv($data->{$key});
+				} else {
+					$data->{$key} =~ s/\$/\$\$/g; # ハッシュ値に適用
+				}
+			}
+		} elsif(ref $data eq 'ARRAY') {
+			foreach my $num ( 0 .. $#{$data} ){
+				if(ref $data->[$num]) {
+					&subconv($data->[$num]);
+				} else {
+					$data->[$num] =~ s/\$/\$\$/g; # 配列値に適用
+				}
+			}
+		}
+	}
+	&subconv($comp);
 
-	# # -- genieコンテナ
-	# $comp->{services}->{genie}->{image} = 'kazaoki/genie';
-	# $comp->{services}->{genie}->{ports} = [
-	# 	'80:80',
-	# 	'443:443',
-	# 	'8080:8080',
-	# ];
-
-	# # -- 環境変数
-	# $comp->{services}->{genie}->{environment} = [
-	# 	'GENIE_PROC=compose',
-	# ];
-
-	# -- 標準出力に出力
+	# -- YAML形式で標準出力に出力
 	echo YAML::Tiny::Dump($comp);
-	exit;
+
+	exit 0;
 }

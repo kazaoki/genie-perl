@@ -242,7 +242,7 @@ if [[ $GENIE_APACHE_ENABLED ]]; then
   # </__PASSENV__>" /etc/httpd/conf/httpd.conf
   if [[ $GENIE_APACHE_NO_LOG_REGEX ]]; then
     sed -i "s/CustomLog\ \"logs\/access_log\"\ combined/CustomLog\ \"logs\/access_log\"\ combined\ env\=\!nolog/" /etc/httpd/conf/httpd.conf
-    echo "SetEnvIfNoCase Request_URI \"$GENIE_APACHE_NO_LOG_REGEX\" nolog" >> /etc/httpd/conf/httpd.conf
+    echo "SetEnvIfNoCase Request_URI $GENIE_APACHE_NO_LOG_REGEX nolog" >> /etc/httpd/conf/httpd.conf
   fi
   /usr/sbin/httpd
   echo 'Apache setup done.' >> /var/log/entrypoint.log
