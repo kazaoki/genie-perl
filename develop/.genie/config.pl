@@ -237,7 +237,6 @@ return {
 	ADD_COMMAND => {
 		htop => 'htop',
 		ll => 'ls -la',
-		aa => 'ddd',
 	},
 
 };
