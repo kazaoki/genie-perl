@@ -231,6 +231,8 @@ if($config{ADD_COMMAND} && keys %{$config{ADD_COMMAND}}){
 	}
 }
 
+print "\n";
+
 # -- 正しい第一引数かチェック
 if($ARGV[0] !~ /^(?:$ok_args)$/) {
 	help();
@@ -250,8 +252,6 @@ if( $ARGV[0] =~ /^(?:$ok_args)$/ ){
 	# -- genie正常完了
 	exit 0;
 }
-
-print "\n";
 
 # -- ヘルプ表示
 help();
@@ -904,6 +904,7 @@ sub up {
 				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/mysql/opt/before-entrypoint.sh".
+				' --restart=always'.
 				" $db->{REPOSITORY}".
 				" mysqld"
 			;
@@ -989,6 +990,7 @@ sub up {
 				" -e TERM=xterm".
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/postgresql/opt/before-entrypoint.sh".
+				' --restart=always'.
 				" $db->{REPOSITORY}".
 				" postgres"
 			;
@@ -1150,6 +1152,7 @@ sub up {
 			" --name=$container_name_base".
 			" $envs".
 			($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
+			' --restart=always'.
 			" $config{DOCKER}->{IMAGE}"
 		;
 
