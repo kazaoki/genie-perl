@@ -13,7 +13,6 @@ return {
 		# MACHINE       => 'sandbox',
 		NAME          => 'genie-test',
 		OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
-		OPTIONS_BUILD => '--cpuset-cpus=0-1', # `docker build` 時に渡す追加引数
 		HOSTS         => [
 			'genie-test.com:127.0.0.1',
 		],

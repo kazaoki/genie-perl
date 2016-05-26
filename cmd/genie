@@ -1660,7 +1660,6 @@ sub build {
 		my $cmd =
 			"docker build".
 			" -t $config{DOCKER}->{IMAGE}".
-			($config{DOCKER}->{OPTIONS_BUILD} ? " $config{DOCKER}->{OPTIONS_BUILD}" : '').
 			" $nocache $config{GENERAL}->{config_dir}/genie/opt/build/"
 		;
 		message(info=>"ビルドを開始します。\n$cmd");
