@@ -109,8 +109,6 @@ my %config;
 # -- compose用変数
 my $comp;
 
-print "\n";
-
 # --------------------------------------------------------------------
 # 起動オプション、設定ファイル読み込み
 # --------------------------------------------------------------------
@@ -227,16 +225,9 @@ if($config{ADD_COMMAND} && keys %{$config{ADD_COMMAND}}){
 		my $in_cmd = $config{ADD_COMMAND}->{$ARGV[0]} . ' ' . join(' ', @args);
 		$in_cmd =~ s/\"/\\\"/g;
 		my $cmd = "docker exec -ti $config{DOCKER}->{NAME} sh -c \"$in_cmd\"";
-		system($cmd);
-
-		# -- 終了処理
-		echo "\n";
-		style(color=>'black', bgcolor=>'dark_black');
-		echo "  EOL\n\n";
-		style(color=>'clear', bgcolor=>'clear');
 
 		# -- genie正常完了
-		exit 0;
+		exit system($cmd);
 	}
 }
 
@@ -259,6 +250,8 @@ if( $ARGV[0] =~ /^(?:$ok_args)$/ ){
 	# -- genie正常完了
 	exit 0;
 }
+
+print "\n";
 
 # -- ヘルプ表示
 help();
@@ -535,6 +528,7 @@ sub input {
 # ------------------
 sub throw {
 	my($message, $detail) = @_;
+	print "\n";
 	if($detail) {
 		message(danger=>"$message\n$detail", scalar(split(/\n/, $message)));
 	} else {
