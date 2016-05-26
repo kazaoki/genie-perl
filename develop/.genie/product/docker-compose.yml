@@ -6,6 +6,7 @@ services:
       - TERM=xterm
       - LANG=ja_JP.UTF-8
       - LC_ALL=ja_JP.UTF-8
+      - 'GENIE_ADD_COMMAND_GRACEFUL=/usr/sbin/httpd -k graceful'
       - GENIE_ADD_COMMAND_HTOP=htop
       - 'GENIE_ADD_COMMAND_LL=ls -la'
       - GENIE_APACHE_BIND_PORTS=80:80,443:443
@@ -29,11 +30,11 @@ services:
       - GENIE_DOCKER_NAME=genie-test
       - GENIE_DOCKER_OPTIONS=--cpuset-cpus=0-1
       - GENIE_DOCKER_OPTIONS_BUILD=--cpuset-cpus=0-1
-      - GENIE_GENERAL_CONFIG_DIR=../.genie
-      - GENIE_GENERAL_CONFIG_FILE=../.genie/config.pl
+      - GENIE_GENERAL_CONFIG_DIR=../../.genie
+      - GENIE_GENERAL_CONFIG_FILE=../../.genie/config.pl
       - GENIE_GENERAL_DRIVE_LETTER=c
-      - GENIE_GENERAL_HOME_DIR=..
-      - GENIE_GENERAL_HOME_REL=..
+      - GENIE_GENERAL_HOME_DIR=../..
+      - GENIE_GENERAL_HOME_REL=../..
       - GENIE_GENERAL_HOST_IP=192.168.99.100
       - GENIE_GENERAL_RUNMODE=product
       - GENIE_LOGS_FILES=/var/log/httpd/access_log,/var/log/httpd/error_log
@@ -87,8 +88,8 @@ services:
       - GENIE_SPEC_DEFAULT_USER_AGENT=
       - GENIE_SPEC_JS_ERRORS=0
     extra_hosts:
-      - 'db1.kazaoki.jp:'
-      - 'db-wp.kazaoki.jp:'
+      - db1.kazaoki.jp:172.17.0.2
+      - db-wp.kazaoki.jp:172.17.0.3
       - genie-test.com:127.0.0.1
     image: kazaoki/genie
     links:
@@ -99,8 +100,8 @@ services:
       - 443:443
     restart: always
     volumes:
-      - ../.genie/genie:/genie
-      - ../public_html:/var/www/html
+      - ../../.genie/genie:/genie
+      - ../../public_html:/var/www/html
   genie-test-mysql-db1:
     command:
       - mysqld
@@ -121,7 +122,7 @@ services:
       - '3306'
     restart: always
     volumes:
-      - ../.genie/mysql:/mysql
+      - ../../.genie/mysql:/mysql
       - genie-test-mysql-db1:/var/lib/mysql
   genie-test-mysql-wp:
     command:
@@ -143,7 +144,7 @@ services:
       - 3306:3306
     restart: always
     volumes:
-      - ../.genie/mysql:/mysql
+      - ../../.genie/mysql:/mysql
       - genie-test-mysql-wp:/var/lib/mysql
 version: '2'
 volumes:
