@@ -2537,31 +2537,45 @@ sub compose {
 	# -- 基本設定
 	$comp->{version} = 2;
 
+	# -- ホームへの相対パスを取得
+	my $cut = $now_path;
+	$cut =~ s/$config{GENERAL}->{home_dir}//;
+	$config{GENERAL}->{home_rel} = join('/', map{ '..' } 1..($cut =~ tr/\///));
+	my $drive_letter = $config{GENERAL}->{drive_letter} ? '/'.$config{GENERAL}->{drive_letter} : '';
+
 	# -- 起動に必用な情報を収集してくる
 	&up('compose');
 
-	# -- 再帰して値のみエスケープする：「$」→「$$」
-	sub subconv{
+	# -- 値を調整する関数用意
+	sub _adjust{
+		my $value_ref = shift;
+		# 「$」→「$$」
+		$$value_ref =~ s/\$/\$\$/g;
+		# ローカルパスを相対パスに変更
+		$$value_ref =~ s/(?:$drive_letter)?$config{GENERAL}->{home_dir}/$config{GENERAL}->{home_rel}/g;
+	}
+	# -- 再帰して値調整を実行
+	sub _subconv{
 		my $data = shift;
 		if(ref $data eq 'HASH'){
 			foreach my $key (keys %{$data}){
 				if(ref $data->{$key}) {
-					&subconv($data->{$key});
+					&_subconv($data->{$key});
 				} else {
-					$data->{$key} =~ s/\$/\$\$/g; # ハッシュ値に適用
+					&_adjust(\$data->{$key});
 				}
 			}
 		} elsif(ref $data eq 'ARRAY') {
 			foreach my $num ( 0 .. $#{$data} ){
 				if(ref $data->[$num]) {
-					&subconv($data->[$num]);
+					&_subconv($data->[$num]);
 				} else {
-					$data->[$num] =~ s/\$/\$\$/g; # 配列値に適用
+					&_adjust(\$data->[$num]);
 				}
 			}
 		}
 	}
-	&subconv($comp);
+	&_subconv($comp);
 
 	# -- YAML形式で標準出力に出力
 	echo YAML::Tiny::Dump($comp);

@@ -29,11 +29,11 @@ services:
       - GENIE_DOCKER_NAME=genie-test
       - GENIE_DOCKER_OPTIONS=--cpuset-cpus=0-1
       - GENIE_DOCKER_OPTIONS_BUILD=--cpuset-cpus=0-1
-      - GENIE_GENERAL_CONFIG_DIR=/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop/.genie
-      - GENIE_GENERAL_CONFIG_FILE=/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop/.genie/config.pl
-      - GENIE_GENERAL_CONFIG_NAME=config
+      - GENIE_GENERAL_CONFIG_DIR=../.genie
+      - GENIE_GENERAL_CONFIG_FILE=../.genie/config.pl
       - GENIE_GENERAL_DRIVE_LETTER=c
-      - GENIE_GENERAL_HOME_DIR=/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop
+      - GENIE_GENERAL_HOME_DIR=..
+      - GENIE_GENERAL_HOME_REL=..
       - GENIE_GENERAL_HOST_IP=192.168.99.100
       - GENIE_GENERAL_RUNMODE=product
       - GENIE_LOGS_FILES=/var/log/httpd/access_log,/var/log/httpd/error_log
@@ -97,9 +97,10 @@ services:
     ports:
       - 80:80
       - 443:443
+    restart: always
     volumes:
-      - /c/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop/.genie/genie:/genie
-      - /c/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop/public_html:/var/www/html
+      - ../.genie/genie:/genie
+      - ../public_html:/var/www/html
   genie-test-mysql-db1:
     command:
       - mysqld
@@ -118,8 +119,9 @@ services:
     image: mysql:5.5
     ports:
       - '3306'
+    restart: always
     volumes:
-      - /c/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop/.genie/mysql:/mysql
+      - ../.genie/mysql:/mysql
       - genie-test-mysql-db1:/var/lib/mysql
   genie-test-mysql-wp:
     command:
@@ -139,8 +141,9 @@ services:
     image: mysql:5.7
     ports:
       - 3306:3306
+    restart: always
     volumes:
-      - /c/Users/kazaoki/Documents/LOCAL_Services/kazaoki-genie/work/develop/.genie/mysql:/mysql
+      - ../.genie/mysql:/mysql
       - genie-test-mysql-wp:/var/lib/mysql
 version: '2'
 volumes:
