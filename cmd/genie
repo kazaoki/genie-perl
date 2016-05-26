@@ -120,16 +120,14 @@ my %options;
 if($ARGV[0] ne 'cli') {
 	# -- cli の時は `genie cli ls -la` などの引数をそのまま渡したいので無効に。
 	GetOptions(
-		'm=s' => \$config{GENERAL}->{runmode},
-		'c=s' => \$config{GENERAL}->{config_name},
+		'mode|m=s' => \$config{GENERAL}->{runmode},
+		'config|c=s' => \$config{GENERAL}->{config_file},
 		'all' => \$options{all}, # specやdlsyncで使用
 		'now-branch'    => \$options{'now-branch'}, # dlsyncで使用
 		'oldest-branch' => \$options{'oldest-branch'}, # dlsyncで使用
 		'cap' => \$options{'cap'}, # specで使用
 	);
 }
-$config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。または、compose実行の場合はproductになります。
-$config{GENERAL}->{config_name} ||= 'config'; # 未指定の場合 `.genie/config.pl` を読み込みます。
 
 # -- .genieディレクトリがあるパスを探して移動する
 my $now_path = Cwd::getcwd();
@@ -147,14 +145,18 @@ while(@dirs){
 	pop @dirs;
 }
 
+# -- ランモード、設定ファイルの決定
+$config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。または、compose実行の場合はproductになります。
+$config{GENERAL}->{config_file} ||= "$config{GENERAL}->{config_dir}/config.pl"; # 未指定の場合 `.genie/config.pl` を読み込みます。
+# echo "  Run `$config{GENERAL}->{runmode}` mode by `$config{GENERAL}->{config_file}`\n\n";
+
 # -- 設定ファイルをロード
 if( -d $config{GENERAL}->{config_dir} ){
-	$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/$config{GENERAL}->{config_name}.pl";
 	if(-f $config{GENERAL}->{config_file}) {
 		my $r = require $config{GENERAL}->{config_file};
 		%config = (%config, %$r);
 	} else {
-		throw("設定ディレクトリ（$config{GENERAL}->{config_dir}）はあるのに設定ファイル（$config{GENERAL}->{config_name}.pl）が見つかりません。");
+		throw("設定ディレクトリ（$config{GENERAL}->{config_dir}）はあるのに設定ファイル（$config{GENERAL}->{config_file}）が見つかりません。");
 	}
 } else {
 	unless($ARGV[0] eq '' || $ARGV[0] =~ /^(?:$noconf_args)$/){
@@ -270,6 +272,13 @@ exit 0;
 sub help {
 
 	my $helps = [
+		{
+			label  => "OPTIONS",
+			list   => [
+				'-m|--mode <mode>'   => '実行モード（developまたはproduct）を指定（default: 標準）',
+				'-c|--config <file>' => '設定ファイルを指定（default: .genie/config.pl）',
+			],
+		},
 		{
 			label  => "GENERAL\nCOMMANDS",
 			list   => [
