@@ -548,10 +548,23 @@ sub throw {
 sub say {
 	return if($config{DOCKER}->{NO_SAY} || (!$can_say));
 	my $message = encode($is_win ? 'Shift_JIS' : 'UTF-8', shift);
+	# for Mac
 	if($is_mac) {
 	    system "say -r 300 \"$message\"";
-	} elsif ($is_win) {
-		system "start wscript $config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_dir}/genie/opt/say.js \"$message\"";
+	}
+	# for Windows
+	elsif ($is_win) {
+
+		# -- テンポラリフォルダに _genie_say.js 用意
+		my $temp_path = `echo %temp%`;
+		chomp $temp_path;
+		my $say_js = "$temp_path\\_genie_say.js";
+		open my $fh, ">$say_js";
+		print $fh q|var args = [];for(var i = 0; i < WScript.Arguments.length; i++) args.push(WScript.Arguments.Item(i));WScript.CreateObject('SAPI.SpVoice').Speak('<volume level="100">'+'<rate speed="2">'+'<pitch middle="0">'+args.join(' ')+'</pitch>'+'</rate>'+'</volume>', 8);|;
+		close $fh;
+
+		# -- 音声出力
+		system "start wscript $say_js \"$message\"";
 	}
 }
 
