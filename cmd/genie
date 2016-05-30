@@ -118,12 +118,13 @@ my %options;
 if($ARGV[0] ne 'cli') {
 	# -- cli の時は `genie cli ls -la` などの引数をそのまま渡したいので無効に。
 	GetOptions(
-		'mode|m=s' => \$config{GENERAL}->{runmode},
-		'config|c=s' => \$config{GENERAL}->{config_file},
-		'all' => \$options{all}, # specやdlsyncで使用
+		'mode|m=s'      => \$config{GENERAL}->{runmode},
+		'config|c=s'    => \$config{GENERAL}->{config_file},
+		'all'           => \$options{all}, # specやdlsyncで使用
 		'now-branch'    => \$options{'now-branch'}, # dlsyncで使用
 		'oldest-branch' => \$options{'oldest-branch'}, # dlsyncで使用
-		'cap' => \$options{'cap'}, # specで使用
+		'cap'           => \$options{'cap'}, # specで使用
+		'fast'          => \$options{'fast'}, # specで使用
 	);
 }
 
@@ -322,6 +323,7 @@ sub help {
 				'spec <feature dir/files>' => 'Capybaraを使用したSPECテストを実行：引数無しでヘルプ表示',
 				'spec --all'               => 'Capybaraを使用したSPECテストを全て実行',
 				'spec --all --cap'         => '自動的にキャプチャを録ります',
+				'spec --all --fast'        => '起動中のコンテナ上でSPEC実行',
 				'zap <port/schema/url>'    => 'OWASP/ZAPコンテナを起動して脆弱性をチェック：引数無しでヘルプ表示',
 			],
 		},
@@ -1143,6 +1145,8 @@ sub up {
 			($config{PERL}->{CPANFILE_ENABLED} ? ' -e PERL5LIB=/perl/cpanfile-modules/lib/perl5' : '').
 			($options{cap} ? ' -e GENIE_SPEC_AUTOCAP=1' : '').
 			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
+			" -v $letter$config{GENERAL}->{config_dir}/spec:/spec".
+			" -v $letter$config{GENERAL}->{config_dir}/spec/confs:/turnip/spec".
 			$mysql_option.
 			$postgresql_option.
 			$apache_option.
@@ -1179,10 +1183,6 @@ sub up {
 			$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -e GENIE_PROC="$up_type" $config{DOCKER}->{IMAGE}/;
 			# -- マウントを「/_/*」に変える（entrypoint.sh時に正式なディレクトリにコピーする）
 			$cmd =~ s/( \-v [^ ]+\:)([^ ]+)/$1\/_$2/g;
-			# -- /spec/をマウントする
-			if($up_type eq 'spec'){
-				$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec:\/spec -v $letter$config{GENERAL}->{config_dir}\/spec\/confs:\/turnip\/spec $config{DOCKER}->{IMAGE}/;
-			}
 		}
 
 		# -- スクリプトパーミッション設定
@@ -2164,6 +2164,11 @@ sub dlsync {
 # --------------------------------------------------------------------
 sub spec {
 
+	# -- fastモードの場合はコンテナ起動必須
+	if($options{fast}){
+		return unless require_up(); # 起動必須
+	}
+
 	# -- featureファイルの一覧表示のみ
 	if(!($options{all}||$ARGV[1] ne '')) {
 		my @list = &_spec_files($config{GENERAL}->{config_dir} . '/spec/features');
@@ -2205,11 +2210,21 @@ sub spec {
 			$files_args = join(' ', @files_args);
 		}
 
-		# -- SPEC用コンテナを起動
-		&up('spec');
+		# -- fastモードの場合
+		if($options{fast}){
+
+			# -- 確認する
+			my $input = input('fastモードで実行しますがよろしいでしょうか（起動中のコンテナで実行） [y/N]: ');
+			print "\n";
+			return if $input !~ /^y$/i;
+
+		}
+
+		# -- SPEC用コンテナを起動（fast時は起動しない）
+		&up('spec') if !$options{fast};
 
 		# -- SPECを実行
-		my $container_name = 'SPEC-'.$config{DOCKER}->{NAME};
+		my $container_name = ($options{fast} ? '' : 'SPEC-').$config{DOCKER}->{NAME};
 		my $cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
 		my $res = system $cmd;
 		echo "\n";
@@ -2227,8 +2242,8 @@ sub spec {
 			`$cmd`;
 		}
 
-		# -- SPEC用コンテナを終了
-		&down('spec');
+		# -- SPEC用コンテナを終了（fast時は起動しない）
+		&down('spec') if !$options{fast};
 
 	}
 
