@@ -2214,7 +2214,7 @@ sub spec {
 		if($options{fast}){
 
 			# -- 確認する
-			my $input = input('fastモードで実行しますがよろしいでしょうか（起動中のコンテナで実行） [y/N]: ');
+			my $input = input('fastモードで実行してよろしいでしょうか（起動中のコンテナで実行） [y/N]: ');
 			print "\n";
 			return if $input !~ /^y$/i;
 
