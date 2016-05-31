@@ -2225,7 +2225,7 @@ sub spec {
 
 		# -- SPECを実行
 		my $container_name = ($options{fast} ? '' : 'SPEC-').$config{DOCKER}->{NAME};
-		my $cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
+		my $cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args && \\cp -f /spec/report.html /_/spec/report.html\"";
 		my $res = system $cmd;
 		echo "\n";
 
