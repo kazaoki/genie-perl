@@ -2242,7 +2242,7 @@ sub spec {
 			$env .= $options{cap} ? ' export GENIE_SPEC_AUTOCAP=1 &&' : '';
 			$cmd = "docker exec -it $container_name sh -c \"$env . /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
 		} else {
-			$cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args && \\cp -f /spec/report.html /_/spec/report.html\"";
+			$cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args ; \\cp -f /spec/report.html /_/spec/report.html\"";
 		}
 		my $res = system $cmd;
 		echo "\n";
