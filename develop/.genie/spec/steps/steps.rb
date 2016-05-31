@@ -105,7 +105,7 @@ end
 
 step '最後に開いたウィンドウに移動する' do
   page.driver.browser.switch_to_window(page.driver.browser.window_handles.last)
-  page.driver.resize_window(ENV['GENIE_SPEC_DEFAULT_CAPTURE_WIDTH'], 500)
+  page.driver.resize_window(ENV['GENIE_SPEC_CAPTURE_WIDTH'], 500)
   step 'cap' if autocap
 end
 
@@ -116,7 +116,7 @@ end
 
 step 'ウィンドウの幅を:widthにする' do |width|
   if width == 'default'
-    width = ENV['GENIE_SPEC_DEFAULT_CAPTURE_WIDTH']
+    width = ENV['GENIE_SPEC_CAPTURE_WIDTH']
   end
   if ENV['GENIE_SPEC_BROWSER'] == "firefox" then
     Capybara.current_session.driver.browser.manage.window.resize_to(width, 500)
@@ -131,7 +131,7 @@ end
 
 step 'UAを:uaにする' do |ua|
   if ua == 'default'
-    ua = ENV['GENIE_SPEC_DEFAULT_USER_AGENT']
+    ua = ENV['GENIE_SPEC_USER_AGENT']
   end
 
   if ENV['GENIE_SPEC_BROWSER'] == "firefox" then

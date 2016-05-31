@@ -22,7 +22,7 @@ RSpec.configure do |config|
   if ENV['GENIE_SPEC_BROWSER'] == "firefox" then
     Capybara.default_driver = :headless_firefox
     Capybara.javascript_driver = :headless_firefox
-    headless = Headless.new(dimensions: ENV['GENIE_SPEC_DEFAULT_CAPTURE_WIDTH']+"x1080x24")
+    headless = Headless.new(dimensions: ENV['GENIE_SPEC_CAPTURE_WIDTH']+"x1080x24")
     headless.start
   else
     Capybara.default_driver = :poltergeist
@@ -41,12 +41,12 @@ end
 Capybara.register_driver :poltergeist do |app|
   ghost_busters = Capybara::Poltergeist::Driver.new(app, {
       js_errors:         ENV['GENIE_SPEC_JS_ERRORS']=="1",
-      window_size:       [ENV['GENIE_SPEC_DEFAULT_CAPTURE_WIDTH'], 1024],
+      window_size:       [ENV['GENIE_SPEC_CAPTURE_WIDTH'], 1024],
       timeout:           base_wait_time,
       phantomjs_options: ["--config=/spec/confs/config.json"]
     })
-  if ENV['GENIE_SPEC_DEFAULT_USER_AGENT'] != "" then
-    ghost_busters.headers = { 'User-Agent' => ENV['GENIE_SPEC_DEFAULT_USER_AGENT'] }
+  if ENV['GENIE_SPEC_USER_AGENT'] != "" then
+    ghost_busters.headers = { 'User-Agent' => ENV['GENIE_SPEC_USER_AGENT'] }
   end
   ghost_busters
 end
