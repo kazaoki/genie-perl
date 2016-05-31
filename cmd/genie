@@ -1193,7 +1193,7 @@ sub up {
 			# -- マウントを「/_/*」に変える（entrypoint.sh時に正式なディレクトリにコピーする）
 			$cmd =~ s/( \-v [^ ]+\:)([^ ]+)/$1\/_$2/g;
 			# -- /spec/captures/をマウントする
-			if($up_type eq 'spec' && !$options{fast}){
+			if($up_type eq 'spec'){
 				$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec\/captures:\/spec\/captures $config{DOCKER}->{IMAGE}/;
 			}
 		}
@@ -2226,7 +2226,7 @@ sub spec {
 		# -- fastモードの場合
 		if($options{fast}){
 			# -- 確認する
-			my $input = input('fastモードで実行してよろしいでしょうか（起動中のコンテナで実行） [y/N]: ');
+			my $input = input('起動中のコンテナで実行で実行してよろしいでしょうか（fastモード） [y/N]: ');
 			print "\n";
 			return if $input !~ /^y$/i;
 		}
@@ -2238,7 +2238,9 @@ sub spec {
 		my $container_name = ($options{fast} ? '' : 'SPEC-').$config{DOCKER}->{NAME};
 		my $cmd;
 		if($options{fast}){
-			$cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
+			my $env = 'export GENIE_PROC=spec &&';
+			$env .= $options{cap} ? ' export GENIE_SPEC_AUTOCAP=1 &&' : '';
+			$cmd = "docker exec -it $container_name sh -c \"$env . /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
 		} else {
 			$cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args && \\cp -f /spec/report.html /_/spec/report.html\"";
 		}
