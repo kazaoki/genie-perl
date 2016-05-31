@@ -14,11 +14,11 @@
 	# ----------------------------------------------------------------------------------------------
 		* ページ"/"を表示する
 			* ページを検証する
-				| タイトル | genie テスト |
-				| ワード   | これは genie のテストページです。 | body>h1 |
-				| リンク   | PHP info          | ul#links |
-				| リンク   | CGIのテストページ | ul#links |
-				| リンク   | WordPressテスト   | ul#links |
+				| TITLE    | genie テスト |
+				| WORD     | これは genie のテストページです。 | body>h1 |
+				| LINK     | PHP info          | ul#links |
+				| LINK     | CGIのテストページ | ul#links |
+				| LINK     | WordPressテスト   | ul#links |
 			* リンクを検証する
 				| PHP info          | info.php | ul#links |
 				| CGIのテストページ | test.cgi | ul#links |
