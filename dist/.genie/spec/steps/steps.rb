@@ -6,7 +6,8 @@
 # 初期設定
 # --------------------------------------------------------------------
 dirname = 'cap-' + Time.now.strftime('%Y%m%d-%H%M%S')
-autocap= ENV['GENIE_SPEC_AUTOCAP']
+autocap = ENV['GENIE_SPEC_AUTOCAP']
+autocap_addname = '' # 自動キャプチャのファイル名に一時的に付加する名前（一度キャプチャされると空白に戻る）
 
 # --------------------------------------------------------------------
 # ページナビゲーション：アクション
@@ -29,8 +30,9 @@ end
 step 'cap' do
   base = self.pretty_inspect.match(/\(\/spec\/features\/([^\(\)]+)\.feature\:(\d+)\)\>$/)
   line = caller.pretty_inspect.match(/\.feature\:(\d+)/)
-  filepath = sprintf("/spec/captures/%s/%s/%05d-%05d.png", dirname, base[1], base[2], line[1])
+  filepath = sprintf("/spec/captures/%s/%s/%05d-%05d"+autocap_addname+".png", dirname, base[1], base[2], line[1])
   page.save_screenshot(filepath, :full => true)
+  autocap_addname = ''
 end
 
 step '戻る' do
@@ -131,7 +133,7 @@ end
 
 step 'UAを:uaにする' do |ua|
   if ua == 'default'
-    ua = ENV['GENIE_SPEC_DEFAULT_USER_AGENT']
+    ua = ENV['GENIE_DEFAULT_USER_AGENT']
   end
 
   if ENV['GENIE_SPEC_BROWSER'] == "firefox" then
@@ -638,55 +640,55 @@ step 'ページを検証する' do |table|
     (key, value, option) = item
     if key == "URL" then
       step 'URLが"'+value+'"である'
-    elsif key == "パス" then
+    elsif key == "PATH" then
       if option == "unescaped" then
         step 'パスがエスケープされていない"'+value+'"である'
       else
         step 'パスが"'+value+'"である'
       end
-    elsif key == "タイトル" then
+    elsif key == "TITLE" then
       step 'ページタイトルが"'+value+'"である'
-    elsif key == "!タイトル" then
+    elsif key == "!TITLE" then
       step 'ページタイトルが"'+value+'"ではない'
-    elsif key == "ワード" then
+    elsif key == "WORD" then
       if option then
         step '"'+value+'"と表示されている @"'+option+'"'
       else
         step '"'+value+'"と表示されている'
       end
-    elsif key == "!ワード" then
+    elsif key == "!WORD" then
       if option then
         step '"'+value+'"と表示されていない @"'+option+'"'
       else
         step '"'+value+'"と表示されていない'
       end
-    elsif key == "リンク" then
+    elsif key == "LINK" then
       if option then
         step '"'+value+'"というリンクが表示されている @"'+option+'"'
       else
         step '"'+value+'"というリンクが表示されている'
       end
-    elsif key == "!リンク" then
+    elsif key == "!LINK" then
       if option then
         step '"'+value+'"というリンクが表示されていない @"'+option+'"'
       else
         step '"'+value+'"というリンクが表示されていない'
       end
-    elsif key == "セレクタ" then
+    elsif key == "SELECTOR" then
       if option == "false" then
         step 'セレクタ"'+value+'"が存在している'
       else
         step 'セレクタ"'+value+'"が表示されている'
       end
-    elsif key == "!セレクタ" then
+    elsif key == "!SELECTOR" then
       if option == "false" then
         step 'セレクタ"'+value+'"が存在していない'
       else
         step 'セレクタ"'+value+'"が表示されていない'
       end
-    elsif key == "ボタン" then
+    elsif key == "BUTTON" then
       step 'ボタン"'+value+'"が表示されている'
-    elsif key == "!ボタン" then
+    elsif key == "!BUTTON" then
       step 'ボタン"'+value+'"が表示されていない'
     end
   end
@@ -698,60 +700,63 @@ end
 step 'フォームを送信する' do |table|
   table.each do |item|
     (type, name, value, scope) = item
-    if type == "text" then
+    if type == "TEXTBOX" then
       if scope then
         step 'テキストボックス"'+name+'"を"'+value+'"にする @"'+scope+'"'
       else
         step 'テキストボックス"'+name+'"を"'+value+'"にする'
       end
-    elsif type == "textarea" then
+    elsif type == "TEXTAREA" then
       if scope then
         step 'テキストエリア"'+name+'"を"'+value+'"にする @"'+scope+'"'
       else
         step 'テキストエリア"'+name+'"を"'+value+'"にする'
       end
-    elsif type == "radio" then
+    elsif type == "RADIO" then
       if scope then
         step 'ラジオボタン"'+name+'"の"'+value+'"を選択する @"'+scope+'"'
       else
         step 'ラジオボタン"'+name+'"の"'+value+'"を選択する'
       end
-    elsif type == "check" then
+    elsif type == "CHECK" then
       if scope then
         step 'チェックボックス"'+name+'"の"'+value+'"を選択する @"'+scope+'"'
       else
         step 'チェックボックス"'+name+'"の"'+value+'"を選択する'
       end
-    elsif type == "!check" then
+    elsif type == "!CHECK" then
       if scope then
         step 'チェックボックス"'+name+'"の"'+value+'"を未選択にする @"'+scope+'"'
       else
         step 'チェックボックス"'+name+'"の"'+value+'"を未選択にする'
       end
-    elsif type == "select" then
+    elsif type == "SELECT" then
       if scope then
         step 'セレクトボックス"'+name+'"の"'+value+'"を選択する @"'+scope+'"'
       else
         step 'セレクトボックス"'+name+'"の"'+value+'"を選択する'
       end
-    elsif type == "file" then
+    elsif type == "FILE" then
       if scope then
         step 'ファイル選択"'+name+'"に"'+value+'"を選択する @"'+scope+'"'
       else
         step 'ファイル選択"'+name+'"に"'+value+'"を選択する'
       end
-    elsif type == "hidden" then
+    elsif type == "HIDDEN" then
       if scope then
         step '隠し要素"'+name+'"を"'+value+'"にする @"'+scope+'"'
       else
         step '隠し要素"'+name+'"を"'+value+'"にする'
       end
-    elsif type == "submit" then
+    elsif type == "SUBMIT" then
+      autocap_addname = '-before-submit'
+      step 'cap' if autocap
       if scope then
         step '"'+value+'"をクリックする @"'+scope+'"'
       else
         step '"'+value+'"をクリックする'
       end
+      return
     end
   end
   step 'cap' if autocap
@@ -763,73 +768,73 @@ end
 step 'フォームを検証する' do |table|
   table.each do |item|
     (type, name, value, scope) = item
-    if type == "text" then
+    if type == "TEXTBOX" then
       if scope then
         step 'テキストボックス"'+name+'"が"'+value+'"である @"'+scope+'"'
       else
         step 'テキストボックス"'+name+'"が"'+value+'"である'
       end
-    elsif type == "!text" then
+    elsif type == "!TEXTBOX" then
       if scope then
         step 'テキストボックス"'+name+'"が"'+value+'"ではない @"'+scope+'"'
       else
         step 'テキストボックス"'+name+'"が"'+value+'"ではない'
       end
-    elsif type == "textarea" then
+    elsif type == "TEXTAREA" then
       if scope then
         step 'テキストエリア"'+name+'"が"'+value+'"である @"'+scope+'"'
       else
         step 'テキストエリア"'+name+'"が"'+value+'"である'
       end
-    elsif type == "!textarea" then
+    elsif type == "!TEXTAREA" then
       if scope then
         step 'テキストエリア"'+name+'"が"'+value+'"ではない @"'+scope+'"'
       else
         step 'テキストエリア"'+name+'"が"'+value+'"ではない'
       end
-    elsif type == "radio" then
+    elsif type == "RADIO" then
       if scope then
         step 'ラジオボタン"'+name+'"の"'+value+'"が選択されている @"'+scope+'"'
       else
         step 'ラジオボタン"'+name+'"の"'+value+'"が選択されている'
       end
-    elsif type == "!radio" then
+    elsif type == "!RADIO" then
       if scope then
         step 'ラジオボタン"'+name+'"の"'+value+'"が選択されていない @"'+scope+'"'
       else
         step 'ラジオボタン"'+name+'"の"'+value+'"が選択されていない'
       end
-    elsif type == "checkbox" then
+    elsif type == "CHECKBOX" then
       if scope then
         step 'チェックボックス"'+name+'"の"'+value+'"が選択されている @"'+scope+'"'
       else
         step 'チェックボックス"'+name+'"の"'+value+'"が選択されている'
       end
-    elsif type == "!checkbox" then
+    elsif type == "!CHECKBOX" then
       if scope then
         step 'チェックボックス"'+name+'"の"'+value+'"が選択されていない @"'+scope+'"'
       else
         step 'チェックボックス"'+name+'"の"'+value+'"が選択されていない'
       end
-    elsif type == "select" then
+    elsif type == "SELECT" then
       if scope then
         step 'セレクトボックス"'+name+'"の"'+value+'"が選択されている @"'+scope+'"'
       else
         step 'セレクトボックス"'+name+'"の"'+value+'"が選択されている'
       end
-    elsif type == "!select" then
+    elsif type == "!SELECT" then
       if scope then
         step 'セレクトボックス"'+name+'"の"'+value+'"が選択されていない @"'+scope+'"'
       else
         step 'セレクトボックス"'+name+'"の"'+value+'"が選択されていない'
       end
-    elsif type == "hidden" then
+    elsif type == "HIDDEN" then
       if scope then
         step '隠し要素"'+name+'"が"'+value+'"である @"'+scope+'"'
       else
         step '隠し要素"'+name+'"が"'+value+'"である'
       end
-    elsif type == "!hidden" then
+    elsif type == "!HIDDEN" then
       if scope then
         step '隠し要素"'+name+'"が"'+value+'"ではない @"'+scope+'"'
       else
