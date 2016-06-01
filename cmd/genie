@@ -2224,9 +2224,9 @@ sub spec {
 		}
 
 		# -- fastモードの場合
-		if($options{fast}){
+		if($options{fast} && !$config{SPEC}->{SILENT_FAST}){
 			# -- 確認する
-			my $input = input('起動中のコンテナで実行で実行してよろしいでしょうか（fastモード） [y/N]: ');
+			my $input = input('起動中のコンテナ上でSPEC実行してよろしいでしょうか（fastモード） [y/N]: ');
 			print "\n";
 			return if $input !~ /^y$/i;
 		}
