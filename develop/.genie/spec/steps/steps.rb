@@ -6,7 +6,8 @@
 # 初期設定
 # --------------------------------------------------------------------
 dirname = 'cap-' + Time.now.strftime('%Y%m%d-%H%M%S')
-autocap= ENV['GENIE_SPEC_AUTOCAP']
+autocap = ENV['GENIE_SPEC_AUTOCAP']
+autocap_addname = '' # 自動キャプチャのファイル名に一時的に付加する名前（一度キャプチャされると空白に戻る）
 
 # --------------------------------------------------------------------
 # ページナビゲーション：アクション
@@ -29,8 +30,9 @@ end
 step 'cap' do
   base = self.pretty_inspect.match(/\(\/spec\/features\/([^\(\)]+)\.feature\:(\d+)\)\>$/)
   line = caller.pretty_inspect.match(/\.feature\:(\d+)/)
-  filepath = sprintf("/spec/captures/%s/%s/%05d-%05d.png", dirname, base[1], base[2], line[1])
+  filepath = sprintf("/spec/captures/%s/%s/%05d-%05d"+autocap_addname+".png", dirname, base[1], base[2], line[1])
   page.save_screenshot(filepath, :full => true)
+  autocap_addname = ''
 end
 
 step '戻る' do
@@ -747,11 +749,14 @@ step 'フォームを送信する' do |table|
         step '隠し要素"'+name+'"を"'+value+'"にする'
       end
     elsif type == "SUBMIT" then
+      autocap_addname = '-before-submit'
+      step 'cap' if autocap
       if scope then
         step '"'+value+'"をクリックする @"'+scope+'"'
       else
         step '"'+value+'"をクリックする'
       end
+      return
     end
   end
   step 'cap' if autocap
