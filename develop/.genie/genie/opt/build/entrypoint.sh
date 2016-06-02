@@ -1,9 +1,13 @@
 #!/bin/sh
 
-# -- general
+# --------------------------------------------------------------------
+# general
+# --------------------------------------------------------------------
 echo ". /etc/bashrc" >> /root/.bashrc
 
-# -- init mode
+# --------------------------------------------------------------------
+# init mode
+# --------------------------------------------------------------------
 if [[ $GENIE_PROC == 'init' ]]; then
   cd /work
   mkdir .genie
@@ -21,7 +25,9 @@ if [[ $GENIE_PROC == 'init' ]]; then
   exit 0
 fi
 
-# -- update mode
+# --------------------------------------------------------------------
+# update mode
+# --------------------------------------------------------------------
 if [[ $GENIE_PROC == 'update' ]]; then
   cd /work
   mkdir .genie_update
@@ -40,14 +46,18 @@ if [[ $GENIE_PROC == 'update' ]]; then
   exit 0
 fi
 
-# -- httpd mode
+# --------------------------------------------------------------------
+# httpd mode
+# --------------------------------------------------------------------
 if [[ $GENIE_PROC == 'httpd' ]]; then
   /usr/sbin/httpd
   /loop.sh
   exit 0
 fi
 
-# -- spec|zap mode
+# --------------------------------------------------------------------
+# spec|zap mode
+# --------------------------------------------------------------------
 if [[ $GENIE_PROC == 'spec' ]] || [[ $GENIE_PROC == 'zap' ]]; then
   # -- dir copy
   \cp -rpdfL /_/* /
@@ -55,7 +65,9 @@ if [[ $GENIE_PROC == 'spec' ]] || [[ $GENIE_PROC == 'zap' ]]; then
   prefix_mount=/_
 fi
 
-# -- dlsync mode
+# --------------------------------------------------------------------
+# dlsync mode
+# --------------------------------------------------------------------
 if [[ $GENIE_PROC == 'dlsync' ]]; then
   rm -f /tmp/mirror.cmd
   if [[ $GENIE_DLSYNC_REMOTE_CHARSET ]]; then
@@ -77,10 +89,14 @@ if [[ $GENIE_PROC == 'dlsync' ]]; then
   exit 0;
 fi
 
-# -- entrypoint.sh started
+# --------------------------------------------------------------------
+# entrypoint.sh started
+# --------------------------------------------------------------------
 echo 'entrypoint.sh setup start.' >> /var/log/entrypoint.log
 
-# -- perl setup
+# --------------------------------------------------------------------
+# perl setup
+# --------------------------------------------------------------------
 if [[ $GENIE_PERL_VERSION != '' ]]; then
   mkdir -p $prefix_mount/genie/opt/perl
   # -- tar restore
@@ -116,7 +132,9 @@ if [[ $GENIE_PERL_VERSION != '' ]]; then
   echo 'Perl setup done.' >> /var/log/entrypoint.log
 fi
 
-# -- Install perl modules from cpanfile
+# --------------------------------------------------------------------
+# Install perl modules from cpanfile
+# --------------------------------------------------------------------
 if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/opt/perl/cpanfile ]]; then
   mkdir -p $prefix_mount/genie/opt/perl
   # -- tar restore
@@ -132,7 +150,9 @@ if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/opt/perl/cpanfile ]]; then
   echo 'cpanfile setup done.' >> /var/log/entrypoint.log
 fi
 
-# -- php setup
+# --------------------------------------------------------------------
+# php setup
+# --------------------------------------------------------------------
 if [[ $GENIE_PHP_VERSION != '' ]]; then
   mkdir -p $prefix_mount/genie/opt/php
   # -- tar restore
@@ -152,6 +172,8 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     \cp -f /etc/httpd/modules/libphp5.so ${link_to}/
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
+    echo '[Date]' >> /php/versions/$GENIE_PHP_VERSION/etc/php.ini
+    echo 'date.timezone = "Asia/Tokyo"' >> /php/versions/$GENIE_PHP_VERSION/etc/php.ini
     cd /php/versions
     tar cf $prefix_mount/genie/opt/php/versions.tar ./
   else
@@ -164,7 +186,9 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
   echo 'PHP setup done.' >> /var/log/entrypoint.log
 fi
 
-# -- ruby setup
+# --------------------------------------------------------------------
+# ruby setup
+# --------------------------------------------------------------------
 if [[ $GENIE_RUBY_VERSION != '' ]]; then
   mkdir -p $prefix_mount/genie/opt/ruby
   # -- tar restore
@@ -193,7 +217,9 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
   echo 'Ruby setup done.' >> /var/log/entrypoint.log
 fi
 
-# -- Apache
+# --------------------------------------------------------------------
+# Apache
+# --------------------------------------------------------------------
 if [[ $GENIE_APACHE_ENABLED ]]; then
   if [[ $GENIE_APACHE_HTTP_PORT ]]; then
     sed -i "s/Listen 80$/Listen $GENIE_APACHE_HTTP_PORT/" /etc/httpd/conf/httpd.conf
@@ -241,7 +267,9 @@ if [[ $GENIE_APACHE_ENABLED ]]; then
   echo 'Apache setup done.' >> /var/log/entrypoint.log
 fi
 
-# -- Nginx
+# --------------------------------------------------------------------
+# Nginx
+# --------------------------------------------------------------------
 if [[ $GENIE_NGINX_ENABLED ]]; then
   if [[ $GENIE_NGINX_HTTP_PORT ]]; then
     sed -i "s/80 default_server/$GENIE_NGINX_HTTP_PORT default_server/" /etc/nginx/nginx.conf
@@ -250,7 +278,9 @@ if [[ $GENIE_NGINX_ENABLED ]]; then
   echo 'Nginx setup done.' >> /var/log/entrypoint.log
 fi
 
-# -- Postfix
+# --------------------------------------------------------------------
+# Postfix
+# --------------------------------------------------------------------
 if [[ $GENIE_POSTFIX_ENABLED ]]; then
   if [[ $GENIE_POSTFIX_FORCE_ENVELOPE != '' ]]; then
     echo "canonical_classes = envelope_sender, envelope_recipient" >> /etc/postfix/main.cf
@@ -261,7 +291,9 @@ if [[ $GENIE_POSTFIX_ENABLED ]]; then
   echo 'Postfix setup done.' >> /var/log/entrypoint.log
 fi
 
-# -- Copy directories other than /opt/
+# --------------------------------------------------------------------
+# Copy directories other than /opt/
+# --------------------------------------------------------------------
 rsync -rltD --exclude /opt /genie/* /
 if [[ -d /genie/etc/httpd ]]; then
   if [[ $GENIE_APACHE_ENABLED ]]; then
@@ -279,12 +311,18 @@ if [[ -d /genie/etc/nginx ]]; then
   fi
 fi
 
-# -- entrypoint.sh finished
+# --------------------------------------------------------------------
+# entrypoint.sh finished
+# --------------------------------------------------------------------
 echo 'entrypoint.sh setup done.' >> /var/log/entrypoint.log
 
-# -- run init.sh
+# --------------------------------------------------------------------
+# run init.sh
+# --------------------------------------------------------------------
 /genie/opt/init.sh
 echo 'init.sh setup done.' >> /var/log/entrypoint.log
 
-# -- daemon loop start
+# --------------------------------------------------------------------
+# daemon loop start
+# --------------------------------------------------------------------
 /loop.sh
