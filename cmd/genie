@@ -2022,7 +2022,8 @@ sub open {
 sub logs {
 	if(defined $config{LOGS}->{FILES} && ref $config{LOGS}->{FILES}) {
 		my $log_files = join(' ', @{$config{LOGS}->{FILES}});
-		my $cmd = qq|docker exec -ti $config{DOCKER}->{NAME} script /dev/null -qc "multitail $log_files"|;
+		my $split = $config{LOGS}->{SPLIT} ? '-s '.$config{LOGS}->{SPLIT} : '';
+		my $cmd = qq|docker exec -ti $config{DOCKER}->{NAME} script /dev/null -qc "multitail $split $log_files"|;
 		system $cmd;
 	}
 }

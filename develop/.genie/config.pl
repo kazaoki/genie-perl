@@ -44,6 +44,7 @@ return {
 			# '/var/log/nginx/access.log',
 			# '/var/log/nginx/error.log',
 		],
+		# SPLIT => 2,
 	},
 
 	# Perl設定
