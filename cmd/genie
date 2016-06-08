@@ -2364,7 +2364,7 @@ sub zap {
 	&up('zap');
 
 	# -- ZAP実行
-	my $cmd = qq|docker run -u zap | . join(' ', map{ "--add-host=$_" } @{$config{DOCKER}->{HOSTS}}) . qq| --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/ZAP_2.4.3/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
+	my $cmd = qq|docker run -u zap | . join(' ', map{ "--add-host=$_" } @{$config{DOCKER}->{HOSTS}}) . qq| --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
 
 	# -- コンテナ実行
 	my $pid = fork;
@@ -2471,7 +2471,9 @@ sub _report_xml2html {
 		$html .= qq|<thead><tr><th>Level</th><th>Alert</th><th>Count</th></tr></thead>|;
 		$html .= qq|<tbody>|;
 		my $anchor = 1;
-		foreach my $item (@{$site->{alerts}->{alertitem}}){
+
+		foreach (keys %{$site->{alerts}->{alertitem}}){
+			my $item = $site->{alerts}->{alertitem}->{$_};
 			my $level = ( $item->{riskcode}==1 ? 'Low' : $item->{riskcode}==2 ? 'Medium' : 'High');
 			my $class = ( $item->{riskcode}==1 ? 'default' : $item->{riskcode}==2 ? 'warning' : 'danger');
 			$html .= qq|<tr class="$class">|;
@@ -2504,7 +2506,8 @@ sub _report_xml2html {
 		$html .= qq|<hr>|;
 		$anchor = 1;
 
-		foreach my $item (@{$site->{alerts}->{alertitem}}){
+		foreach (keys %{$site->{alerts}->{alertitem}}){
+			my $item = $site->{alerts}->{alertitem}->{$_};
 			$html .= qq|<div class="panel panel-$class[$item->{riskcode}]" id="issue-$anchor">|;
 			$html .= qq|<div class="panel-heading">|;
 			$html .= qq|<p class="pull-right">|;
