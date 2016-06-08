@@ -141,6 +141,7 @@ RUN mkdir /tmp/ngrok/ \
 RUN rpm -ivh http://lftp.yar.ru/ftp/binaries/lftp-4.6.5-1.x86_64.rpm
 
 # Install suPHP
+# -------------
 ADD suphp-0.7.2-1.src.rpm /tmp/suphp/suphp-0.7.2-1.src.rpm
 RUN cd /tmp/suphp/ \
     && rpm -ivh suphp-0.7.2-1.src.rpm \
@@ -148,11 +149,20 @@ RUN cd /tmp/suphp/ \
     && rpm -ivh /root/rpmbuild/RPMS/x86_64/suphp-0.7.2-1.x86_64.rpm \
     && echo 'IncludeOptional /etc/httpd/conf/extra/httpd-suphp.conf' >> /etc/httpd/conf/httpd.conf
 
+# Setup sendmail logging
+# ----------------------
+ADD sendsave.pl /sendsave.pl
+RUN chmod +x /sendsave.pl \
+    && ln -sf /sendsave.pl /usr/sbin/sendmail
+
 # Add files
 # ---------
 ADD loop.sh /loop.sh
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod +x /*.sh
+
+
+
 
 # Entry point
 # -----------
