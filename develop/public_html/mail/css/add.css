@@ -1,0 +1,42 @@
+
+/* --- errors --- */
+.error {
+	background-color: #ff066a !important;
+	color: white;
+}
+#name1-error,
+#name2-error,
+.error-message {
+	color: #ff066a;
+}
+
+/* --- success --- */
+.success {
+	background-color: #06a8ff !important;
+	color: white;
+}
+
+/* --- focus input --- */
+input:focus,
+textarea:focus {
+	background-color: rgb(255, 251, 143);
+}
+
+/* --- status status --- */
+.status {
+	font-size: 10px;
+	font-weight: bold;
+	color: white;
+}
+.status:before {
+	padding: 5px;
+	border-radius: 10px;
+}
+.status.ok:before {
+	content: 'OK';
+	background: #06a8ff;
+}
+.status.ng:before {
+	content: 'NG';
+	background: #ff066a;
+}
