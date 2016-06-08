@@ -2364,7 +2364,7 @@ sub zap {
 	&up('zap');
 
 	# -- ZAP実行
-	my $cmd = qq|docker run -u zap --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/ZAP_2.4.3/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
+	my $cmd = qq|docker run -u zap | . join(' ', map{ "--add-host=$_" } @{$config{DOCKER}->{HOSTS}}) . qq| --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/ZAP_2.4.3/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
 
 	# -- コンテナ実行
 	my $pid = fork;
