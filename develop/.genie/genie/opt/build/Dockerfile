@@ -22,6 +22,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         libxslt-devel libmcrypt libmcrypt-devel php-mcrypt \
         php php-mbstring php-pdo php-mysql php-pgsql php-gd php-xml \
         php-soap php-Smarty re2c libxml2-devel bison bison-devel \
+        php-pear-Mail-mimeDecode \
         perl-libwww-perl perl-Crypt-SSLeay \
         perl-String-CRC32 gnutls \
         perl-DBD-MySQL perl-DBD-Pg \
@@ -151,18 +152,17 @@ RUN cd /tmp/suphp/ \
 
 # Setup sendmail logging
 # ----------------------
-ADD sendsave.pl /sendsave.pl
-RUN chmod +x /sendsave.pl \
-    && ln -sf /sendsave.pl /usr/sbin/sendmail
+ADD sendlog/sendsave.pl /sendlog/sendsave.pl
+ADD sendlog/index.php /sendlog/index.php
+RUN chmod 0777 /sendlog \
+    && chmod 0755 /sendlog/sendsave.pl \
+    && ln -sf /sendlog/sendsave.pl /usr/sbin/sendmail
 
 # Add files
 # ---------
 ADD loop.sh /loop.sh
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod +x /*.sh
-
-
-
 
 # Entry point
 # -----------

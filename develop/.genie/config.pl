@@ -20,6 +20,7 @@ return {
 		VOLUMES => [ # ホスト側(左側)を/以外で始めるとホームパスからの指定になります。
 			# 'app:/app',
 			# 'home-data:/home/xxx/',
+			# 'sendlog:/sendlog',
 		],
 		# NO_SAY => 1, # 有効にすると音声アナウンスしなくなります。
 	},
@@ -98,6 +99,12 @@ return {
 	POSTFIX => {
 		ENABLED => 1,
 		FORCE_ENVELOPE => 'webmaster@kazaoki.jp',
+		SENDLOG => {
+			ENABLED => 1,
+			BIND_PORTS   => [
+				'9981:9981',
+			]
+		},
 	},
 
 	# MySQL設定

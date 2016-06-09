@@ -1126,6 +1126,16 @@ sub up {
 			}
 		}
 
+		# -- Postfix:Sendlog
+		my $postfix_option;
+		if($config{POSTFIX}->{ENABLED} && $config{POSTFIX}->{SENDLOG}->{ENABLED}) {
+			if(ref $config{POSTFIX}->{SENDLOG}->{BIND_PORTS}){
+				foreach(@{$config{POSTFIX}->{SENDLOG}->{BIND_PORTS}}){
+					$postfix_option .= " -p $_";
+				}
+			}
+		}
+
 		# -- add hosts
 		my $add_host;
 		if(ref $config{DOCKER}->{HOSTS}) {
@@ -1160,6 +1170,7 @@ sub up {
 			$postgresql_option.
 			$apache_option.
 			$nginx_option.
+			$postfix_option.
 			$add_host.
 			$volumes.
 			" --name=$container_name_base".

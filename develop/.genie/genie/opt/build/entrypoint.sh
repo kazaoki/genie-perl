@@ -289,6 +289,9 @@ if [[ $GENIE_POSTFIX_ENABLED ]]; then
   fi
   /usr/sbin/postfix start
   echo 'Postfix setup done.' >> /var/log/entrypoint.log
+  if [[ $GENIE_POSTFIX_SENDLOG_ENABLED ]]; then
+    php -S 0.0.0.0:$(echo $GENIE_POSTFIX_SENDLOG_BIND_PORTS | cut -f1 -d:) -t /sendlog >/dev/null 2>&1 &
+  fi
 fi
 
 # --------------------------------------------------------------------
