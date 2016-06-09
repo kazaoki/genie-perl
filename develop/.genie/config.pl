@@ -99,12 +99,15 @@ return {
 	POSTFIX => {
 		ENABLED => 1,
 		FORCE_ENVELOPE => 'webmaster@kazaoki.jp',
-		SENDLOG => {
-			ENABLED => 1,
-			BIND_PORTS   => [
-				'9981:9981',
-			]
-		},
+	},
+
+	# Sendlog設定
+	# -----------
+	SENDLOG => {
+		ENABLED => 1,
+		BIND_PORTS   => [
+			'9981:9981',
+		]
 	},
 
 	# MySQL設定

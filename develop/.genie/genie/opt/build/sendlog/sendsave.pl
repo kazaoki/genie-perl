@@ -3,7 +3,7 @@
 use strict;
 my $data;
 
-if($ENV{GENIE_POSTFIX_ENABLED} && $ENV{GENIE_POSTFIX_SENDLOG_ENABLED}){
+if($ENV{GENIE_SENDLOG_ENABLED}){
 
 	# -- 保存先の用意
 	my $dir = '/sendlog'; # -- 権限の問題で、ディレクトリ自体の作成はDockerfileの方で行う。

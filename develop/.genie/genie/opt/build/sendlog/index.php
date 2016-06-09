@@ -71,10 +71,17 @@ function h($str) {
 <body>
 
 <div class="container">
-	<h1><a href="/">sendmail sent logs</a></h1>
+	<h1><a href="/">Sendlog - sendmail sent logs</a></h1>
 	<div class="panel panel-default">
 	  <div class="panel-body">
-	  	<code>sendmail</code> にて送信されたメールのログです。この画面は環境変数 <code>GENIE_GENERAL_RUNMODE</code> が <code>develop</code> の時のみに閲覧できます。
+	  （メッセージ調整中。。。）
+	  	<ul>
+			<li>
+				<code>sendmail</code> にて送信されたメールのログです。この画面は環境変数 <code>GENIE_GENERAL_RUNMODE</code> が <code>develop</code> の時のみに閲覧できます。
+			</li>
+			<li>GENIE_POSTFIX_ENABLED: <?php echo getenv('GENIE_POSTFIX_ENABLED') ?></li>
+			<li>GENIE_POSTFIX_ENABLED: <?php echo getenv('GENIE_POSTFIX_FORCE_ENVELOPE') ?></li>
+	  	</ul>
 	  </div>
 	</div>
 	<hr>

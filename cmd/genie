@@ -1126,12 +1126,12 @@ sub up {
 			}
 		}
 
-		# -- Postfix:Sendlog
-		my $postfix_option;
-		if($config{POSTFIX}->{ENABLED} && $config{POSTFIX}->{SENDLOG}->{ENABLED}) {
-			if(ref $config{POSTFIX}->{SENDLOG}->{BIND_PORTS}){
-				foreach(@{$config{POSTFIX}->{SENDLOG}->{BIND_PORTS}}){
-					$postfix_option .= " -p $_";
+		# -- Sendlog
+		my $sendlog_option;
+		if($config{SENDLOG}->{ENABLED}) {
+			if(ref $config{SENDLOG}->{BIND_PORTS}){
+				foreach(@{$config{SENDLOG}->{BIND_PORTS}}){
+					$sendlog_option .= " -p $_";
 				}
 			}
 		}
@@ -1170,7 +1170,7 @@ sub up {
 			$postgresql_option.
 			$apache_option.
 			$nginx_option.
-			$postfix_option.
+			$sendlog_option.
 			$add_host.
 			$volumes.
 			" --name=$container_name_base".
