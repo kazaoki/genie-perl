@@ -215,6 +215,13 @@
 		DEFAULT_USER_AGENT    => '',
 		JS_ERRORS             => 0,
 		SILENT_FAST           => 0,  # 1にするとfastモード時に実行するか否か聞いてこないように
+		NO_SENDMAIL           => 1,  # 1にするとSPEC中はメール送信を行いません。（但し、/sendlogには記録されます）
+	},
+
+	# ZAP設定
+	# -------
+	ZAP => {
+		NO_SENDMAIL           => 1,  # 1にするとZAP中はメール送信を行いません。（但し、/sendlogには記録されます）
 	},
 
 	# 追加コマンド設定
