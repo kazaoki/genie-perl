@@ -295,7 +295,9 @@ fi
 # Sendlog
 # --------------------------------------------------------------------
 if [[ $GENIE_SENDLOG_ENABLED ]]; then
-  php -S 0.0.0.0:$(echo $GENIE_SENDLOG_BIND_PORTS | cut -f2 -d:) -t /sendlog >/dev/null 2>&1 &
+  echo 'system' > /sendlog/.php-version
+  cd /sendlog
+  php -S 0.0.0.0:$(echo $GENIE_SENDLOG_BIND_PORTS | cut -f2 -d:) >/dev/null 2>&1 &
 fi
 
 # --------------------------------------------------------------------
