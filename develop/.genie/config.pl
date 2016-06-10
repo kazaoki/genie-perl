@@ -104,7 +104,7 @@ return {
 	# Sendlog設定
 	# -----------
 	SENDLOG => {
-		ENABLED => 1,
+		ENABLED => 1, # ENABLEでも本番モードなら送信ログの保存すらしません。
 		BIND_PORTS   => [
 			'9981:9981',
 		]

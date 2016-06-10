@@ -3,19 +3,21 @@
 use strict;
 my $data;
 
-if($ENV{GENIE_SENDLOG_ENABLED}){
+if($ENV{GENIE_GENERAL_RUNMODE} eq 'develop') {
+	if($ENV{GENIE_SENDLOG_ENABLED}){
 
-	# -- 保存先の用意
-	my $dir = '/sendlog'; # -- 権限の問題で、ディレクトリ自体の作成はDockerfileの方で行う。
-	my @list = glob("$dir/*.eml");
-	my $logfile = sprintf("$dir/%06d.eml", scalar(@list)+1);
+		# -- 保存先の用意
+		my $dir = '/sendlog'; # -- 権限の問題で、ディレクトリ自体の作成はDockerfileの方で行う。
+		my @list = glob("$dir/*.eml");
+		my $logfile = sprintf("$dir/%06d.eml", scalar(@list)+1);
 
-	# -- 受信したデータをファイルに保存する
-	$data = join('', <STDIN>);
-	open  LOG, ">$logfile";
-	print LOG 'X-Genie-Send-Command: sendmail ' . join(' ', @ARGV)."\n";
-	print LOG $data;
-	close LOG;
+		# -- 受信したデータをファイルに保存する
+		$data = join('', <STDIN>);
+		open  LOG, ">$logfile";
+		print LOG 'X-Genie-Send-Command: sendmail ' . join(' ', @ARGV)."\n";
+		print LOG $data;
+		close LOG;
+	}
 }
 
 # -- メール配送が無効ならここで終了
