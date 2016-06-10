@@ -51,8 +51,17 @@ function parseMail($file){
 		@$info['headers'] .= sprintf("%s: %s\n", $key, $mail->headers[$key]);
 	}
 
-	# -- 入れ子解析して返却
-	return analyzePart($mail, $info);
+	# -- 入れ子解析
+	$info = analyzePart($mail, $info);
+
+	# -- FromとToの<>ラベルの前に空白を入れる作業
+	mb_regex_encoding('UTF-8');
+	$info['from']    = preg_replace('/</', ' <', $info['from']);
+	$info['to']      = preg_replace('/</', ' <', $info['to']);
+	$info['headers'] = preg_replace('/^((?:from|to)\: )\<(.+)$/', '$1 <$2', $info['headers']);
+
+	# -- 返却
+	return $info;
 }
 
 // -------------------------------------------------------------------
