@@ -97,7 +97,7 @@ return {
 	# Postfix設定
 	# -----------
 	POSTFIX => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		FORCE_ENVELOPE => 'webmaster@kazaoki.jp',
 	},
 
@@ -113,7 +113,7 @@ return {
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => [
 			{
 				LABEL      => 'db1',

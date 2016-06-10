@@ -15,7 +15,7 @@ foreach(scandir($dir, SCANDIR_SORT_DESCENDING ) as $file){
 }
 
 # --  必要なメールデータのパース
-if($_GET['last']!='') {
+if(@$_GET['last']!='') {
 	# -- 詳細の場合
 	if(!$_GET['last']>0) $_GET['last'] = 1;
 	$detail = parseMail($files[$_GET['last']-1]);
@@ -30,6 +30,7 @@ if($_GET['last']!='') {
 // メールデータパース
 // -------------------------------------------------------------------
 function parseMail($file){
+
 	# -- パース
 	$mail = Mail_mimeDecode::decode(array(
 		'include_bodies' => true, // 返される構造体にbody(本文)を含めるどうか。
@@ -38,16 +39,63 @@ function parseMail($file){
 		'input'          => file_get_contents($file),
 		'crlf'           => "\r\n", // 行末を指定する。
 	));
-	# -- 調整
-	if(preg_match('/charset=(.+)$/', $mail->headers['content-type'], $mathes)){
-		$mail->charset = $mathes[1];
-		$mail->headers['subject'] = mb_convert_encoding($mail->headers['subject'], 'UTF-8', $mathes[1]);
-		$mail->headers['from']    = mb_convert_encoding($mail->headers['from'], 'UTF-8', $mathes[1]);
-		$mail->headers['to']      = mb_convert_encoding($mail->headers['to'], 'UTF-8', $mathes[1]);
-		$mail->body               = mb_convert_encoding($mail->body, 'UTF-8', $mathes[1]);
+
+	# -- 解析結果用の入れ物
+	$info = array();
+	$info['subject'] = $mail->headers['subject'];
+	$info['from']    = $mail->headers['from'];
+	$info['to']      = $mail->headers['to'];
+	$info['date']    = $mail->headers['date'];
+	$keys = array_keys($mail->headers);
+	foreach($keys as $key) {
+		@$info['headers'] .= sprintf("%s: %s\n", $key, $mail->headers[$key]);
 	}
-	# -- 返却
-	return $mail;
+
+	# -- 入れ子解析して返却
+	return analyzePart($mail, $info);
+}
+
+// -------------------------------------------------------------------
+// 入れ子パート解析用の再帰関数
+// -------------------------------------------------------------------
+function analyzePart($part, $info){
+	switch(strtolower($part->ctype_primary)){
+		case 'text':
+			if($part->ctype_secondary=='plain') {
+				$info['body'] = $part->body;
+				if($part->ctype_parameters['charset']){
+					$encode = $part->ctype_parameters['charset'];
+					$info['encode']  = $encode;
+					$info['subject'] = mb_convert_encoding($info['subject'], 'UTF-8', $encode);
+					$info['from']    = mb_convert_encoding($info['from'],    'UTF-8', $encode);
+					$info['to']      = mb_convert_encoding($info['to'],      'UTF-8', $encode);
+					$info['body']    = mb_convert_encoding($info['body'],    'UTF-8', $encode);
+					$info['headers'] = mb_convert_encoding($info['headers'], 'UTF-8', $encode);
+				}
+			} else if($part->ctype_secondary=='html') {
+				$info['html'] = $part->body;
+			}
+			break;
+		case 'multipart':
+			foreach($part->parts as $inpart){
+				$info = analyzePart($inpart, $info);
+			}
+			break;
+		case 'image':
+		case 'application':
+			$info['attach'][] = array(
+				'filename' =>
+					( $info['encode']
+						? mb_convert_encoding($part->ctype_parameters['name'], 'UTF-8', $info['encode'])
+						: $part->ctype_parameters['name']
+					),
+				'is_image' => ($part->ctype_primary=='image'),
+				'base64'   => sprintf('data:%s/%s;base64,%s', $part->ctype_primary, $part->ctype_secondary, base64_encode($part->body)),
+				'kb'       => number_format(floor(strlen($part->body)/1024)),
+			);
+			break;
+	}
+	return $info;
 }
 
 // -------------------------------------------------------------------
@@ -71,20 +119,55 @@ function h($str) {
 <body>
 
 <div class="container">
-	<h1><a href="/">Sendlog - sendmail sent logs</a></h1>
+	<h1><a href="/">Sendlog <small>sendmail sent logs</small></a></h1>
+
+<?php if(!@$_GET['last']) { ?>
+
 	<div class="panel panel-default">
-	  <div class="panel-body">
-	  （メッセージ調整中。。。）
-	  	<ul>
-			<li>
-				<code>sendmail</code> にて送信されたメールのログです。この画面は環境変数 <code>GENIE_GENERAL_RUNMODE</code> が <code>develop</code> の時のみに閲覧できます。
-			</li>
-			<li>GENIE_POSTFIX_ENABLED: <?php echo getenv('GENIE_POSTFIX_ENABLED') ?></li>
-			<li>GENIE_POSTFIX_ENABLED: <?php echo getenv('GENIE_POSTFIX_FORCE_ENVELOPE') ?></li>
-	  	</ul>
-	  </div>
+		<div class="panel-body">
+			<p>
+				<code>sendmail</code> コマンドにて送信されたメールのログです。spec等の送信メールの内容チェックにご利用いただけます。
+			</p>
+			<table class="table table-bordered table-striped table-condensed">
+				<thead>
+					<tr>
+						<th>関連する環境変数名</th>
+						<th>現在の値</th>
+						<th>説明</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>GENIE_GENERAL_RUNMODE</td>
+						<td><?php echo getenv('GENIE_GENERAL_RUNMODE') ?></td>
+						<td><code>develop</code> の場合にのみ、この画面が表示されます。</td>
+					</tr>
+					<tr>
+						<td>GENIE_POSTFIX_ENABLED</td>
+						<td><?php echo getenv('GENIE_POSTFIX_ENABLED') ?></td>
+						<td><code>1</code> の場合、sendmailを通したメール送信が実行されます。</td>
+					</tr>
+					<tr>
+						<td>GENIE_POSTFIX_FORCE_ENVELOPE</td>
+						<td><?php echo getenv('GENIE_POSTFIX_FORCE_ENVELOPE') ?></td>
+						<td>この設定したメールアドレスに強制的に配送されます。</td>
+					</tr>
+					<tr>
+						<td>GENIE_SENDLOG_ENABLED</td>
+						<td><?php echo getenv('GENIE_SENDLOG_ENABLED') ?></td>
+						<td><code>1</code> の場合、この画面が表示できます。</td>
+					</tr>
+					<tr>
+						<td>GENIE_SENDLOG_BIND_PORTS</td>
+						<td><?php echo getenv('GENIE_SENDLOG_BIND_PORTS') ?></td>
+						<td>この画面にアクセスするためのポート指定です。docker のポート指定にもそのまま使用されますので、 <code>AAAA:BBBB</code> のようなカンマ区切りの指定も可能です。</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</div>
-	<hr>
+<?php } ?>
+
 	<section>
 
 <?php if($list) { ?>
@@ -105,10 +188,10 @@ function h($str) {
 			<?php foreach($list as $mail) { ++$count ?>
 			<tr id="last-<?php echo $count ?>">
 				<td class="count"><?php echo $count ?></td>
-				<td class="subject"><a href="/?last=<?php echo $count ?>"><?php echo h($mail->headers['subject']) ?></a></td>
-				<td class="from"><small><?php echo h($mail->headers['from']) ?></small></td>
-				<td class="to"><small><?php echo h($mail->headers['to']) ?></small></td>
-				<td class="date"><small><?php echo h($mail->headers['date']) ?></small></td>
+				<td class="subject"><a href="/?last=<?php echo $count ?>"><?php echo h($mail['subject']) ?></a></td>
+				<td class="from"><small><?php echo h($mail['from']) ?></small></td>
+				<td class="to"><small><?php echo h($mail['to']) ?></small></td>
+				<td class="date"><small><?php echo h($mail['date']) ?></small></td>
 			</tr>
 			<?php } ?>
 		</tbody>
@@ -116,44 +199,74 @@ function h($str) {
 
 <?php } else if ($detail) { ?>
 
-<?php
-// var_dump($detail); exit;
-?>
-
-
 	<!-- 詳細 -->
 	<h2>詳細</h2>
 	<div class="panel panel-default">
 		<div class="panel-heading">
 			<p class="pull-right">
 				<span id="date" class="btn btn-default disabled" style="cursor:default">
-					<?php echo $detail->headers['date'] ?>
+					<?php echo $detail['date'] ?>
 				</span>
 			</p>
-			<h4 id="subject"><?php echo h($detail->headers['subject']) ?></h4>
+			<h4 id="subject"><?php echo h($detail['subject']) ?></h4>
 		</div>
 		<div class="panel-body">
 			<div class="text-center">
-				<span id="from"><?php echo h($detail->headers['from']) ?></span>
+				<span id="from"><?php echo h($detail['from']) ?></span>
 				&nbsp;
 				<i class="fa fa-arrow-right fa-2x text-info" aria-hidden="true" style="vertical-align:middle"></i>
 				&nbsp;
-				<span id="to"><?php echo h($detail->headers['to']) ?></span>
+				<span id="to"><?php echo h($detail['to']) ?></span>
 			</div>
-			<hr>
-			<pre class="col-md-8" id="body"><?php echo h($detail->body) ?></pre>
-			<pre class="col-md-4" id="headers">(headers)</pre>
 		</div>
 		<table class="table" id="attach">
 			<thead>
 				<tr>
 					<td>
-						添付ファイル
-						（実装未だ）
+						<dl class="dl-horizontal">
+							<dt>SUBJECT</dt>
+							<dd id="SUBJECT"><?php echo h($detail['subject']) ?></dd>
+							<dt>FROM</dt>
+							<dd id="FROM"><?php echo h($detail['from']) ?></dd>
+							<dt>TO</dt>
+							<dd id="TO"><?php echo h($detail['to']) ?></dd>
+							<dt>DATE</dt>
+							<dd id="DATE"><?php echo h($detail['date']) ?></dd>
+							<dt>BODY</dt>
+							<dd id="BODY"><pre style="white-space: pre-wrap;"><?php echo h($detail['body']) ?></pre></dd>
+							<?php if($detail['html']!='') { ?>
+							<dt>HTML</dt>
+							<dd id="HTML"><pre style="white-space: pre-wrap;"><?php echo h($detail['html']) ?></pre></dd>
+							<?php } ?>
+							<dt>HEADER</dt>
+							<dd id="HEADER"><pre style="white-space: pre-wrap;"><?php echo h($detail['headers']) ?></pre></dd>
+							<?php if($detail['attach']!='') { ?>
+							<dt>ATTACH</dt>
+							<dd id="ATTACH">
+								<ul>
+								<?php foreach($detail['attach'] as $attach) { ?>
+									<li>
+										<a href="<?php echo $attach['base64'] ?>">
+											<?php echo $attach['filename'] ?>
+											<small>(<?php echo $attach['kb'] ?>kb)</small>
+											<?php if($attach['is_image']) { ?><img src="<?php echo $attach['base64'] ?>" class="img-thumbnail" style="max-width:100px;max-height:100px;"><?php } ?>
+										</a>
+									</li>
+								<?php } ?>
+								</ul>
+							</dd>
+							<?php } ?>
+						</dl>
 					</td>
 				</tr>
 			</thead>
 		</table>
+	</div>
+
+<?php } else { ?>
+
+	<div class="well">
+		<code>sendmail</code> を通したメール送信ログはまだありません。
 	</div>
 
 <?php } ?>
