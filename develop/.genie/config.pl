@@ -58,7 +58,7 @@ return {
 	# PHP設定
 	# --------
 	PHP => {
-		VERSION => '5.3.2', # `genie php` でリストアップされるバージョン文字列を指定
+		# VERSION => '5.3.2', # `genie php` でリストアップされるバージョン文字列を指定
 	},
 
 	# Ruby設定

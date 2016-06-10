@@ -44,6 +44,7 @@
 			# '/var/log/nginx/access.log',
 			# '/var/log/nginx/error.log',
 		],
+		# SPLIT => 2,
 	},
 
 	# Perl設定
@@ -99,6 +100,15 @@
 	POSTFIX => {
 		ENABLED => 1,
 		FORCE_ENVELOPE => 'test@xx.xx',
+	},
+
+	# Sendlog設定
+	# -----------
+	SENDLOG => {
+		ENABLED => 1,
+		BIND_PORTS   => [
+			'9981:9981',
+		]
 	},
 
 	# MySQL設定
