@@ -18,9 +18,17 @@ if($ENV{GENIE_SENDLOG_ENABLED}){
 	close LOG;
 }
 
+# -- メール配送が無効ならここで終了
+if(
+	($ENV{GENIE_PROC} eq 'spec' && $ENV{GENIE_SPEC_NO_SENDMAIL}) ||
+	($ENV{GENIE_PROC} eq 'zap'  && $ENV{GENIE_ZAP_NO_SENDMAIL})
+){
+	exit 0;
+}
+
 # -- MTAにパスする
 open(MAIL, '| /etc/alternatives/mta '.join(' ', @ARGV));
 print MAIL $data;
 close MAIL;
 
-exit;
+exit 0;
