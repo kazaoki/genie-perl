@@ -35,20 +35,24 @@ function parseMail($file){
 	$mail = Mail_mimeDecode::decode(array(
 		'include_bodies' => true, // 返される構造体にbody(本文)を含めるどうか。
 		'decode_bodies'  => true, // 返されるbodyをデコードするかどうか。
-		'decode_headers' => true, // ヘッダをデコードするかどうか。
+		'decode_headers' => false, // ヘッダをデコードするかどうか。→自前でデコードします
 		'input'          => file_get_contents($file),
 		'crlf'           => "\r\n", // 行末を指定する。
 	));
 
+	// file_put_contents("$file.txt", print_r($mail, true));
+	// error_log(($mail->headers['subject'])."\n", 3, '/sendlog/log.log');
+
 	# -- 解析結果用の入れ物
 	$info = array();
-	$info['subject'] = $mail->headers['subject'];
-	$info['from']    = $mail->headers['from'];
-	$info['to']      = $mail->headers['to'];
+	$info['subject'] = mb_decode_mimeheader($mail->headers['subject']);
+	$info['from']    = mb_decode_mimeheader($mail->headers['from']);
+	$info['to']      = mb_decode_mimeheader($mail->headers['to']);
 	$info['date']    = $mail->headers['date'];
 	$keys = array_keys($mail->headers);
+	sort($keys);
 	foreach($keys as $key) {
-		@$info['headers'] .= sprintf("%s: %s\n", $key, $mail->headers[$key]);
+		@$info['headers'] .= sprintf("%s: %s\n", $key, mb_decode_mimeheader($mail->headers[$key]));
 	}
 
 	# -- 入れ子解析
@@ -75,11 +79,7 @@ function analyzePart($part, $info){
 				if($part->ctype_parameters['charset']){
 					$encode = $part->ctype_parameters['charset'];
 					$info['encode']  = $encode;
-					$info['subject'] = mb_convert_encoding($info['subject'], 'UTF-8', $encode);
-					$info['from']    = mb_convert_encoding($info['from'],    'UTF-8', $encode);
-					$info['to']      = mb_convert_encoding($info['to'],      'UTF-8', $encode);
 					$info['body']    = mb_convert_encoding($info['body'],    'UTF-8', $encode);
-					$info['headers'] = mb_convert_encoding($info['headers'], 'UTF-8', $encode);
 				}
 			} else if($part->ctype_secondary=='html') {
 				$info['html'] = $part->body;
@@ -93,11 +93,7 @@ function analyzePart($part, $info){
 		case 'image':
 		case 'application':
 			$info['attach'][] = array(
-				'filename' =>
-					( $info['encode']
-						? mb_convert_encoding($part->ctype_parameters['name'], 'UTF-8', $info['encode'])
-						: $part->ctype_parameters['name']
-					),
+				'filename' => mb_decode_mimeheader($part->ctype_parameters['name']),
 				'is_image' => ($part->ctype_primary=='image'),
 				'base64'   => sprintf('data:%s/%s;base64,%s', $part->ctype_primary, $part->ctype_secondary, base64_encode($part->body)),
 				'kb'       => number_format(floor(strlen($part->body)/1024)),
