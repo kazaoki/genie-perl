@@ -130,6 +130,11 @@ end
 step 'BASIC認証のユーザー名を:user、パスワードを:passにする' do |user, pass|
   page.driver.basic_authorize(user, pass)
 end
+step 'BASIC認証をクリアする' do
+  headers = page.driver.headers
+  headers.delete('Authorization')
+  page.driver.headers = headers
+end
 
 step 'UAを:uaにする' do |ua|
   if ua == 'default'
