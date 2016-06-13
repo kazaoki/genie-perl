@@ -6,12 +6,12 @@ my $data;
 if($ENV{GENIE_GENERAL_RUNMODE} eq 'develop') {
 	if($ENV{GENIE_SENDLOG_ENABLED}){
 
-		# -- 保存先の用意
-		my $dir = '/sendlog'; # -- 権限の問題で、ディレクトリ自体の作成はDockerfileの方で行う。
+		# -- prepared save path
+		my $dir = '/sendlog'; # -- mkdir in Dockerfile (a permission problem)
 		my @list = glob("$dir/*.eml");
 		my $logfile = sprintf("$dir/%06d.eml", scalar(@list)+1);
 
-		# -- 受信したデータをファイルに保存する
+		# -- arg data to file
 		$data = join('', <STDIN>);
 		open  LOG, ">$logfile";
 		print LOG 'X-Genie-Send-Command: sendmail ' . join(' ', @ARGV)."\n";
@@ -20,15 +20,10 @@ if($ENV{GENIE_GENERAL_RUNMODE} eq 'develop') {
 	}
 }
 
-# -- メール配送が無効ならここで終了
-if(
-	($ENV{GENIE_PROC} eq 'spec' && $ENV{GENIE_SPEC_NO_SENDMAIL}) ||
-	($ENV{GENIE_PROC} eq 'zap'  && $ENV{GENIE_ZAP_NO_SENDMAIL})
-){
-	exit 0;
-}
+# -- exit if nosend file
+exit 0 if -f '/tmp/nosend';
 
-# -- MTAにパスする
+# -- passthru to MTA
 open(MAIL, '| /etc/alternatives/mta '.join(' ', @ARGV));
 print MAIL $data;
 close MAIL;

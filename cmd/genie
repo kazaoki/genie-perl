@@ -2250,6 +2250,7 @@ sub spec {
 		my $container_name = ($options{fast} ? '' : 'SPEC-').$config{DOCKER}->{NAME};
 		my $cmd;
 		if($options{fast}){
+			`docker exec $container_name touch /tmp/nosend` if $config{SPEC}->{NO_SENDMAIL}; # -- SPEC中のメール送信禁止ファイル作成（環境変数だと情報をもっていけないのでtmpにファイルを作成）
 			my $env = 'export GENIE_PROC=spec &&';
 			$env .= $options{cap} ? ' export GENIE_SPEC_AUTOCAP=1 &&' : '';
 			$cmd = "docker exec -it $container_name sh -c \"$env . /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
@@ -2258,6 +2259,9 @@ sub spec {
 		}
 		my $res = system $cmd;
 		echo "\n";
+
+		# -- SPEC中のメール送信禁止ファイル削除
+		`docker exec $container_name rm -fr /tmp/nosend` if $config{SPEC}->{NO_SENDMAIL};
 
 		# -- アナウンス
 		say('レポートを開きます。' . ($res ? 'エラーがありますので確認してください。' : 'オッケーです。'));
@@ -2374,8 +2378,11 @@ sub zap {
 	# -- ZAP用コンテナを起動
 	&up('zap');
 
+	# -- ZAP中のメール送信禁止ファイル作成（環境変数だと情報をもっていけないのでtmpにファイルを作成）
+	my $nosend_cmd = 'touch /tmp/nosend &&' if $config{SPEC}->{NO_SENDMAIL};
+
 	# -- ZAP実行
-	my $cmd = qq|docker run -u zap | . join(' ', map{ "--add-host=$_" } @{$config{DOCKER}->{HOSTS}}) . qq| --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "/zap/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
+	my $cmd = qq|docker run -u zap | . join(' ', map{ "--add-host=$_" } @{$config{DOCKER}->{HOSTS}}) . qq| --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "$nosend_cmd /zap/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
 
 	# -- コンテナ実行
 	my $pid = fork;
