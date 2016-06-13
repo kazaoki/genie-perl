@@ -30,10 +30,12 @@ if(@$_GET['last']!='') {
 // 複数行MIMEヘッダのデコード
 // -------------------------------------------------------------------
 function mb_decode_mimeheader_multiline($string){
-	return (preg_match_all('/\=\?(.+?)\?(.+?)\?(.+?)\?\=/', $string, $matches))
-		? mb_decode_mimeheader(sprintf('=?%s?%s?%s?=', $matches[1][0], $matches[2][0], join('', $matches[3])))
-		: $string
-	;
+	$decode = '';
+	if(preg_match_all('/\=\?(.+?)\?(.+?)\?(.+?)\?\=/', $string, $matches)){
+		$decode = mb_decode_mimeheader(sprintf('=?%s?%s?%s?=', $matches[1][0], $matches[2][0], join('', $matches[3])));
+	}
+	$decode .= join('', preg_split('/\=\?(.+?)\?(.+?)\?(.+?)\?\=/', $string)); # MIME以外の部分を連結
+	return $decode;
 }
 // -------------------------------------------------------------------
 // メールデータパース
@@ -62,7 +64,12 @@ function parseMail($file){
 	$keys = array_keys($mail->headers);
 	sort($keys);
 	foreach($keys as $key) {
-		@$info['headers'] .= sprintf("%s: %s\n", $key, mb_decode_mimeheader_multiline($mail->headers[$key]));
+		$line = sprintf("%s: %s\n", $key, mb_decode_mimeheader_multiline($mail->headers[$key]));
+		if(in_array($key, array('to', 'from', 'subject'))){
+			$info[$key] = preg_replace('/(?<! )</', ' <', $info[$key]);
+			$line = preg_replace('/(?<! )</', ' <', $line);
+		}
+		@$info['headers'] .= $line;
 	}
 
 	# -- 入れ子解析
@@ -70,9 +77,6 @@ function parseMail($file){
 
 	# -- FromとToの<>ラベルの前に空白を入れる作業
 	mb_regex_encoding('UTF-8');
-	$info['from']    = preg_replace('/</', ' <', $info['from']);
-	$info['to']      = preg_replace('/</', ' <', $info['to']);
-	$info['headers'] = preg_replace('/^((?:from|to)\: )\<(.+)$/', '$1 <$2', $info['headers']);
 
 	# -- 返却
 	return $info;
