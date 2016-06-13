@@ -133,7 +133,7 @@ end
 
 step 'UAを:uaにする' do |ua|
   if ua == 'default'
-    ua = ENV['GENIE_DEFAULT_USER_AGENT']
+    ua = ENV['GENIE_SPEC_DEFAULT_USER_AGENT']
   end
 
   if ENV['GENIE_SPEC_BROWSER'] == "firefox" then
