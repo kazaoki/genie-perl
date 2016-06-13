@@ -770,3 +770,20 @@ end
 step '最後のメールを検証する' do |table|
   step '最後から"1"番目のメールを検証する', table
 end
+
+# --------------------------------------------------------------------
+# キーを押す
+# ex) * キー"1234-1234-1234-1234"を押す @"[name=account]"
+# --------------------------------------------------------------------
+step 'キー:keysを押す @:target' do |keys, target|
+  find(target).native.send_key(keys)
+end
+
+# --------------------------------------------------------------------
+# 特殊キーを押す
+# ex) * 特殊キー"Enter"を押す @"[name=account]"
+# キーマップ：https://github.com/ariya/phantomjs/commit/cab2635e66d74b7e665c44400b8b20a8f225153a
+# --------------------------------------------------------------------
+step '特殊キー:key_idを押す @:target' do |key_id, target|
+  find(target).native.send_key(eval(':'+key_id))
+end
