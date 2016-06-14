@@ -59,8 +59,14 @@ fi
 # spec|zap mode
 # --------------------------------------------------------------------
 if [[ $GENIE_PROC == 'spec' ]] || [[ $GENIE_PROC == 'zap' ]]; then
+
+  # -- make nosend file
+  [[ $GENIE_PROC == 'spec' && $GENIE_SPEC_NO_SENDMAIL ]] && touch /tmp/nosend
+  [[ $GENIE_PROC == 'zap'  && $GENIE_ZAP_NO_SENDMAIL  ]] && touch /tmp/nosend
+
   # -- dir copy
   \cp -rpdfL /_/* /
+
   # -- mount prefix
   prefix_mount=/_
 fi
