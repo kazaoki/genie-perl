@@ -27,17 +27,6 @@ if(@$_GET['last']!='') {
 }
 
 // -------------------------------------------------------------------
-// 複数行MIMEヘッダのデコード
-// -------------------------------------------------------------------
-function mb_decode_mimeheader_multiline($string){
-	$decode = '';
-	if(preg_match_all('/\=\?(.+?)\?(.+?)\?(.+?)\?\=/', $string, $matches)){
-		$decode = mb_decode_mimeheader(sprintf('=?%s?%s?%s?=', $matches[1][0], $matches[2][0], join('', $matches[3])));
-	}
-	$decode .= join('', preg_split('/\=\?(.+?)\?(.+?)\?(.+?)\?\=/', $string)); # MIME以外の部分を連結
-	return $decode;
-}
-// -------------------------------------------------------------------
 // メールデータパース
 // -------------------------------------------------------------------
 function parseMail($file){
@@ -57,14 +46,14 @@ function parseMail($file){
 	# -- 解析結果用の入れ物
 	$info = array();
 
-	$info['subject'] = mb_decode_mimeheader_multiline($mail->headers['subject']);
-	$info['from']    = mb_decode_mimeheader_multiline($mail->headers['from']);
-	$info['to']      = mb_decode_mimeheader_multiline($mail->headers['to']);
+	$info['subject'] = mb_decode_mimeheader($mail->headers['subject']);
+	$info['from']    = mb_decode_mimeheader($mail->headers['from']);
+	$info['to']      = mb_decode_mimeheader($mail->headers['to']);
 	$info['date']    = $mail->headers['date'];
 	$keys = array_keys($mail->headers);
 	sort($keys);
 	foreach($keys as $key) {
-		$line = sprintf("%s: %s\n", $key, mb_decode_mimeheader_multiline($mail->headers[$key]));
+		$line = sprintf("%s: %s\n", $key, mb_decode_mimeheader($mail->headers[$key]));
 		if(in_array($key, array('to', 'from', 'subject'))){
 			$info[$key] = preg_replace('/(?<! )</', ' <', $info[$key]);
 			$line = preg_replace('/(?<! )</', ' <', $line);
@@ -107,7 +96,7 @@ function analyzePart($part, $info){
 		case 'image':
 		case 'application':
 			$info['attach'][] = array(
-				'filename' => mb_decode_mimeheader_multiline($part->ctype_parameters['name']),
+				'filename' => mb_decode_mimeheader($part->ctype_parameters['name']),
 				'is_image' => ($part->ctype_primary=='image'),
 				'base64'   => sprintf('data:%s/%s;base64,%s', $part->ctype_primary, $part->ctype_secondary, base64_encode($part->body)),
 				'kb'       => number_format(floor(strlen($part->body)/1024)),
