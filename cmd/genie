@@ -789,14 +789,14 @@ sub update {
 		"・設定ファイルはGitHub上の初期ファイルに全て上書きされますので、既存の設定は消えます。\n".
 		"・設定ファイルはgitなどでバージョン管理をし、必要箇所を戻すなどしてご利用下さい。\n"
 	, 1);
-	my $input = input("実行してもよろしいでしょうか。またはgenie本体のみ更新=g [y/N/g]: ");
-	return if $input !~ /^(?:y|g)$/i;
+	my $input = input("c=設定ファイル群(.genie/)を更新 / g=本体（genie）を更新 / y=両方更新 [c/g/y/N]: ");
+	return if $input !~ /^(?:[cgy])$/i;
 
 	# -- ブランチ指定
 	my $branch = $ARGV[1] ne '' ? $ARGV[1] : 'master';
 
 	# -- 一時コンテナを起動してそっちで設定ファイルコピーしてくる
-	if($input =~ /^y$/i ) {
+	if($input =~ /^[cy]$/i ) {
 	
 		# -- 設定ディレクトリの存在確認
 		if(!-d $config{GENERAL}->{config_dir}) {
@@ -818,22 +818,24 @@ sub update {
 	}
 
 	# -- genie本体の更新
-	my $data = encode('UTF-8', get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie"));
-	if(!$data) { throw 'ダウンロードに失敗した可能性があります。'; }
-	open my $fh, '>', __FILE__ or die $!;
-	binmode $fh;
-	print $fh $data;
-	close $fh;
-	if($is_win){
-		my $data = encode('UTF-8', get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie.bat"));
-		if(!$data) { throw 'ダウンロードに失敗した可能性があります。'; }
-		open my $fh, '>', __FILE__.'.bat' or die $!;
+	if($input =~ /^[gy]$/i ) {
+		my $data = encode('UTF-8', get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie"));
+		if(!$data) { throw 'ダウンロードに失敗した可能性があります。(genie)'; }
+		open my $fh, '>', __FILE__ or die $!;
 		binmode $fh;
 		print $fh $data;
 		close $fh;
+		if($is_win){
+			my $data = encode('UTF-8', get("https://raw.githubusercontent.com/kazaoki/genie/$branch/cmd/genie.cmd"));
+			if(!$data) { throw 'ダウンロードに失敗した可能性があります。(genie.cmd)'; }
+			open my $fh, '>', __FILE__.'.cmd' or die $!;
+			binmode $fh;
+			print $fh $data;
+			close $fh;
+		}
+		print "\n";
+		message(success=>"genie本体を上書きしました。\n".__FILE__.($is_win ? "\n".__FILE__.'.cmd' : ''), 1);
 	}
-	print "\n";
-	message(success=>"genie本体を更新しました。\n".__FILE__.($is_win ? "\n".__FILE__.'.bat' : ''), 1);
 
 	return 1;
 
