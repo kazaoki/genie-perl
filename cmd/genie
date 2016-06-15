@@ -86,11 +86,13 @@ if($is_win) {
 
 # -- ブラウザ起動コマンド
 my $open_cmd;
+my $open_cmd_after;
    if($is_win  ) { $open_cmd = 'start'; }
 elsif($is_mac  ) { $open_cmd = 'open'; }
 elsif($is_linux) {
 	`xdpyinfo >/dev/null 2>&1`;
 	$open_cmd = 'xdg-open' if(!$?);
+	$open_cmd_after = '>/dev/null 2>&1';
 }
 
 # -- Windows向けにShift-JIS出力関数を通す関数を先に用意
@@ -1613,7 +1615,7 @@ sub config {
 		if($is_win) {
 			$conf = "$config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_file}";
 		}
-		return `$open_cmd $conf`;
+		return `$open_cmd $conf $open_cmd_after`;
 	}
 
 	message(info=>Dumper(\%config));
@@ -1640,7 +1642,7 @@ sub httpd {
 		my $url = "http://$config{GENERAL}->{host_ip}:$1/";
 		message(success=>$url);
 		if($open_cmd){
-			`$open_cmd $url`;
+			`$open_cmd $url $open_cmd_after`;
 		}
 
 		# -- ngrok起動
@@ -1752,7 +1754,7 @@ sub ruby {
 sub ngrok {
 	# -- QRcode show on browser (if subdomain specified.)
 	if($open_cmd && $config{NGROK}->{SUBDOMAIN}){
-		`$open_cmd https://chart.googleapis.com/chart?cht=qr"&"chs=150x150"&"chl=https://$config{NGROK}->{SUBDOMAIN}.ngrok.io`;
+		`$open_cmd https://chart.googleapis.com/chart?cht=qr"&"chs=150x150"&"chl=https://$config{NGROK}->{SUBDOMAIN}.ngrok.io $open_cmd_after`;
 	}
 	# -- start ngrok
 	my $token = $config{NGROK}->{AUTHTOKEN} ? "--authtoken=$config{NGROK}->{AUTHTOKEN}" : '';
@@ -2024,7 +2026,7 @@ sub open {
 		my $url = "$config{BROWSER}->{OPEN_SCHEMA}://$config{GENERAL}->{host_ip}$port_str/";
 		message(success=>$url);
 		if($open_cmd){
-			`$open_cmd $url`;
+			`$open_cmd $url $open_cmd_after`;
 		}
 	}
 }
@@ -2274,7 +2276,7 @@ sub spec {
 			if($is_win) {
 				$report = "$config{GENERAL}->{drive_letter}\:$report";
 			}
-			$cmd = "$open_cmd $report";
+			$cmd = "$open_cmd $report $open_cmd_after";
 			`$cmd`;
 		}
 
@@ -2346,7 +2348,7 @@ sub zap {
 		&_report_xml2html($report_xml, $report_html);
 		print "\n";
 		message(success=>"セキュリティレポートを書き出しました。\n$report_html", 1);
-		my $cmd = "$open_cmd $dl$report_html";
+		my $cmd = "$open_cmd $dl$report_html $open_cmd_after";
 		`$cmd`;
 		return 1;
 	}
@@ -2414,7 +2416,7 @@ sub zap {
 		message(success=>"セキュリティレポートを書き出しました。\n$report_html", 1);
 
 		# -- レポートを開く
-		my $cmd = "$open_cmd $dl$report_html";
+		my $cmd = "$open_cmd $dl$report_html $open_cmd_after";
 		`$cmd`;
 
 		# -- コンテナを削除
