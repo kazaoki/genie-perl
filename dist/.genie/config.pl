@@ -98,7 +98,7 @@
 	# Postfix設定
 	# -----------
 	POSTFIX => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		FORCE_ENVELOPE => 'test@xx.xx',
 	},
 
