@@ -3,6 +3,12 @@ require_once 'Mail/mimeDecode.php';
 
 $dir = '/sendlog';
 
+// -- クリアモード
+if($_GET['clear']){
+	array_map('unlink', glob('/sendlog/*.eml'));
+	header('Location: ' . $_SERVER['PHP_SELF']);
+}
+
 // -- developモードでしか機能しないよう
 if(getenv('GENIE_GENERAL_RUNMODE')!='develop') throw new Exception();
 
@@ -99,7 +105,7 @@ function analyzePart($part, $info){
 				'filename' => mb_decode_mimeheader($part->ctype_parameters['name']),
 				'is_image' => ($part->ctype_primary=='image'),
 				'base64'   => sprintf('data:%s/%s;base64,%s', $part->ctype_primary, $part->ctype_secondary, base64_encode($part->body)),
-				'kb'       => number_format(floor(strlen($part->body)/1024)),
+				'kb'       => number_format(ceil(strlen($part->body)/1024)),
 			);
 			break;
 	}
@@ -127,7 +133,7 @@ function h($str) {
 <body>
 
 <div class="container">
-	<h1><a href="/">Sendlog <small>sendmail sent logs</small></a></h1>
+	<h1><a href="/">Sendlog <small>sendmail sent logs <i>[<?php echo getenv('GENIE_DOCKER_NAME') ?>]</i></small></a></h1>
 
 <?php if(!@$_GET['last']) { ?>
 
@@ -180,8 +186,10 @@ function h($str) {
 
 <?php if($list) { ?>
 
-	<!-- 一覧 -->
-	<h2>一覧</h2>
+	<div class="text-right">
+		<a href="./?clear=1" onClick="if(confirm('本当に削除しますか？')){;}else{return false;}">送信ログを全て削除する</a>
+	</div>
+	<h2>list</h2>
 	<table class="table table-bordered">
 		<thead>
 			<tr>
@@ -207,8 +215,7 @@ function h($str) {
 
 <?php } else if ($detail) { ?>
 
-	<!-- 詳細 -->
-	<h2>詳細</h2>
+	<h2>detail</h2>
 	<div class="panel panel-default">
 		<div class="panel-heading">
 			<p class="pull-right">
@@ -254,7 +261,7 @@ function h($str) {
 								<ul>
 								<?php foreach($detail['attach'] as $attach) { ?>
 									<li>
-										<a href="<?php echo $attach['base64'] ?>">
+										<a href="<?php echo $attach['base64'] ?>" download="<?php echo $attach['filename'] ?>">
 											<?php echo $attach['filename'] ?>
 											<small>(<?php echo $attach['kb'] ?>kb)</small>
 											<?php if($attach['is_image']) { ?><img src="<?php echo $attach['base64'] ?>" class="img-thumbnail" style="max-width:100px;max-height:100px;"><?php } ?>
