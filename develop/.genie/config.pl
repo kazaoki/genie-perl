@@ -240,7 +240,7 @@ return {
 		DEFAULT_CAPTURE_WIDTH => 1280,
 		DEFAULT_USER_AGENT    => '',
 		JS_ERRORS             => 0,
-		SILENT_FAST           => 0,  # 1にするとfastモード時に実行するか否か聞いてこないように
+		SILENT_FAST           => 1,  # 1にするとfastモード時に実行するか否か聞いてこないように
 		NO_SENDMAIL           => 1,  # 1にするとSPEC中はメール送信を行いません。（但し、/sendlogには記録されます）
 	},
 
