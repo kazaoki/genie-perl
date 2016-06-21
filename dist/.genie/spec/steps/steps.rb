@@ -168,7 +168,7 @@ step ':labelをクリックする' do |label|
   step 'cap' if autocap
 end
 step ':labelをクリックする @:scope' do |label, scope|
-  within scope do
+  within scopeconv(scope) do
     step '"'+label+'"をクリックする'
   end
 end
@@ -179,7 +179,7 @@ step ':n番目の:labelをクリックする' do |n, label|
   step 'cap' if autocap
 end
 step ':n番目の:labelをクリックする @:scope' do |n, label, scope|
-  within scope do
+  within scopeconv(scope) do
     step '"'+n+'"番目の"'+label+'"をクリックする'
   end
 end
@@ -189,7 +189,7 @@ step 'セレクタ:selectorをクリックする' do |selector|
   step 'cap' if autocap
 end
 step 'セレクタ:selectorをクリックする @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"をクリックする'
   end
 end
@@ -204,7 +204,7 @@ step 'テキストボックス:nameを:valueにする' do |name, value|
   step 'cap' if autocap
 end
 step 'テキストボックス:nameを:valueにする @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'テキストボックス"'+name+'"を"'+value+'"にする'
   end
 end
@@ -214,7 +214,7 @@ step 'テキストエリア:nameを:valueにする' do |name, value|
   step 'テキストボックス"'+name+'"を"'+value+'"にする'
 end
 step 'テキストエリア:nameを:valueにする @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'テキストボックス"'+name+'"を"'+value+'"にする'
   end
 end
@@ -225,7 +225,7 @@ step 'ラジオボタン:valueを選択する' do |value|
   step 'cap' if autocap
 end
 step 'ラジオボタン:valueを選択する @:scope' do |value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'ラジオボタン"'+value+'"を選択する'
   end
 end
@@ -234,7 +234,7 @@ step 'ラジオボタン:nameの:valueを選択する' do |name, value|
   step 'cap' if autocap
 end
 step 'ラジオボタン:nameの:valueを選択する @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     find("input[name='"+name+"'][value='"+value+"']").set(true)
     step 'cap' if autocap
   end
@@ -246,7 +246,7 @@ step 'チェックボックス:valueを選択する' do |value|
   step 'cap' if autocap
 end
 step 'チェックボックス:valueを選択する @:scope' do |value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'チェックボックス"'+value+'"を選択する'
   end
 end
@@ -255,7 +255,7 @@ step 'チェックボックス:nameの:valueを選択する' do |name, value|
   step 'cap' if autocap
 end
 step 'チェックボックス:nameの:valueを選択する @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     find("input[name='"+name+"'][value='"+value+"']").set(true)
     step 'cap' if autocap
   end
@@ -266,7 +266,7 @@ step 'チェックボックス:valueを未選択にする' do |value|
   step 'cap' if autocap
 end
 step 'チェックボックス:valueを未選択にする @:scope' do |value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'チェックボックス"'+value+'"を未選択にする'
   end
 end
@@ -275,7 +275,7 @@ step 'チェックボックス:nameの:valueを未選択にする' do |name, val
   step 'cap' if autocap
 end
 step 'チェックボックス:nameの:valueを未選択にする @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     find("input[name='"+name+"'][value='"+value+"']").set(false)
     step 'cap' if autocap
   end
@@ -287,7 +287,7 @@ step 'セレクトボックス:nameの:valueを選択する' do |name, value|
   step 'cap' if autocap
 end
 step 'セレクトボックス:nameの:valueを選択する @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクトボックス"'+name+'"の"'+value+'"を選択する'
   end
 end
@@ -297,7 +297,7 @@ step 'ファイル選択:nameに:filenameを選択する' do |name, filename|
   step 'cap' if autocap
 end
 step 'ファイル選択:nameに:filenameを選択する @:scope' do |name, filename, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'ファイル選択"'+name+'"に"'+filename+'"を選択する'
   end
 end
@@ -308,7 +308,7 @@ step '隠し要素:nameを:valueにする' do |name, value|
   step 'cap' if autocap
 end
 step '隠し要素:nameを:valueにする @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step '隠し要素"'+name+'"を"'+value+'"にする'
   end
 end
@@ -322,7 +322,7 @@ step 'テキストボックス:nameが:valueである' do |name, value|
   expect(page).to have_field name, with: multi(value)
 end
 step 'テキストボックス:nameが:valueである @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'テキストボックス"'+name+'"が"'+value+'"である'
   end
 end
@@ -331,7 +331,7 @@ step 'テキストボックス:nameが:valueではない' do |name, value|
   expect(page).not_to have_field name, with: multi(value)
 end
 step 'テキストボックス:nameが:valueではない @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'テキストボックス"'+name+'"が"'+value+'"ではない'
   end
 end
@@ -342,7 +342,7 @@ step 'テキストエリア:nameが:valueである' do |name, value|
   expect(textarea.value).to match multi(value)
 end
 step 'テキストエリア:nameが:valueである @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'テキストエリア"'+name+'"が"'+value+'"ではない'
   end
 end
@@ -352,7 +352,7 @@ step 'テキストエリア:nameが:valueではない' do |name, value|
   expect(textarea.value).not_to match multi(value)
 end
 step 'テキストエリア:nameが:valueではない @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'テキストエリア"'+name+'"が"'+value+'"ではない'
   end
 end
@@ -362,7 +362,7 @@ step 'ラジオボタン:valueが選択されている' do |value|
   expect(page).to have_checked_field(value)
 end
 step 'ラジオボタン:valueが選択されている @:scope' do |value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'ラジオボタン"'+value+'"が選択されている'
   end
 end
@@ -370,7 +370,7 @@ step 'ラジオボタン:nameの:valueが選択されている' do |name, value|
   expect(page).to have_checked_field(name, with: value)
 end
 step 'ラジオボタン:nameの:valueが選択されている @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'ラジオボタン"'+name+'"の"'+value+'"が選択されている'
   end
 end
@@ -379,7 +379,7 @@ step 'ラジオボタン:valueが選択されていない' do |value|
   expect(page).not_to have_checked_field(value)
 end
 step 'ラジオボタン:valueが選択されていない @:scope' do |value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'ラジオボタン"'+value+'"が選択されていない'
   end
 end
@@ -388,7 +388,7 @@ step 'ラジオボタン:nameの:valueが選択されていない' do |name, val
   expect(page).not_to have_checked_field(name, with: value)
 end
 step 'ラジオボタン:nameの:valueが選択されていない @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'ラジオボタン"'+name+'"の"'+value+'"が選択されていない'
   end
 end
@@ -398,7 +398,7 @@ step 'チェックボックス:valueが選択されている' do |value|
   expect(page).to have_checked_field(value)
 end
 step 'チェックボックス:valueが選択されている @:scope' do |value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'チェックボックス"'+value+'"が選択されている'
   end
 end
@@ -406,7 +406,7 @@ step 'チェックボックス:nameの:valueが選択されている' do |name, 
   expect(page).to have_checked_field(name, with: value)
 end
 step 'チェックボックス:nameの:valueが選択されている @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'チェックボックス"'+name+'"の"'+value+'"が選択されている'
   end
 end
@@ -415,7 +415,7 @@ step 'チェックボックス:valueが選択されていない' do |value|
   expect(page).not_to have_checked_field(value)
 end
 step 'チェックボックス:valueが選択されていない @:scope' do |value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'チェックボックス"'+value+'"が選択されていない'
   end
 end
@@ -423,7 +423,7 @@ step 'チェックボックス:nameの:valueが選択されていない' do |nam
   expect(page).not_to have_checked_field(name, with: value)
 end
 step 'チェックボックス:nameの:valueが選択されていない @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'チェックボックス"'+name+'"の"'+value+'"が選択されていない'
   end
 end
@@ -433,7 +433,7 @@ step 'セレクトボックス:nameの:valueが選択されている' do |name, 
   expect(page).to have_select(name, selected: value)
 end
 step 'セレクトボックス:nameの:valueが選択されている @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクトボックス"'+name+'"の"'+value+'"が選択されている'
   end
 end
@@ -442,7 +442,7 @@ step 'セレクトボックス:nameの:valueが選択されていない' do |nam
   expect(page).not_to have_select(name, selected: value)
 end
 step 'セレクトボックス:nameの:valueが選択されていない @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクトボックス"'+name+'"の"'+value+'"が選択されていない'
   end
 end
@@ -452,7 +452,7 @@ step '隠し要素:nameが:valueである' do |name, value|
   expect(find('input[name='+name+']', visible: false).value).to eq value
 end
 step '隠し要素:nameが:valueである @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step '隠し要素"'+name+'"が"'+value+'"である'
   end
 end
@@ -461,7 +461,7 @@ step '隠し要素:nameが:valueではない' do |name, value|
   expect(find('input[name='+name+']', visible: false).value).not_to eq value
 end
 step '隠し要素:nameが:valueではない @:scope' do |name, value, scope|
-  within scope do
+  within scopeconv(scope) do
     step '隠し要素"'+name+'"が"'+value+'"ではない'
   end
 end
@@ -475,7 +475,7 @@ step 'セレクタ:selectorをクリックする' do |selector|
   step 'cap' if autocap
 end
 step 'セレクタ:selectorをクリックする @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"をクリックする'
   end
 end
@@ -485,7 +485,7 @@ step 'セレクタ:selectorを削除する' do |selector|
   step 'cap' if autocap
 end
 step 'セレクタ:selectorを削除する @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"を削除する'
   end
 end
@@ -503,7 +503,7 @@ step ':textと表示されている' do |text|
   expect(page).to have_content(multi(text))
 end
 step ':textと表示されている @:scope' do |text, scope|
-  within scope do
+  within scopeconv(scope) do
     step '"'+text+'"と表示されている'
   end
 end
@@ -512,7 +512,7 @@ step ':textと表示されていない' do |text|
   expect(page).not_to have_content(multi(text))
 end
 step ':textと表示されていない @:scope' do |text, scope|
-  within scope do
+  within scopeconv(scope) do
     step '"'+text+'"と表示されていない'
   end
 end
@@ -521,7 +521,7 @@ step ':textというリンクが表示されている' do |text|
   expect(page).to have_link(multi(text))
 end
 step ':textというリンクが表示されている @:scope' do |text, scope|
-  within scope do
+  within scopeconv(scope) do
     step '"'+text+'"というリンクが表示されている'
   end
 end
@@ -530,7 +530,7 @@ step ':textというリンクが表示されていない' do |text|
   expect(page).not_to have_link(multi(text))
 end
 step ':textというリンクが表示されていない @:scope' do |text, scope|
-  within scope do
+  within scopeconv(scope) do
     step '"'+text+'"というリンクが表示されていない'
   end
 end
@@ -539,7 +539,7 @@ step 'セレクタ:selectorが表示されている' do |selector|
   expect(page).to have_css(selector)
 end
 step 'セレクタ:selectorが表示されている @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"が表示されている'
   end
 end
@@ -548,7 +548,7 @@ step 'セレクタ:selectorが表示されていない' do |selector|
   expect(page).not_to have_css(selector)
 end
 step 'セレクタ:selectorが表示されていない @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"が表示されていない'
   end
 end
@@ -557,7 +557,7 @@ step 'セレクタ:selectorが存在している' do |selector|
   expect(page).to have_css(selector, visible: false)
 end
 step 'セレクタ:selectorが存在している @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"が存在している'
   end
 end
@@ -566,7 +566,7 @@ step 'セレクタ:selectorが存在していない' do |selector|
   expect(page).not_to have_css(selector, visible: false)
 end
 step 'セレクタ:selectorが存在していない @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"が存在していない'
   end
 end
@@ -575,7 +575,7 @@ step 'セレクタ:selectorに:textが表示されている' do |selector, text|
   expect(page).to have_selector(selector, text: text)
 end
 step 'セレクタ:selectorに:textが表示されている @:scope' do |selector, text, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"に"'+text+'"が表示されている'
   end
 end
@@ -584,7 +584,7 @@ step 'セレクタ:selectorに:textが表示されていない' do |selector, te
   expect(page).to have_selector(selector, text: text)
 end
 step 'セレクタ:selectorに:textが表示されていない @:scope' do |selector, text, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"に"'+text+'"が表示されていない'
   end
 end
@@ -593,7 +593,7 @@ step 'ボタン:textが表示されている' do |text|
   expect(page).to have_button(text)
 end
 step 'ボタン:textが表示されている @:scope' do |text, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'ボタン"'+text+'"が表示されている'
   end
 end
@@ -602,7 +602,7 @@ step 'ボタン:textが表示されていない' do |text|
   expect(page).not_to have_button(text)
 end
 step 'ボタン:textが表示されていない @:scope' do |text, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'ボタン"'+text+'"が表示されていない'
   end
 end
@@ -611,7 +611,7 @@ step 'セレクタ:selectorが無効である' do |selector|
   expect(find(selector)).to be_disabled
 end
 step 'セレクタ:selectorが無効である @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"が無効である'
   end
 end
@@ -620,7 +620,7 @@ step 'セレクタ:selectorが無効ではない' do |selector|
   expect(find(selector)).not_to be_disabled
 end
 step 'セレクタ:selectorが無効ではない @:scope' do |selector, scope|
-  within scope do
+  within scopeconv(scope) do
     step 'セレクタ"'+selector+'"が無効ではない'
   end
 end
@@ -747,7 +747,7 @@ step 'リンクを検証する' do |table|
   table.each do |item|
     (label, href, scope) = item
     if scope then
-      within scope do
+      within scopeconv(scope) do
         expect(page).to have_link multi(label), href: href
       end
     else

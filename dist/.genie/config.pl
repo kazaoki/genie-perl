@@ -14,7 +14,7 @@
 		NAME          => 'genie-xxx',
 		# OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
 		HOSTS         => [
-			# 'genie-xxx.com:127.0.0.1',
+			'genie-xxx.com:127.0.0.1',
 		],
 		# HOST_IP_FORCE => '192.168.99.100',
 		VOLUMES => [ # ホスト側(左側)を/以外で始めるとホームパスからの指定になります。
