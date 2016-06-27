@@ -695,14 +695,23 @@ step 'フォームを送信する' do |table|
         step 'ファイル選択"'+name+'"に"'+value+'"を選択する'+(scope ? ' @"'+scope+'"' : '')
       when 'HIDDEN'
         step '隠し要素"'+name+'"を"'+value+'"にする'+(scope ? ' @"'+scope+'"' : '')
+      when 'SLEEP'
+        step '"'+name+'"秒待つ'
       when 'SUBMIT'
-        autocap_addname = '-before-submit'
+        autocap_addname = ' before-submit'
         step 'cap' if autocap
         step '"'+value+'"をクリックする'+(scope ? ' @"'+scope+'"' : '')
         return
     end
   end
   step 'cap' if autocap
+end
+
+# --------------------------------------------------------------------
+# 一括フォーム入力
+# --------------------------------------------------------------------
+step 'フォームを入力する' do |table|
+  step 'フォームを送信する', table
 end
 
 # --------------------------------------------------------------------
