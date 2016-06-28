@@ -5,8 +5,18 @@
 
 // コンパイラ
 // https://closure-compiler.appspot.com/home
+// ↓
+// 「javascript:（コンパイルしたコード）」をブックマークしてください。
 
-// var charcount=function(str) {
+// 除外name
+var excludes = [
+	'csrf_token'
+];
+
+/**
+ * 全角を2、半角を1で計算した長さを返す関数
+ * ----------------------------------------
+ */
 var cc=function(str) {
 	len=0;
 	str=escape(str);
@@ -21,7 +31,11 @@ var cc=function(str) {
 	}
 	return len;
 }
-// var spaces=function(time){
+
+/**
+ * 指定数の長さの空白を返す関数
+ * ----------------------------
+ */
 var ss=function(time){
 	var ss='';
 	for(i=0; i<time; i++) {
@@ -29,43 +43,64 @@ var ss=function(time){
 	}
 	return ss;
 }
-var maxes=[];maxes['type']=maxes['name']=maxes['value']=0;
+
+var max=[];max.type=max.name=max.value=0;
 var line=[];
-$('input,textarea,select').each(function(){
-	var column=[];
-	var type='';
-	if($(this).get(0).tagName==='INPUT') {
-		if($(this).attr('type')==='radio') {
-			if($(this).prop('checked')) type='RADIO';
-		} else if($(this).attr('type')==='checkbox') {
-			if($(this).prop('checked')) type='CHECK';
-		} else {
-			if($(this).val().length) type='TEXTBOX';
-		}
-	} else {
-		if($(this).val().length) type=$(this).get(0).tagName;
-	}
-	if(type) {
+document.querySelectorAll('input,textarea,select').forEach(function(element){
+	var col=[];
+	if(element.name && excludes.some(function(str){return str!==element.name})){
 		// type
-		column['type']=type;
-		if(maxes['type']<type.length) maxes['type']=type.length;
+		if(element.tagName==='INPUT') {
+			if(element.type==='radio') {
+				col.type='RADIO';
+				if(!element.checked) col.dis=true;
+			} else if(element.type==='checkbox') {
+				col.type='CHECK';
+				if(!element.checked) col.dis=true;
+			} else {
+				col.type='TEXTBOX';
+				if(!element.value.length) col.dis=true;
+			}
+		} else {
+			col.type=element.tagName;
+			if(!element.value.length) col.dis=true;
+		}
+		if(max.type<cc(element.type)) max.type=cc(element.type);
 		// name
-		column['name']=$(this).attr('name');
-		if(maxes['name']<$(this).attr('name').length) maxes['name']=$(this).attr('name').length;
+		col.name=element.name;
+		if(max.name<cc(element.name)) max.name=cc(element.name);
 		// value
-		column['value']=$(this).val().replace(/\n/g, '\\n');
-		if(maxes['value']<$(this).val().length) maxes['value']=$(this).val().length;
-		line.push(column);
+		col.value=element.value.replace(/\n/g, '\\n');
+		if(max.value<cc(element.value)) max.value=cc(element.value);
+		line.push(col);
 	}
 });
 out='';
 for(i in line){
-	var column=line[i];
+	var col=line[i];
 	out +=
-		'| '+column['type']  + ss(maxes['type']  - cc(column['type']))  + ' ' +
-		'| '+column['name']  + ss(maxes['name']  - cc(column['name']))  + ' ' +
-		'| '+column['value'] + ss(maxes['value'] - cc(column['value'])) + ' |\n'
+		(col.dis?'#':'')+'\t\t'+
+		'| '+col.type  + ss(max.type  - cc(col.type))  + ' ' +
+		'| '+col.name  + ss(max.name  - cc(col.name))  + ' ' +
+		'| '+col.value + ss(max.value - cc(col.value)) + ' |\n'
 	;
 }
-console.log(out);
-// alert(out);
+
+var box = document.createElement('textarea');
+with(box) {
+	textContent      = out;
+	style.position   = 'absolute';
+	style.width      = '700px';
+	style.height     = '300px';
+	style.left       = '50%';
+	style.top        = '20px';
+	style.marginLeft = '-350px';
+	style.padding    = '10px';
+	style.zIndex     = 10;
+	style.fontFamily = 'monospace';
+	style.fontSize   = '10pt';
+	onblur           = function(){if(box)parentNode.removeChild(box)};
+	onkeydown        = function(e){if(e.keyCode==27){ onblur={}; parentNode.removeChild(box)}};
+}
+document.body.appendChild(box); 
+box.focus();
