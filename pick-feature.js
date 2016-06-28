@@ -79,7 +79,7 @@ out='';
 for(i in line){
 	var col=line[i];
 	out +=
-		(col.dis?'#':'')+'\t\t'+
+		(col.dis?'#':'')+'\t\t\t'+
 		'| '+col.type  + ss(max.type  - cc(col.type))  + ' ' +
 		'| '+col.name  + ss(max.name  - cc(col.name))  + ' ' +
 		'| '+col.value + ss(max.value - cc(col.value)) + ' |\n'
