@@ -1168,8 +1168,8 @@ sub up {
 			($config{PERL}->{CPANFILE_ENABLED} ? ' -e PERL5LIB=/perl/cpanfile-modules/lib/perl5' : '').
 			($options{cap} ? ' -e GENIE_SPEC_AUTOCAP=1' : '').
 			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
-			" -v $letter$config{GENERAL}->{config_dir}/spec:/spec".
-			" -v $letter$config{GENERAL}->{config_dir}/spec/confs:/turnip/spec".
+			(-d "$config{GENERAL}->{config_dir}/spec" ? " -v $letter$config{GENERAL}->{config_dir}/spec:/spec" : '').
+			(-d "$config{GENERAL}->{config_dir}/spec" ? " -v $letter$config{GENERAL}->{config_dir}/spec/confs:/turnip/spec" : '').
 			$mysql_option.
 			$postgresql_option.
 			$apache_option.
