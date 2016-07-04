@@ -1,6 +1,6 @@
 
 /**
- * 表示中のページから、feature用の「フォームを検証する」を生成するブックマークレット
+ * 表示中のページから、feature用の「ページを検証する」を生成するブックマークレット
  */
 
 // コンパイラ
@@ -44,48 +44,53 @@ var ss=function(time){
 	return ss;
 }
 
-var max=[];max.type=max.name=max.value=0;
+var max=[];max.type=max.value=max.option=0;
 var line=[];
-document.querySelectorAll('input,textarea,select').forEach(function(element){
-	var col=[];
-	if(element.name && excludes.some(function(str){return str!==element.name})){
-		// type
-		if(element.tagName==='INPUT') {
-			if(element.type==='radio') {
-				col.type='RADIO';
-				if(!element.checked) col.dis=true;
-			} else if(element.type==='checkbox') {
-				col.type='CHECK';
-				if(!element.checked) col.dis=true;
-			} else if(element.type==='hidden') {
-				col.type='HIDDEN';
-			} else {
-				col.type='TEXTBOX';
-				if(!element.value.length) col.dis=true;
-			}
-		} else {
-			col.type=element.tagName;
-			if(!element.value.length) col.dis=true;
-		}
-		if(max.type<cc(element.type)) max.type=cc(element.type);
-		// name
-		col.name=element.name;
-		if(max.name<cc(element.name)) max.name=cc(element.name);
-		// value
-		col.value=element.value.replace(/\n/g, '\\n');
-		if(max.value<cc(element.value)) max.value=cc(element.value);
-		line.push(col);
-	}
-});
+
+// PATH
+{
+	line.push({
+		type:   'PATH',
+		value:  window.location.pathname
+	});
+}
+
+// TITLE
+{
+	line.push({
+		type:  'TITLE',
+		value: document.title
+	});
+}
+
+// WORD: h1
+{
+	line.push({
+		type:   'WORD',
+		value:  document.querySelector('h1').innerText.replace(/\n/g, '\\n'),
+		option: 'h1'
+	});
+}
+
 // 整形と出力
-out='		* フォームを検証する\n';
+for(i in line){
+	var element = line[i];
+	// type
+	if(max.type<cc(element.type)) max.type=cc(element.type);
+	// value
+	if(max.value<cc(element.value)) max.value=cc(element.value);
+	// option
+	if(max.option<cc(element.option)) max.option=cc(element.option);
+}
+out='		* ページを検証する\n';
 for(i in line){
 	var col=line[i];
 	out +=
 		(col.dis?'#':'')+'\t\t\t'+
-		'| '+col.type  + ss(max.type  - cc(col.type))  + ' ' +
-		'| '+col.name  + ss(max.name  - cc(col.name))  + ' ' +
-		'| '+col.value + ss(max.value - cc(col.value)) + ' |\n'
+		'| '+col.type   + ss(max.type   - cc(col.type))   + ' ' +
+		'| '+col.value  + ss(max.value  - cc(col.value))  + ' ' +
+		(col.option ? '| '+col.option + ss(max.option - cc(col.option)) + ' ' : '') +
+		'|\n'
 	;
 }
 

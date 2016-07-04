@@ -4,6 +4,7 @@ include 'helper/core.php';
 <!DOCTYPE html>
 <html lang="ja" id="top" prefix="og: http://ogp.me/ns#">
 <head>
+<title>めーるてすと</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=2.0">
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
