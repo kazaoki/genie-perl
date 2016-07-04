@@ -2024,6 +2024,10 @@ sub open {
 		if($config{BROWSER}->{OPEN_SCHEMA} eq 'http' && $port_str eq ':80') { $port_str = ''; }
 		elsif($config{BROWSER}->{OPEN_SCHEMA} eq 'https' && $port_str eq ':443') { $port_str = ''; }
 		my $url = "$config{BROWSER}->{OPEN_SCHEMA}://$config{GENERAL}->{host_ip}$port_str/";
+		if($config{BROWSER}->{OPEN_PATH}){
+			$url =~ s/\/$//;
+			$url .= $config{BROWSER}->{OPEN_PATH};
+		}		
 		message(success=>$url);
 		if($open_cmd){
 			`$open_cmd $url $open_cmd_after`;

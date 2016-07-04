@@ -31,6 +31,7 @@ return {
 		OPEN_AT_UPPED => 1, # UP時にブラウザオープンするか
 		OPEN_IN_PORT  => 80, # ブラウザで開きたい内部ポートを指定（自動的に外部ポートに変換されます）
 		OPEN_SCHEMA   => 'http',
+		OPEN_PATH     => '',
 	},
 
 	# logs設定
