@@ -56,6 +56,12 @@ include 'helper/core.php';
 						<span data-error="comment"></span>
 					</td>
 				</tr>
+				<tr>
+					<th>同意チェック <span class="label label-danger">必須</span></th>
+					<td>
+						<div><label><input type="checkbox" id="agree" name="agree"> 同意する</label></div>
+					</td>
+				</tr>
 			</tbody>
 		</table>
 		<input type="submit" class="btn btn-primary" value="確認画面へ &raquo;">

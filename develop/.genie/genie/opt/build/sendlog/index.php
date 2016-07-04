@@ -88,7 +88,8 @@ function analyzePart($part, $info){
 				if($part->ctype_parameters['charset']){
 					$encode = $part->ctype_parameters['charset'];
 					$info['encode']  = $encode;
-					$info['body']    = mb_convert_encoding($info['body'],    'UTF-8', $encode);
+					$info['body']    = mb_convert_encoding($info['body'], 'UTF-8', $encode);
+					$info['body']    = preg_replace("~[[:alpha:]]+://[^<>[:space:]]+[[:alnum:]/]~", "<a href=\"\\0\" class=\"inmail-link\">\\0</a>", h($info['body'])); // auto link
 				}
 			} else if($part->ctype_secondary=='html') {
 				$info['html'] = $part->body;
@@ -248,7 +249,7 @@ function h($str) {
 							<dt>DATE</dt>
 							<dd id="DATE"><?php echo h($detail['date']) ?></dd>
 							<dt>BODY</dt>
-							<dd id="BODY"><pre style="white-space: pre-wrap;"><?php echo h($detail['body']) ?></pre></dd>
+							<dd id="BODY"><pre style="white-space: pre-wrap;"><?php echo $detail['body'] ?></pre></dd>
 							<?php if($detail['html']!='') { ?>
 							<dt>HTML</dt>
 							<dd id="HTML"><pre style="white-space: pre-wrap;"><?php echo h($detail['html']) ?></pre></dd>
