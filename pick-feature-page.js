@@ -8,10 +8,11 @@
 // ↓
 // 「javascript:（コンパイルしたコード）」をブックマークしてください。
 
-// 除外name
-var excludes = [
-	'csrf_token'
-];
+// 既存の入力欄を消す
+box_id = 'genie-pick-features-box';
+if(document.getElementById(box_id)){
+	document.getElementById(box_id).blur();
+}
 
 /**
  * 全角を2、半角を1で計算した長さを返す関数
@@ -96,6 +97,7 @@ for(i in line){
 
 var box = document.createElement('textarea');
 with(box) {
+	id               = box_id;
 	textContent      = out;
 	style.position   = 'absolute';
 	style.width      = '700px';
