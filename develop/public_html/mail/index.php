@@ -19,6 +19,7 @@ include 'helper/core.php';
 	<h1>testメール：入力画面</h1>
 	<hr>
 	<form action="check.php" method="post">
+		<input type="hidden" name="no" value="123">
 		<table class="table table-bordered table-condensed">
 			<caption><span class="label label-danger">必須</span>は必ず入力してください。</caption>
 			<tbody>

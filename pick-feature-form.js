@@ -1,6 +1,6 @@
 
 /**
- * 表示中のフォームから、feature用のテーブルを生成するブックマークレット。
+ * 表示中のページから、feature用の「フォームを検証する」を生成するブックマークレット
  */
 
 // コンパイラ
@@ -57,6 +57,8 @@ document.querySelectorAll('input,textarea,select').forEach(function(element){
 			} else if(element.type==='checkbox') {
 				col.type='CHECK';
 				if(!element.checked) col.dis=true;
+			} else if(element.type==='hidden') {
+				col.type='HIDDEN';
 			} else {
 				col.type='TEXTBOX';
 				if(!element.value.length) col.dis=true;
