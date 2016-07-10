@@ -4,7 +4,8 @@ MAINTAINER kazaoki lab.
 # Set timezone
 # ------------
 RUN cp /etc/localtime /etc/localtime.org \
-    && ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+    && ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime \
+    && localedef -f UTF-8 -i ja_JP ja_JP.UTF-8
 
 # Add packages
 # ------------
