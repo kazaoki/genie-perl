@@ -101,9 +101,22 @@ sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 # -- 生のsjis文字列をフラグ付きutf8にする
 sub sjis2utf8 {
 	my $str = shift;
-	Encode::from_to($str, 'sjis', 'utf8');
+	Encode::from_to($str, 'cp932', 'utf8');
 	return Encode::decode('utf8', $str);
 }
+# -- フラグ付きutf8を生のsjis文字にする
+sub utf82sjis {
+	return Encode::encode('cp932', shift);
+}
+# # -- Windowsホストから実行時のみ、'/c/'形式のレターで始まるutf8フラグ付きなパスをWindowsホストでもチェックできる文字列に直す。（基本的に'-v'指定用です）
+# sub raw_path {
+# 	my $str = shift;
+# 	if($is_win){
+# 		$str =~ s/^\/(\w)\//$1\:\//g;
+# 		$str = utf82sjis($str);
+# 	}
+# 	return $str;
+# }
 
 # -- 設定値変数
 my %config;
@@ -130,10 +143,11 @@ if($ARGV[0] ne 'cli') {
 	);
 }
 
-# -- .genieディレクトリがあるパスを探して移動する
+# -- .genieディレクトリがあるパスまで登って移動する
 my $now_path = Cwd::getcwd();
-$now_path =~ s/^([A-Za-z])\:\//\//; # ドライブレター削除（for Windows）
-$config{GENERAL}->{drive_letter} = lc $1;
+# if($now_path =~ s/^([A-Za-z])\:\//\//) { # ドライブレター取得（for Windows）
+# 	$config{GENERAL}->{drive_letter} = lc $1;
+# }
 my @dirs = split('/', $now_path);
 while(@dirs){
 	my $genie_path = join('/', @dirs);
@@ -145,6 +159,47 @@ while(@dirs){
 	}
 	pop @dirs;
 }
+
+# -- 見つからなければカレントを設定
+$config{GENERAL}->{home_dir}   ||= $now_path;
+$config{GENERAL}->{config_dir} ||= "$now_path/$config_dir_name";
+
+# -- 設定ディレクトリが存在しているかここで変数に入れておく
+# my $is_exist_config_dir = -d $config{GENERAL}->{config_dir};
+
+# -- Windowsホストの場合、パスがSJISなのでUTF-8に統一しておく＋ドライブレターくっつける
+# if($is_win){
+# 	$config{GENERAL}->{home_dir} = sjis2utf8("/$config{GENERAL}->{drive_letter}".$config{GENERAL}->{home_dir});
+# 	$config{GENERAL}->{config_dir} = sjis2utf8("/$config{GENERAL}->{drive_letter}".$config{GENERAL}->{config_dir});
+# }
+# if($is_win){
+# 	$config{GENERAL}->{home_dir} = ("$config{GENERAL}->{drive_letter}\:".$config{GENERAL}->{home_dir});
+# 	$config{GENERAL}->{config_dir} = ("$config{GENERAL}->{drive_letter}\:".$config{GENERAL}->{config_dir});
+# }
+
+# print $config{GENERAL}->{home_dir};
+# print "\n";
+# exit;
+
+# sub raw_path {
+# 	my $str = shift;
+# 	if($is_win){
+# 		$str =~ s/^\/(\w)\//$1\:\//g;
+# 		$str = utf82sjis($str);
+# 	}
+# 	return $str;
+# }
+
+
+
+
+
+
+
+
+
+
+
 
 # -- ランモード、設定ファイルの決定
 $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。または、compose実行の場合はproductになります。
@@ -186,7 +241,7 @@ my $is_docker_machine = !$?;
 if($config{DOCKER}->{HOST_IP_FORCE}){
 	$config{GENERAL}->{host_ip} = $config{DOCKER}->{HOST_IP_FORCE};
 } else {
-	if($is_docker_machine) {
+	if($is_docker_machine && $config{DOCKER}->{MACHINE}) {
 		my $ip = `docker-machine ip $config{DOCKER}->{MACHINE}`;
 		chomp $ip;
 		$config{GENERAL}->{host_ip} = $ip;
@@ -745,22 +800,17 @@ sub args_to_list($$) {
 # genie init develop でdevelopブランチの.genieを持ってきます。
 sub init {
 
-	# -- 必要情報の用意
-	$config{GENERAL}->{home_dir}    = $now_path;
-	$config{GENERAL}->{config_dir}  = "$now_path/$config_dir_name";
-	my $config_dir_show = $is_win ? sjis2utf8($config{GENERAL}->{config_dir}) : $config{GENERAL}->{config_dir};
-
 	# -- 設定ディレクトリの存在確認
 	if(-d $config{GENERAL}->{config_dir}) {
-		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", $config_dir_show);
+		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", sjis2utf8($config{GENERAL}->{config_dir}));
 	}
 
 	# -- ブランチ指定
 	my $branch = $ARGV[1] ne '' ? $ARGV[1] : 'master';
 
-	# -- 一時コンテナを起動してそっちで初期化
-	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-	my $cmd = "docker run --rm -v $current:/work -e GENIE_PROC=init -e GENIE_INIT_BRANCH=$branch kazaoki/genie";
+	# -- コマンド実行
+	my $cmd = "docker run --rm -v $config{GENERAL}->{home_dir}:/work -e GENIE_PROC=init -e GENIE_INIT_BRANCH=$branch kazaoki/genie";
+
 	system $cmd;
 	if($?){
 		rmdir $config_dir_name;
@@ -773,7 +823,7 @@ sub init {
 	}
 
 	print "\n";
-	message(success=>"設定ファイルを作成しました。\n$config_dir_show", 1);
+	message(success=>"設定ファイルを作成しました。\n".sjis2utf8($config{GENERAL}->{config_dir}), 1);
 	return 1;
 
 }
