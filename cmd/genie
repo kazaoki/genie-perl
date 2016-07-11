@@ -104,9 +104,10 @@ sub sjis2utf8 {
 	Encode::from_to($str, 'cp932', 'utf8');
 	return Encode::decode('utf8', $str);
 }
-# -- フラグ付きutf8を生のsjis文字にする
-sub utf82sjis {
-	return Encode::encode('cp932', shift);
+# -- 生のsjis文字列をフラグ付きutf8にする（Windowsホストの時のみ）
+sub sjis2utf8_ifwin {
+	my $str = shift;
+	return $is_win ? sjis2utf8($str) : $str;
 }
 
 # -- 設定値変数
@@ -190,6 +191,9 @@ foreach my $db_type (qw|MYSQL POSTGRESQL|) {
 # -- docker-machineコマンドが存在してるかどうか
 `docker-machine`;
 my $is_docker_machine = !$?;
+
+# -- MACHINE名が未指定でも環境変数に入っていればセット
+$config{DOCKER}->{MACHINE} ||= $ENV{DOCKER_MACHINE_NAME};
 
 # -- ホストIPを設定
 if($config{DOCKER}->{HOST_IP_FORCE}){
@@ -756,7 +760,7 @@ sub init {
 
 	# -- 設定ディレクトリの存在確認
 	if(-d $config{GENERAL}->{config_dir}) {
-		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", sjis2utf8($config{GENERAL}->{config_dir}));
+		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", sjis2utf8_ifwin($config{GENERAL}->{config_dir}));
 	}
 
 	# -- ブランチ指定
@@ -777,7 +781,7 @@ sub init {
 	}
 
 	print "\n";
-	message(success=>"設定ファイルを作成しました。\n".sjis2utf8($config{GENERAL}->{config_dir}), 1);
+	message(success=>"設定ファイルを作成しました。\n".sjis2utf8_ifwin($config{GENERAL}->{config_dir}), 1);
 	return 1;
 
 }
@@ -818,8 +822,7 @@ sub update {
 			return;
 		}
 		print "\n";
-		my $config_dir_show = $is_win ? sjis2utf8($config{GENERAL}->{config_dir}) : $config{GENERAL}->{config_dir};
-		message(success=>"設定ファイルを上書きしました。\n$config_dir_show", 1);
+		message(success=>"設定ファイルを上書きしました。\n".sjis2utf8_ifwin($config{GENERAL}->{config_dir}), 1);
 	}
 
 	# -- genie本体の更新
