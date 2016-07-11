@@ -104,11 +104,6 @@ sub sjis2utf8 {
 	Encode::from_to($str, 'cp932', 'utf8');
 	return Encode::decode('utf8', $str);
 }
-# -- 生のsjis文字列をフラグ付きutf8にする（Windowsホストの時のみ）
-sub sjis2utf8_ifwin {
-	my $str = shift;
-	return $is_win ? sjis2utf8($str) : $str;
-}
 
 # -- 設定値変数
 my %config;
@@ -155,6 +150,10 @@ while(@dirs){
 # -- 見つからなければカレントを設定
 $config{GENERAL}->{home_dir}   ||= $now_path;
 $config{GENERAL}->{config_dir} ||= "$now_path/$config_dir_name";
+
+# -- 表示用にUTF8フラグ付きも用意しておく
+$config{GENERAL}->{home_dir_u}   = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{home_dir});
+$config{GENERAL}->{config_dir_u} = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{config_dir});
 
 # -- ランモード、設定ファイルの決定
 $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。または、compose実行の場合はproductになります。
@@ -760,7 +759,7 @@ sub init {
 
 	# -- 設定ディレクトリの存在確認
 	if(-d $config{GENERAL}->{config_dir}) {
-		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", sjis2utf8_ifwin($config{GENERAL}->{config_dir}));
+		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", $config{GENERAL}->{config_dir_u});
 	}
 
 	# -- ブランチ指定
@@ -781,7 +780,7 @@ sub init {
 	}
 
 	print "\n";
-	message(success=>"設定ファイルを作成しました。\n".sjis2utf8_ifwin($config{GENERAL}->{config_dir}), 1);
+	message(success=>"設定ファイルを作成しました。\n".$config{GENERAL}->{config_dir_u}, 1);
 	return 1;
 
 }
@@ -822,7 +821,7 @@ sub update {
 			return;
 		}
 		print "\n";
-		message(success=>"設定ファイルを上書きしました。\n".sjis2utf8_ifwin($config{GENERAL}->{config_dir}), 1);
+		message(success=>"設定ファイルを上書きしました。\n".$config{GENERAL}->{config_dir_u}, 1);
 	}
 
 	# -- genie本体の更新
