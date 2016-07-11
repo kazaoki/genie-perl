@@ -108,15 +108,6 @@ sub sjis2utf8 {
 sub utf82sjis {
 	return Encode::encode('cp932', shift);
 }
-# # -- Windowsホストから実行時のみ、'/c/'形式のレターで始まるutf8フラグ付きなパスをWindowsホストでもチェックできる文字列に直す。（基本的に'-v'指定用です）
-# sub raw_path {
-# 	my $str = shift;
-# 	if($is_win){
-# 		$str =~ s/^\/(\w)\//$1\:\//g;
-# 		$str = utf82sjis($str);
-# 	}
-# 	return $str;
-# }
 
 # -- 設定値変数
 my %config;
@@ -163,43 +154,6 @@ while(@dirs){
 # -- 見つからなければカレントを設定
 $config{GENERAL}->{home_dir}   ||= $now_path;
 $config{GENERAL}->{config_dir} ||= "$now_path/$config_dir_name";
-
-# -- 設定ディレクトリが存在しているかここで変数に入れておく
-# my $is_exist_config_dir = -d $config{GENERAL}->{config_dir};
-
-# -- Windowsホストの場合、パスがSJISなのでUTF-8に統一しておく＋ドライブレターくっつける
-# if($is_win){
-# 	$config{GENERAL}->{home_dir} = sjis2utf8("/$config{GENERAL}->{drive_letter}".$config{GENERAL}->{home_dir});
-# 	$config{GENERAL}->{config_dir} = sjis2utf8("/$config{GENERAL}->{drive_letter}".$config{GENERAL}->{config_dir});
-# }
-# if($is_win){
-# 	$config{GENERAL}->{home_dir} = ("$config{GENERAL}->{drive_letter}\:".$config{GENERAL}->{home_dir});
-# 	$config{GENERAL}->{config_dir} = ("$config{GENERAL}->{drive_letter}\:".$config{GENERAL}->{config_dir});
-# }
-
-# print $config{GENERAL}->{home_dir};
-# print "\n";
-# exit;
-
-# sub raw_path {
-# 	my $str = shift;
-# 	if($is_win){
-# 		$str =~ s/^\/(\w)\//$1\:\//g;
-# 		$str = utf82sjis($str);
-# 	}
-# 	return $str;
-# }
-
-
-
-
-
-
-
-
-
-
-
 
 # -- ランモード、設定ファイルの決定
 $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。または、compose実行の場合はproductになります。
@@ -857,8 +811,7 @@ sub update {
 		}
 
 		# -- コンテナ起動
-		my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-		my $cmd = "docker run --rm -v $current:/work -e GENIE_PROC=update -e GENIE_UPDATE_BRANCH=$branch $config{DOCKER}->{IMAGE}";
+		my $cmd = "docker run --rm -v $config{GENERAL}->{home_dir}:/work -e GENIE_PROC=update -e GENIE_UPDATE_BRANCH=$branch $config{DOCKER}->{IMAGE}";
 		system $cmd;
 		if($?){
 			message(danger=>'update に失敗しました。');
