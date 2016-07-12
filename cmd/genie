@@ -2076,7 +2076,8 @@ sub dlsync {
 		my $oldest_branch;
 		my $now_branch;
 		foreach(`git branch -v $hide_err`){
-			my @column = split(/\s+/, $_);
+			my $line = Encode::decode('utf8', $_); # 実行結果はフラグ無しutf8なのでフラグ付けておく
+			my @column = split(/\s+/, $line);
 			if($column[0] =~ /\*/) { $now_branch = $column[1] }
 			my $date;
 			if(`git show $column[1] -q --date=short $hide_err` =~ /Date: *(\d{4}\-\d{2}\-\d{2})/){ $date = $1; }
@@ -2084,7 +2085,6 @@ sub dlsync {
 			$date =~ s/\D//g;
 			$oldest_date ||= $date; $oldest_branch ||= $column[1];
 			if($oldest_date>$date) { $oldest_date = $date; $oldest_branch = $column[1]; }
-
 		}
 
 		# -- all：全てダウンロード
@@ -2119,9 +2119,13 @@ sub dlsync {
 			if(scalar(keys %branch2date)){
 				echo "  [hint by branch]\n";
 				my $branch_length = 0;
-				map{$branch_length = ($branch_length<length($_)?length($_):$branch_length)}keys %branch2date;
+				foreach(keys %branch2date){
+					my $len = length( Encode::encode('sjis', $_)); # マルチバイトは2として計算
+					if($branch_length<$len) { $branch_length = $len; }
+				}
 				foreach my $branch (sort keys %branch2date){
-					echo sprintf('  $ genie dlsync %-'.($branch_length).'s | %10s | %s',
+					my $len = length( Encode::encode('sjis', $branch)); # マルチバイトは2として計算
+					echo sprintf('  $ genie dlsync %s'.(' 'x($branch_length-$len)).' | %10s | %s',
 						$branch,
 						$branch2date{$branch},
 						join(' ', grep{$_}($branch eq $oldest_branch ? '--oldest-branch':''),($branch eq $now_branch ? '--now-branch':''))
