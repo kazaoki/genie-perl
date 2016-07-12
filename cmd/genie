@@ -2267,9 +2267,15 @@ sub spec {
 			$env .= $options{cap} ? ' export GENIE_SPEC_AUTOCAP=1 &&' : '';
 			$cmd = "docker exec -it $container_name sh -c \"$env . /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
 		} else {
-			$cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args ; \\cp -f /spec/report.html /_/spec/report.html\"";
+			$cmd = "docker exec -it $container_name sh -c \". /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
 		}
 		my $res = system $cmd;
+
+		# -- fastモードじゃない場合はレポートをコピーしてくる
+		if(!$options{fast}){
+			`docker exec -it $container_name sh -c \"\\cp -f /spec/report.html /_/spec/report.html\"`;
+		}
+
 		echo "\n";
 
 		# -- SPEC中のメール送信禁止ファイル削除
