@@ -101,7 +101,7 @@ sub echo { print encode($is_win ? 'Shift_JIS' : 'UTF-8', shift) }
 # -- 生のsjis文字列をフラグ付きutf8にする
 sub sjis2utf8 {
 	my $str = shift;
-	Encode::from_to($str, 'sjis', 'utf8');
+	Encode::from_to($str, 'cp932', 'utf8');
 	return Encode::decode('utf8', $str);
 }
 
@@ -130,10 +130,8 @@ if($ARGV[0] ne 'cli') {
 	);
 }
 
-# -- .genieディレクトリがあるパスを探して移動する
+# -- .genieディレクトリがあるパスまで登って移動する
 my $now_path = Cwd::getcwd();
-$now_path =~ s/^([A-Za-z])\:\//\//; # ドライブレター削除（for Windows）
-$config{GENERAL}->{drive_letter} = lc $1;
 my @dirs = split('/', $now_path);
 while(@dirs){
 	my $genie_path = join('/', @dirs);
@@ -146,10 +144,19 @@ while(@dirs){
 	pop @dirs;
 }
 
+# -- 見つからなければカレントを設定
+$config{GENERAL}->{home_dir}   ||= $now_path;
+$config{GENERAL}->{config_dir} ||= "$now_path/$config_dir_name";
+
 # -- ランモード、設定ファイルの決定
 $config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。または、compose実行の場合はproductになります。
 $config{GENERAL}->{config_file} ||= "$config{GENERAL}->{config_dir}/config.pl"; # 未指定の場合 `.genie/config.pl` を読み込みます。
 # echo "  Run `$config{GENERAL}->{runmode}` mode by `$config{GENERAL}->{config_file}`\n\n";
+
+# -- 表示用にUTF8フラグ付きも用意しておく
+$config{GENERAL_U}->{home_dir}    = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{home_dir});
+$config{GENERAL_U}->{config_dir}  = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{config_dir});
+$config{GENERAL_U}->{config_file} = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{config_file});
 
 # -- 設定ファイルをロード
 if( -d $config{GENERAL}->{config_dir} ){
@@ -157,7 +164,7 @@ if( -d $config{GENERAL}->{config_dir} ){
 		my $r = require $config{GENERAL}->{config_file};
 		%config = (%config, %$r);
 	} else {
-		throw("設定ディレクトリ（$config{GENERAL}->{config_dir}）はあるのに設定ファイル（$config{GENERAL}->{config_file}）が見つかりません。");
+		throw("設定ディレクトリ（$config{GENERAL_U}->{config_dir}）はあるのに設定ファイル（$config{GENERAL_U}->{config_file}）が見つかりません。");
 	}
 } else {
 	unless($ARGV[0] eq '' || $ARGV[0] =~ /^(?:$noconf_args)$/){
@@ -182,11 +189,14 @@ foreach my $db_type (qw|MYSQL POSTGRESQL|) {
 `docker-machine`;
 my $is_docker_machine = !$?;
 
+# -- MACHINE名が未指定でも環境変数に入っていればセット
+$config{DOCKER}->{MACHINE} ||= $ENV{DOCKER_MACHINE_NAME};
+
 # -- ホストIPを設定
 if($config{DOCKER}->{HOST_IP_FORCE}){
 	$config{GENERAL}->{host_ip} = $config{DOCKER}->{HOST_IP_FORCE};
 } else {
-	if($is_docker_machine) {
+	if($is_docker_machine && $config{DOCKER}->{MACHINE}) {
 		my $ip = `docker-machine ip $config{DOCKER}->{MACHINE}`;
 		chomp $ip;
 		$config{GENERAL}->{host_ip} = $ip;
@@ -745,22 +755,17 @@ sub args_to_list($$) {
 # genie init develop でdevelopブランチの.genieを持ってきます。
 sub init {
 
-	# -- 必要情報の用意
-	$config{GENERAL}->{home_dir}    = $now_path;
-	$config{GENERAL}->{config_dir}  = "$now_path/$config_dir_name";
-	my $config_dir_show = $is_win ? sjis2utf8($config{GENERAL}->{config_dir}) : $config{GENERAL}->{config_dir};
-
 	# -- 設定ディレクトリの存在確認
 	if(-d $config{GENERAL}->{config_dir}) {
-		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", $config_dir_show);
+		throw("設定ディレクトリが既にあるので処理を中止します。\n既存の設定を更新したい場合は `genie update <branch>` を使用して下さい。", $config{GENERAL_U}->{config_dir});
 	}
 
 	# -- ブランチ指定
 	my $branch = $ARGV[1] ne '' ? $ARGV[1] : 'master';
 
-	# -- 一時コンテナを起動してそっちで初期化
-	my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-	my $cmd = "docker run --rm -v $current:/work -e GENIE_PROC=init -e GENIE_INIT_BRANCH=$branch kazaoki/genie";
+	# -- コマンド実行
+	my $cmd = "docker run --rm -v $config{GENERAL}->{home_dir}:/work -e GENIE_PROC=init -e GENIE_INIT_BRANCH=$branch kazaoki/genie";
+
 	system $cmd;
 	if($?){
 		rmdir $config_dir_name;
@@ -773,7 +778,13 @@ sub init {
 	}
 
 	print "\n";
-	message(success=>"設定ファイルを作成しました。\n$config_dir_show", 1);
+	message(success=>"設定ファイルを作成しました。\n".$config{GENERAL_U}->{config_dir}, 1);
+
+	# -- configをエディタで開く
+	if($open_cmd){
+		`$open_cmd $config{GENERAL}->{config_file} $open_cmd_after`;
+	}
+
 	return 1;
 
 }
@@ -802,21 +813,19 @@ sub update {
 	
 		# -- 設定ディレクトリの存在確認
 		if(!-d $config{GENERAL}->{config_dir}) {
-			message(danger=>"$config{GENERAL}->{config_dir} ディレクトリがありません。先に init を実行してください。");
+			message(danger=>"$config{GENERAL_U}->{config_dir} ディレクトリがありません。先に init を実行してください。");
 			return;
 		}
 
 		# -- コンテナ起動
-		my $current = ($is_win ? '/'.$config{GENERAL}->{drive_letter} : '') . $config{GENERAL}->{home_dir};
-		my $cmd = "docker run --rm -v $current:/work -e GENIE_PROC=update -e GENIE_UPDATE_BRANCH=$branch $config{DOCKER}->{IMAGE}";
+		my $cmd = "docker run --rm -v $config{GENERAL}->{home_dir}:/work -e GENIE_PROC=update -e GENIE_UPDATE_BRANCH=$branch $config{DOCKER}->{IMAGE}";
 		system $cmd;
 		if($?){
 			message(danger=>'update に失敗しました。');
 			return;
 		}
 		print "\n";
-		my $config_dir_show = $is_win ? sjis2utf8($config{GENERAL}->{config_dir}) : $config{GENERAL}->{config_dir};
-		message(success=>"設定ファイルを上書きしました。\n$config_dir_show", 1);
+		message(success=>"設定ファイルを上書きしました。\n".$config{GENERAL_U}->{config_dir}, 1);
 	}
 
 	# -- genie本体の更新
@@ -892,9 +901,6 @@ sub up {
 	# -- 起動
 	echo "  Starting ".($up_type ? uc($up_type).' ' : '')."containers\n" if $up_type ne 'compose';
 
-	# -- -v 用にホームパスをいじる（Windowsのみドライブレターが必要なので）
-	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
-
 	# -- MySQL起動
 	my $mysql_option;
 	my $mysql_last_label; # 最後に起動したコンテナを起動プログレス表示に使用
@@ -907,7 +913,7 @@ sub up {
 			$mysql_last_label = $label;
 			my $cmd =
 				"docker run -d -it --name $label".
-				" -v $letter$config{GENERAL}->{config_dir}/mysql:/mysql".
+				" -v $config{GENERAL}->{config_dir}/mysql:/mysql".
 				($up_type =~ /^(?:spec|zap)$/ ? '' : " -v ".(($up_type ne 'compose' && $db->{DATA_VOLUME_LOCK}) ? 'locked_' : '')."$label:/var/lib/mysql").
 				" -e MYSQL_LABEL=$db->{LABEL}".
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
@@ -957,7 +963,7 @@ sub up {
 					stop_word      => 'Process start',
 					label          => "MySQL container start ($label)",
 				});
-				
+
 				# -- コンテナ直下に起動用コマンドを記録する（restore用）
 				`docker exec $label sh -c "echo '$cmd' > /docker-run.cmd"`;
 			}
@@ -992,7 +998,7 @@ sub up {
 			$postgresql_last_label = $label;
 			my $cmd =
 				"docker run -d -it --name $label".
-				" -v $letter$config{GENERAL}->{config_dir}/postgresql:/postgresql".
+				" -v $config{GENERAL}->{config_dir}/postgresql:/postgresql".
 				($up_type =~ /^(?:spec|zap)$/ ? '' : " -v ".(($up_type ne 'compose' && $db->{DATA_VOLUME_LOCK}) ? 'locked_' : '')."$label:/var/lib/postgresql/data").
 				" -e MYSQL_ROOT_PASSWORD=$db->{PASS}".
 				" -e POSTGRES_LABEL=$db->{LABEL}".
@@ -1103,7 +1109,7 @@ sub up {
 		# -- dockerコンテナに送る環境変数引数を構築
 		my $envs;
 		foreach my $key (sort(keys %envs)){
-			if($key =~ /^GENIE_UPMEMO/) { next ;} # 除外する環境変数名
+			if($key =~ /^(?:GENIE_UPMEMO|GENIE_GENERAL_U_)/) { next ;} # 除外する環境変数名
 			$envs .= ' ' if $envs ne '';
 			$envs .= sprintf('-e %s="%s"', $key, $envs{$key});
 		}
@@ -1111,7 +1117,7 @@ sub up {
 		# -- Apache
 		my $apache_option;
 		if($config{APACHE}->{ENABLED}) {
-			$apache_option .= " -v $letter$config{GENERAL}->{home_dir}/$config{APACHE}->{PUBLIC_PATH}:/var/www/html";
+			$apache_option .= " -v $config{GENERAL}->{home_dir}/$config{APACHE}->{PUBLIC_PATH}:/var/www/html";
 			if(ref $config{APACHE}->{BIND_PORTS}){
 				foreach(@{$config{APACHE}->{BIND_PORTS}}){
 					$apache_option .= " -p $_";
@@ -1122,7 +1128,7 @@ sub up {
 		# -- Nginx
 		my $nginx_option;
 		if($config{NGINX}->{ENABLED}) {
-			$nginx_option .= " -v $letter$config{GENERAL}->{home_dir}/$config{NGINX}->{PUBLIC_PATH}:/usr/share/nginx/html";
+			$nginx_option .= " -v $config{GENERAL}->{home_dir}/$config{NGINX}->{PUBLIC_PATH}:/usr/share/nginx/html";
 			if(ref $config{NGINX}->{BIND_PORTS}){
 				foreach(@{$config{NGINX}->{BIND_PORTS}}){
 					$nginx_option .= " -p $_";
@@ -1153,7 +1159,7 @@ sub up {
 		if(ref $config{DOCKER}->{VOLUMES} && @{$config{DOCKER}->{VOLUMES}}){
 			foreach my $volume (@{$config{DOCKER}->{VOLUMES}}) {
 				if($volume !~ /^\//){
-					$volume = $letter . $config{GENERAL}->{home_dir} . '/' . $volume;
+					$volume = $config{GENERAL}->{home_dir} . '/' . $volume;
 					$volumes .= " -v $volume";
 				}
 			}
@@ -1167,9 +1173,9 @@ sub up {
 			' -e LC_ALL=ja_JP.UTF-8'.
 			($config{PERL}->{CPANFILE_ENABLED} ? ' -e PERL5LIB=/perl/cpanfile-modules/lib/perl5' : '').
 			($options{cap} ? ' -e GENIE_SPEC_AUTOCAP=1' : '').
-			" -v $letter$config{GENERAL}->{config_dir}/genie:/genie".
-			(-d "$config{GENERAL}->{config_dir}/spec" ? " -v $letter$config{GENERAL}->{config_dir}/spec:/spec" : '').
-			(-d "$config{GENERAL}->{config_dir}/spec" ? " -v $letter$config{GENERAL}->{config_dir}/spec/confs:/turnip/spec" : '').
+			" -v $config{GENERAL}->{config_dir}/genie:/genie".
+			(-d "$config{GENERAL}->{config_dir}/spec" ? " -v $config{GENERAL}->{config_dir}/spec:/spec" : '').
+			(-d "$config{GENERAL}->{config_dir}/spec" ? " -v $config{GENERAL}->{config_dir}/spec/confs:/turnip/spec" : '').
 			$mysql_option.
 			$postgresql_option.
 			$apache_option.
@@ -1209,7 +1215,7 @@ sub up {
 			$cmd =~ s/( \-v [^ ]+\:)([^ ]+)/$1\/_$2/g;
 			# -- /spec/captures/をマウントする
 			if($up_type eq 'spec'){
-				$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $letter$config{GENERAL}->{config_dir}\/spec\/captures:\/spec\/captures $config{DOCKER}->{IMAGE}/;
+				$cmd =~ s/ $config{DOCKER}->{IMAGE}$/ -v $config{GENERAL}->{config_dir}\/spec\/captures:\/spec\/captures $config{DOCKER}->{IMAGE}/;
 			}
 		}
 
@@ -1611,11 +1617,7 @@ sub config {
 	# -- エディタオープン
 	if ($ARGV[1] eq 'open') {
 		return if !$open_cmd;
-		my $conf = $config{GENERAL}->{config_file};
-		if($is_win) {
-			$conf = "$config{GENERAL}->{drive_letter}\:$config{GENERAL}->{config_file}";
-		}
-		return `$open_cmd $conf $open_cmd_after`;
+		return `$open_cmd $config{GENERAL}->{config_file} $open_cmd_after`;
 	}
 
 	message(info=>Dumper(\%config));
@@ -1627,8 +1629,7 @@ sub config {
 sub httpd {
 
 	# -- コンテナ起動
-	my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
-	my $cmd = "docker run -d -t -p 80 -e TERM=xterm -v $letter$now_path:/var/www/html/ -e GENIE_PROC=httpd $config{DOCKER}->{IMAGE}";
+	my $cmd = "docker run -d -t -p 80 -e TERM=xterm -v $now_path:/var/www/html/ -e GENIE_PROC=httpd $config{DOCKER}->{IMAGE}";
 	my $cid = `$cmd`;
 	if($?) {
 		throw('Webサーバが起動しませんでした。', $cmd);
@@ -1816,9 +1817,7 @@ sub mysql {
 			my $cmd = qq|docker exec $label sh -c "mysqldump --single-transaction -u $db->{USER} -p$db->{PASS} $db->{NAME} > /mysql/opt/dumps/$db->{LABEL}.sql"|;
 			`$cmd $hide_all`;
 			if(!$?) {
-				my $dumpfile = "$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql";
-				if($is_win){ $dumpfile = &sjis2utf8($dumpfile) } # Windowsの場合、パスに日本語が入っている可能性があるので、SJISにする必要がある。
-				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$dumpfile", 1);
+				message(success=>"MySQLのデータベース $db->{LABEL} をダンプしました。\n$config{GENERAL_U}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql", 1);
 			} else {
 				throw('データベースのダンプに失敗しました。', $!);
 			}
@@ -1962,6 +1961,7 @@ sub psql {
 
 			# -- コンテナ起動用コマンドを取得
 			my $cmd = `docker exec $label sh -c "cat /docker-run.cmd"`;
+			if($is_win){ Encode::from_to($cmd, 'utf8', 'sjis') } # パスに日本語が入っている場合、Windowsの場合はSJISにする必要がある。
 
 			# -- 参照ボリューム名取得
 			my @volumes = &get_data_volume_name($label);
@@ -2076,7 +2076,8 @@ sub dlsync {
 		my $oldest_branch;
 		my $now_branch;
 		foreach(`git branch -v $hide_err`){
-			my @column = split(/\s+/, $_);
+			my $line = Encode::decode('utf8', $_); # 実行結果はフラグ無しutf8なのでフラグ付けておく
+			my @column = split(/\s+/, $line);
 			if($column[0] =~ /\*/) { $now_branch = $column[1] }
 			my $date;
 			if(`git show $column[1] -q --date=short $hide_err` =~ /Date: *(\d{4}\-\d{2}\-\d{2})/){ $date = $1; }
@@ -2084,7 +2085,6 @@ sub dlsync {
 			$date =~ s/\D//g;
 			$oldest_date ||= $date; $oldest_branch ||= $column[1];
 			if($oldest_date>$date) { $oldest_date = $date; $oldest_branch = $column[1]; }
-
 		}
 
 		# -- all：全てダウンロード
@@ -2119,9 +2119,13 @@ sub dlsync {
 			if(scalar(keys %branch2date)){
 				echo "  [hint by branch]\n";
 				my $branch_length = 0;
-				map{$branch_length = ($branch_length<length($_)?length($_):$branch_length)}keys %branch2date;
+				foreach(keys %branch2date){
+					my $len = length( Encode::encode('sjis', $_)); # マルチバイトは2として計算
+					if($branch_length<$len) { $branch_length = $len; }
+				}
 				foreach my $branch (sort keys %branch2date){
-					echo sprintf('  $ genie dlsync %-'.($branch_length).'s | %10s | %s',
+					my $len = length( Encode::encode('sjis', $branch)); # マルチバイトは2として計算
+					echo sprintf('  $ genie dlsync %s'.(' 'x($branch_length-$len)).' | %10s | %s',
 						$branch,
 						$branch2date{$branch},
 						join(' ', grep{$_}($branch eq $oldest_branch ? '--oldest-branch':''),($branch eq $now_branch ? '--now-branch':''))
@@ -2172,13 +2176,12 @@ sub dlsync {
 			: $config{GENERAL}->{home_dir} .'/'. $config{DLSYNC}->{LOCAL_DIR}
 		;
 		my $envs = join(' ', map { "-e GENIE_DLSYNC_$_=\"" . $config{DLSYNC}->{$_} . '"' } keys %{$config{DLSYNC}} );
-		my $letter = $is_win ? '/'.$config{GENERAL}->{drive_letter} : '';
 		my $cmd =
 			"docker run --rm -it".
 			" -e GENIE_PROC=dlsync".
 			" $envs".
-			" -v $letter$local_dir_path:/sync".
-			" -v $letter$config{GENERAL}->{config_dir}/genie/opt:/opt".
+			" -v $local_dir_path:/sync".
+			" -v $config{GENERAL}->{config_dir}/genie/opt:/opt".
 			" $config{DOCKER}->{IMAGE}"
 		;
 		system $cmd;
@@ -2213,7 +2216,7 @@ sub spec {
 			}
 			message(info=>$list, 1);
 		} else {
-			message(warning=>"featureファイルがありません。以下のディレクトリを確認してください。\n$config{GENERAL}->{config_dir}/spec/features/", 1);
+			message(warning=>"featureファイルがありません。以下のディレクトリを確認してください。\n$config{GENERAL_U}->{config_dir}/spec/features/", 1);
 		}
 	}
 
@@ -2277,9 +2280,6 @@ sub spec {
 		# -- ブラウザでレポートを開く
 		if($open_cmd){
 			my $report = "$config{GENERAL}->{config_dir}/spec/report.html";
-			if($is_win) {
-				$report = "$config{GENERAL}->{drive_letter}\:$report";
-			}
 			$cmd = "$open_cmd $report $open_cmd_after";
 			`$cmd`;
 		}
@@ -2345,14 +2345,13 @@ sub zap {
 	# -- レポートファイルパス設定
 	my $report_xml  = "$config{GENERAL}->{config_dir}/zap/report.xml";
 	my $report_html = "$config{GENERAL}->{config_dir}/zap/report.html";
-	my $dl = $is_win ? "$config{GENERAL}->{drive_letter}\:" : '';
 
 	# -- xmlからhtmlへのコンバートのみ
 	if($target eq 'xml2html'){
 		&_report_xml2html($report_xml, $report_html);
 		print "\n";
 		message(success=>"セキュリティレポートを書き出しました。\n$report_html", 1);
-		my $cmd = "$open_cmd $dl$report_html $open_cmd_after";
+		my $cmd = "$open_cmd $report_html $open_cmd_after";
 		`$cmd`;
 		return 1;
 	}
@@ -2406,7 +2405,7 @@ sub zap {
 		}
 
 		# -- レポートファイルをコピーしてくる
-		$cmd = qq|docker cp $zap_container_name:/tmp/report.xml $dl$report_xml|;
+		$cmd = qq|docker cp $zap_container_name:/tmp/report.xml $report_xml|;
 		`$cmd`;
 		if($?){
 			message(danger=>'レポートの取得に失敗しました。');
@@ -2420,7 +2419,7 @@ sub zap {
 		message(success=>"セキュリティレポートを書き出しました。\n$report_html", 1);
 
 		# -- レポートを開く
-		my $cmd = "$open_cmd $dl$report_html $open_cmd_after";
+		my $cmd = "$open_cmd $report_html $open_cmd_after";
 		`$cmd`;
 
 		# -- コンテナを削除
@@ -2613,7 +2612,6 @@ sub compose {
 	my $cut = $now_path;
 	$cut =~ s/$config{GENERAL}->{home_dir}//;
 	$config{GENERAL}->{home_rel} = join('/', map{ '..' } 1..($cut =~ tr/\///));
-	my $drive_letter = $config{GENERAL}->{drive_letter} ? '/'.$config{GENERAL}->{drive_letter} : '';
 
 	# -- 起動に必用な情報を収集してくる
 	&up('compose');
@@ -2624,7 +2622,7 @@ sub compose {
 		# 「$」→「$$」
 		$$value_ref =~ s/\$/\$\$/g;
 		# ローカルパスを相対パスに変更
-		$$value_ref =~ s/(?:$drive_letter)?$config{GENERAL}->{home_dir}/$config{GENERAL}->{home_rel}/g;
+		$$value_ref =~ s/$config{GENERAL}->{home_dir}/$config{GENERAL}->{home_rel}/g;
 	}
 	# -- 再帰して値調整を実行
 	sub _subconv{
