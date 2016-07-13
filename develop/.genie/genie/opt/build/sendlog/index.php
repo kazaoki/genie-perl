@@ -87,9 +87,16 @@ function analyzePart($part, $info){
 				$info['body'] = $part->body;
 				if($part->ctype_parameters['charset']){
 					$encode = $part->ctype_parameters['charset'];
-					$info['encode']  = $encode;
-					$info['body']    = mb_convert_encoding($info['body'], 'UTF-8', $encode);
-					$info['body']    = preg_replace("~[[:alpha:]]+://[^<>[:space:]]+[[:alnum:]/]~", "<a href=\"\\0\" class=\"inmail-link\">\\0</a>", h($info['body'])); // auto link
+					$info['encode'] = $encode;
+					// auto link
+					$info['body'] = preg_replace_callback(
+						"~[[:alpha:]]+://[^<>[:space:]]+[[:alnum:]/]~",
+						function($matches){
+							static $count = 0;
+							return "<a href=\"$matches[0]\" class=\"link-url-".(++$count)."\">$matches[0]</a>";
+						},
+						h(mb_convert_encoding($info['body'], 'UTF-8', $encode))
+					);
 				}
 			} else if($part->ctype_secondary=='html') {
 				$info['html'] = $part->body;
