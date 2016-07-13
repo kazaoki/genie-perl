@@ -150,7 +150,8 @@ if [[ $GENIE_PERL_CPANFILE_ENABLED && -e /genie/opt/perl/cpanfile ]]; then
     tar xf $tarfile -C /perl/cpanfile-modules
   fi
   # -- install
-  cpanm -nq --installdeps -L /perl/cpanfile-modules/ /genie/opt/perl/
+  cd /genie/opt/perl/
+  carton install --path=/perl/cpanfile-modules/
   cd /perl/cpanfile-modules
   tar cf $prefix_mount$tarfile ./
   echo 'cpanfile setup done.' >> /var/log/entrypoint.log

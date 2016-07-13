@@ -92,9 +92,10 @@ RUN sed -i 's/\;date\.timezone\ \=/date\.timezone\ \=\ Asia\/Tokyo/g' /etc/php.i
     && sed -i 's/\;mbstring\.detect_order\ \=\ auto/mbstring\.detect_order\ \=\ UTF-8\,SJIS\,EUC-JP\,JIS\,ASCII/g' /etc/php.ini \
     && sed -i 's/\;mbstring\.func_overload\ \=\ 0/mbstring\.func_overload\ \=\ 0/g' /etc/php.ini
 
-# Setup cpanm
-# -----------
-RUN curl -L http://cpanmin.us | perl - App::cpanminus
+# Setup cpanm+Carton
+# ------------------
+RUN curl -L http://cpanmin.us | perl - App::cpanminus \
+    && cpanm Carton
 
 # Install mod_bw
 # --------------
