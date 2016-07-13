@@ -15,7 +15,11 @@ use LWP::Simple;
 use XML::Simple; # cpan install XML::Simple
 use Tie::IxHash; # cpan install Tie::IxHash
 use YAML::Tiny; # cpan install YAML::Tiny
+use Time::HiRes qw( gettimeofday );
 $| = 1;
+
+# -- 処理開始時間
+my $start_time = gettimeofday;
 
 # -- 許可する第一引数の正規表現
 my $ok_args = join('|', qw/
@@ -257,9 +261,15 @@ if( $ARGV[0] =~ /^(?:$ok_args)$/ ){
 	no strict;
 	$ARGV[0]->();
 
+	# -- 経過時間
+	my $elapsed_time = '';
+	if($start_time) {
+		$elapsed_time = sprintf(' (%0.2f sec)', gettimeofday-$start_time);
+	}
+
 	# -- 終了処理
 	style(color=>'black', bgcolor=>'dark_black');
-	echo "  EOL\n\n";
+	echo "  EOL$elapsed_time\n\n";
 	style(color=>'clear', bgcolor=>'clear');
 
 	# -- genie正常完了
@@ -531,6 +541,9 @@ sub input {
 
 	# -- 入力
 	my $input = <STDIN>;
+
+	# -- 開始時間リセット
+	$start_time = gettimeofday;
 
 	# -- クリアして終わり
 	echo "\e[2B";
