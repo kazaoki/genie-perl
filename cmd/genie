@@ -2275,7 +2275,9 @@ sub spec {
 		my $container_name = ($options{fast} ? '' : 'SPEC-').$config{DOCKER}->{NAME};
 		my $cmd;
 		if($options{fast}){
-			`docker exec $container_name touch /tmp/nosend` if $config{SPEC}->{NO_SENDMAIL}; # -- SPEC中のメール送信禁止ファイル作成（環境変数だと情報をもっていけないのでtmpにファイルを作成）
+			# -- 判別ファイル作成
+			`docker exec $container_name touch /tmp/spec`; # -- fastモードでもspec実行中だと分かるように/tmp/に判別ファイル作成
+			`docker exec $container_name touch /tmp/nosend` if $config{SPEC}->{NO_SENDMAIL}; # -- SPEC中のメール送信禁止判別ファイル作成（環境変数だと情報をもっていけないのでtmpにファイルを作成）
 			my $env = 'export GENIE_PROC=spec &&';
 			$env .= $options{cap} ? ' export GENIE_SPEC_AUTOCAP=1 &&' : '';
 			$cmd = "docker exec -it $container_name sh -c \"$env . /root/.bashrc && cd /turnip/ && bundle exec rspec --color $files_args\"";
@@ -2291,7 +2293,8 @@ sub spec {
 
 		echo "\n";
 
-		# -- SPEC中のメール送信禁止ファイル削除
+		# -- 判別ファイル削除
+		`docker exec $container_name rm -fr /tmp/spec`;
 		`docker exec $container_name rm -fr /tmp/nosend` if $config{SPEC}->{NO_SENDMAIL};
 
 		# -- アナウンス
