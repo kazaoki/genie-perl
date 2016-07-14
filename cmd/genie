@@ -1688,8 +1688,11 @@ sub build {
 
 	# -- 確認
 	my $input;
+	my $machine_name;
 	if($is_docker_machine) {
-		my $machine_name = $config{DOCKER}->{MACHINE} || `docker-machine active`;
+		$machine_name = $config{DOCKER}->{MACHINE} || `docker-machine active`;
+	}
+	if($is_docker_machine && $machine_name) {
 		chomp $machine_name;
 		$input = input(
 			sprintf(
