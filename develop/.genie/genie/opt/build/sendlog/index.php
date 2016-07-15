@@ -28,7 +28,8 @@ if(@$_GET['last']!='') {
 } else {
 	# -- 一覧の場合
 	foreach($files as $file){
-		$list[] = parseMail($file);
+		$mail = parseMail($file);
+		if(mb_strpos($mail[to], '@')!==false) $list[] = $mail; # ちゃんと「@」入ってる宛先なら表示対象にする（cronの結果メールとかは`root`だけだったりするので無視）
 	}
 }
 
