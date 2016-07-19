@@ -53,7 +53,7 @@ var line=[];
 {
 	line.push({
 		type:   'PATH',
-		value:  window.location.pathname
+		value:  window.location.pathname+window.location.search
 	});
 }
 
