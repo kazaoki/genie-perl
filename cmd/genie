@@ -262,10 +262,10 @@ if( $ARGV[0] =~ /^(?:$ok_args)$/ ){
 	$ARGV[0]->();
 
 	# -- 経過時間
-	my $elapsed_time = '';
+	my $elapsed_time = '.';
 	if($start_time) {
 		my $sec = gettimeofday-$start_time;
-		$elapsed_time = sprintf(' (%02d:%02d:%05.2f)',
+		$elapsed_time = sprintf(' in %02d:%02d:%05.2f',
 			int($sec/3600),
 			int(($sec-int($sec/3600))/60),
 			$sec-int(($sec-int($sec/3600))/60),
@@ -274,7 +274,7 @@ if( $ARGV[0] =~ /^(?:$ok_args)$/ ){
 
 	# -- 終了処理
 	style(color=>'black', bgcolor=>'dark_black');
-	echo "  EOL$elapsed_time\n\n";
+	echo "  * Finished$elapsed_time\n\n";
 	style(color=>'clear', bgcolor=>'clear');
 
 	# -- genie正常完了
