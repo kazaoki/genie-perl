@@ -1633,13 +1633,13 @@ sub clean {
 # --------------------------------------------------------------------
 sub config {
 
-	# -- エディタオープン
-	if ($ARGV[1] eq 'open') {
-		return if !$open_cmd;
+	# -- エディタで開けそうなら開く。そうでなければ、または「genie config dump」なら、単に画面に表示する
+	if($open_cmd && $ARGV[1] ne 'dump'){
 		return `$open_cmd $config{GENERAL}->{config_file} $open_cmd_after`;
+	} else {
+		message(info=>Dumper(\%config));
 	}
 
-	message(info=>Dumper(\%config));
 }
 
 # --------------------------------------------------------------------
