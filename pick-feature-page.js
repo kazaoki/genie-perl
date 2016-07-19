@@ -19,6 +19,7 @@ if(document.getElementById(box_id)){
  * ----------------------------------------
  */
 var cc=function(str) {
+	if(!str) return 0;
 	len=0;
 	str=escape(str);
 	for (i=0;i<str.length;i++,len++) {
