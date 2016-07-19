@@ -98,18 +98,22 @@ for(i in line){
 
 var box = document.createElement('textarea');
 with(box) {
-	id               = box_id;
-	textContent      = out;
-	style.position   = 'absolute';
-	style.width      = '700px';
-	style.height     = '300px';
-	style.left       = '50%';
-	style.top        = '20px';
-	style.marginLeft = '-350px';
-	style.padding    = '10px';
-	style.zIndex     = 10;
-	style.fontFamily = 'monospace';
-	style.fontSize   = '10pt';
+	id                    = box_id;
+	textContent           = out;
+	style.position        = 'fixed';
+	style.width           = '700px';
+	style.height          = '300px';
+	style.left            = '50%';
+	style.top             = '20px';
+	style.marginLeft      = '-350px';
+	style.padding         = '10px';
+	style.zIndex          = 10;
+	style.fontFamily      = 'monospace';
+	style.fontSize        = '10pt';
+	style.boxShadow       = 'rgba(0,0,0,0.3) 10px 10px 40px';
+	style.borderRadius    = '5px';
+	style.border          = 'solid 10px #fff';
+	style.backgroundColor = 'rgba(230,230,230,0.95)';
 	onblur           = function(){if(box)parentNode.removeChild(box)};
 	onkeydown        = function(e){if(e.keyCode==27){ onblur={}; parentNode.removeChild(box)}};
 }
