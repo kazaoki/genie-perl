@@ -16,7 +16,9 @@ if(getenv('GENIE_GENERAL_RUNMODE')!='develop') throw new Exception();
 $files = array();
 foreach(scandir($dir, SCANDIR_SORT_DESCENDING ) as $file){
 	if(preg_match('/\.eml$/', $file)){
-		array_push($files, $file);
+		$mail = parseMail($file);
+		# ちゃんと「@」入ってる宛先なら表示対象にする（cronの結果メールとかは`root`だけだったりするので無視）
+		if(mb_strpos($mail[to], '@')!==false) array_push($files, $file)
 	}
 }
 
@@ -29,7 +31,7 @@ if(@$_GET['last']!='') {
 	# -- 一覧の場合
 	foreach($files as $file){
 		$mail = parseMail($file);
-		if(mb_strpos($mail[to], '@')!==false) $list[] = $mail; # ちゃんと「@」入ってる宛先なら表示対象にする（cronの結果メールとかは`root`だけだったりするので無視）
+		$list[] = $mail;
 	}
 }
 
