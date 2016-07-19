@@ -114,6 +114,7 @@ with(box) {
 	style.borderRadius    = '5px';
 	style.border          = 'solid 10px #fff';
 	style.backgroundColor = 'rgba(230,230,230,0.95)';
+	style.zIndex          = '9999';
 	onblur           = function(){if(box)parentNode.removeChild(box)};
 	onkeydown        = function(e){if(e.keyCode==27){ onblur={}; parentNode.removeChild(box)}};
 }
