@@ -24,6 +24,7 @@ var excludes = [
  * ----------------------------------------
  */
 var cc=function(str) {
+	if(!str) return 0;
 	len=0;
 	str=escape(str);
 	for (i=0;i<str.length;i++,len++) {
@@ -78,9 +79,17 @@ document.querySelectorAll('input,textarea,select').forEach(function(element){
 		col.name=element.name;
 		if(max.name<cc(element.name)) max.name=cc(element.name);
 		// value
-		col.value=element.value.replace(/\n/g, '\\n');
+		// 
+		if(element.tagName==='SELECT'){
+			col.value=$(element).find('option:selected').text();
+		} else {
+			col.value=element.value;
+		}
+		col.value=col.value.replace(/\n/g, '\\n');
 		if(max.value<cc(element.value)) max.value=cc(element.value);
 		line.push(col);
+
+
 	}
 });
 // 整形と出力
@@ -97,20 +106,25 @@ for(i in line){
 
 var box = document.createElement('textarea');
 with(box) {
-	id               = box_id;
-	textContent      = out;
-	style.position   = 'absolute';
-	style.width      = '700px';
-	style.height     = '300px';
-	style.left       = '50%';
-	style.top        = '20px';
-	style.marginLeft = '-350px';
-	style.padding    = '10px';
-	style.zIndex     = 10;
-	style.fontFamily = 'monospace';
-	style.fontSize   = '10pt';
-	onblur           = function(){if(box)parentNode.removeChild(box)};
-	onkeydown        = function(e){if(e.keyCode==27){ onblur={}; parentNode.removeChild(box)}};
+	id                    = box_id;
+	textContent           = out;
+	style.position        = 'fixed';
+	style.width           = '700px';
+	style.height          = '300px';
+	style.left            = '50%';
+	style.top             = '20px';
+	style.marginLeft      = '-350px';
+	style.padding         = '10px';
+	style.zIndex          = 10;
+	style.fontFamily      = 'monospace';
+	style.fontSize        = '10pt';
+	style.boxShadow       = 'rgba(0,0,0,0.3) 10px 10px 40px';
+	style.borderRadius    = '5px';
+	style.border          = 'solid 10px #fff';
+	style.backgroundColor = 'rgba(230,230,230,0.95)';
+	style.zIndex          = '9999';
+	onblur                = function(){if(box)parentNode.removeChild(box)};
+	onkeydown             = function(e){if(e.keyCode==27){ onblur={}; parentNode.removeChild(box)}};
 }
 document.body.appendChild(box); 
 box.focus();
