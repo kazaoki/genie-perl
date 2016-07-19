@@ -1,6 +1,6 @@
 
 /**
- * 表示中のページから、feature用の「ページを検証する」を生成するブックマークレット
+ * 表示中のページから、feature用の「メールを検証する」を生成するブックマークレット
  */
 
 // コンパイラ
@@ -21,10 +21,10 @@ if(document.getElementById(box_id)){
 var cc=function(str) {
 	if(!str) return 0;
 	len=0;
-	str=escape(str);
-	for (var i=0;i<str.length;i++,len++) {
-		if (str.charAt(i) == "%") {
-			if (str.charAt(++i) == "u") {
+	work=escape(str);
+	for (var i=0;i<work.length;i++,len++) {
+		if (work.charAt(i) == "%") {
+			if (work.charAt(++i) == "u") {
 				i += 3;
 				len++;
 			}
@@ -49,29 +49,38 @@ var ss=function(time){
 var max=[];max.type=max.value=max.option=0;
 var line=[];
 
-// PATH
+// SUBJECT
 {
 	line.push({
-		type:   'PATH',
-		value:  window.location.pathname+window.location.search
+		type:  'SUBJECT',
+		value: $('#SUBJECT').text(),
 	});
 }
-
-// TITLE
+// FROM
 {
 	line.push({
-		type:  'TITLE',
-		value: document.title
+		type:  'FROM',
+		value: $('#FROM').text(),
 	});
 }
-
-// WORD: h1
+// TO
 {
 	line.push({
-		type:   'WORD',
-		value:  document.querySelector('h1').innerText.replace(/\n/g, '\\n'),
-		option: 'h1'
+		type:  'TO',
+		value: $('#TO').text(),
 	});
+}
+// BODY
+{
+	var body_lines = $('#BODY').text().split("\n");
+	for(var i in body_lines){
+		if(cc(body_lines[i])>0){
+			line.push({
+				type:  'BODY',
+				value: body_lines[i],
+			});
+		}
+	}
 }
 
 // 整形と出力
@@ -84,7 +93,7 @@ for(i in line){
 	// option
 	if(max.option<cc(element.option)) max.option=cc(element.option);
 }
-out='		* ページを検証する\n';
+out='		* メールを検証する\n';
 for(i in line){
 	var col=line[i];
 	out +=

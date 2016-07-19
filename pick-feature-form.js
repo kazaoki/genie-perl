@@ -27,7 +27,7 @@ var cc=function(str) {
 	if(!str) return 0;
 	len=0;
 	str=escape(str);
-	for (i=0;i<str.length;i++,len++) {
+	for (var i=0;i<str.length;i++,len++) {
 		if (str.charAt(i) == "%") {
 			if (str.charAt(++i) == "u") {
 				i += 3;
@@ -121,7 +121,6 @@ with(box) {
 	style.boxShadow       = 'rgba(0,0,0,0.3) 10px 10px 40px';
 	style.borderRadius    = '5px';
 	style.border          = 'solid 10px #fff';
-	style.backgroundColor = 'rgba(230,230,230,0.95)';
 	style.zIndex          = '9999';
 	onblur                = function(){if(box)parentNode.removeChild(box)};
 	onkeydown             = function(e){if(e.keyCode==27){ onblur={}; parentNode.removeChild(box)}};
