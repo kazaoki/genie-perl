@@ -16,7 +16,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         gcc make perl perl-core openssl openssl-libs openssl-devel htop \
         git bzip2 tar patch wget which cronie \
         readline readline-devel \
-        zlib zlib-devel unzip \
+        libevent-devel zlib zlib-devel unzip \
         curl curl-devel psmisc \
         bison bison-devel re2c libxml2-devel autoconf automake \
         libjpeg-devel libpng-devel readline-devel libtidy-devel \
