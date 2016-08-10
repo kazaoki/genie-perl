@@ -173,7 +173,9 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
   link_to="/root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION"
   if [[ ! -e ${install_path} ]]; then
     # -- php install
-    sed -i -e '1i configure_option "--with-apxs2" "/usr/bin/apxs"' /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/definitions/$GENIE_PHP_VERSION
+    if [[ $GENIE_PHP_CONFIGURE != '' ]]; then
+      sed -i -e "1i configure_option \"$GENIE_PHP_CONFIGURE\"" /root/.anyenv/envs/phpenv/plugins/php-build/share/php-build/definitions/$GENIE_PHP_VERSION
+    fi
     /root/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION ${install_path}
     ln -s ${install_path} ${link_to}
     \cp -f /etc/httpd/modules/libphp5.so ${link_to}/
