@@ -20,7 +20,7 @@ return {
 		VOLUMES => [ # ホスト側(左側)を/以外で始めるとホームパスからの指定になります。
 			# 'app:/app',
 			# 'home-data:/home/xxx/',
-			# 'sendlog:/sendlog',
+			# 'emls:/sendlog/emls',
 		],
 		# NO_SAY => 1, # 有効にすると音声アナウンスしなくなります。
 	},

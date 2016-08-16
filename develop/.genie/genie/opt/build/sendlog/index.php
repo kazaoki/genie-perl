@@ -1,11 +1,11 @@
 <?php
 require_once 'Mail/mimeDecode.php';
 
-$dir = '/sendlog';
+$dir = '/sendlog/emls';
 
 // -- クリアモード
 if($_GET['clear']){
-	array_map('unlink', glob('/sendlog/*.eml'));
+	array_map('unlink', glob($dir.'/*.eml'));
 	header('Location: ' . $_SERVER['PHP_SELF']);
 }
 
@@ -16,7 +16,7 @@ if(getenv('GENIE_GENERAL_RUNMODE')!='develop') throw new Exception();
 $files = array();
 foreach(scandir($dir, SCANDIR_SORT_DESCENDING ) as $file){
 	if(preg_match('/\.eml$/', $file)){
-		$mail = parseMail($file);
+		$mail = parseMail("$dir/".$file);
 		# ちゃんと「@」入ってる宛先なら表示対象にする（cronの結果メールとかは`root`だけだったりするので無視）
 		if(mb_strpos($mail[to], '@')!==false) array_push($files, $file);
 	}
@@ -26,11 +26,11 @@ foreach(scandir($dir, SCANDIR_SORT_DESCENDING ) as $file){
 if(@$_GET['last']!='') {
 	# -- 詳細の場合
 	if(!$_GET['last']>0) $_GET['last'] = 1;
-	$detail = parseMail($files[$_GET['last']-1]);
+	$detail = parseMail("$dir/".$files[$_GET['last']-1]);
 } else {
 	# -- 一覧の場合
 	foreach($files as $file){
-		$mail = parseMail($file);
+		$mail = parseMail("$dir/".$file);
 		$list[] = $mail;
 	}
 }

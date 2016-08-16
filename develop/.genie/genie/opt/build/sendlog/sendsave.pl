@@ -7,7 +7,7 @@ if($ENV{GENIE_GENERAL_RUNMODE} eq 'develop') {
 	if($ENV{GENIE_SENDLOG_ENABLED}){
 
 		# -- prepared save path
-		my $dir = '/sendlog'; # -- mkdir in Dockerfile (a permission problem)
+		my $dir = '/sendlog/emls'; # -- mkdir in Dockerfile (a permission problem)
 		my @list = glob("$dir/*.eml");
 		my $logfile = sprintf("$dir/%06d.eml", scalar(@list)+1);
 
