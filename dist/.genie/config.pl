@@ -20,6 +20,7 @@
 		VOLUMES => [ # ホスト側(左側)を/以外で始めるとホームパスからの指定になります。
 			# 'app:/app',
 			# 'home-data:/home/xxx/',
+			# 'emls:/sendlog/emls',
 		],
 		# NO_SAY => 1, # 有効にすると音声アナウンスしなくなります。
 	},
@@ -58,7 +59,8 @@
 	# PHP設定
 	# --------
 	PHP => {
-		# VERSION => '5.6.0', # `genie php` でリストアップされるバージョン文字列を指定
+		# VERSION => '5.3.3', # `genie php` でリストアップされるバージョン文字列を指定
+		# CONFIGURE => '--with-apxs2=/usr/bin/apxs', # `うまくいかないときは '--with-apxs2=/usr/bin/apxs --disable-fpm' など
 	},
 
 	# Ruby設定

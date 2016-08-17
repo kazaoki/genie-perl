@@ -471,7 +471,7 @@ end
 # --------------------------------------------------------------------
 
 step 'セレクタ:selectorをクリックする' do |selector|
-  page.execute_script "$('"+selector+"').click();"
+  page.execute_script "$('"+selector+"').get(0).click();"
   step 'cap' if autocap
 end
 step 'セレクタ:selectorをクリックする @:scope' do |selector, scope|
@@ -763,6 +763,23 @@ step 'リンクを検証する' do |table|
       expect(page).to have_link multi(label), href: href
     end
   end
+end
+
+# --------------------------------------------------------------------
+# 配送メールの内容を表示する
+# --------------------------------------------------------------------
+step '最後から:last番目のメールを表示する' do |last|
+  visit ('http://localhost:'+(ENV['GENIE_SENDLOG_BIND_PORTS'].split(':')[0])+'/?last='+last)
+  step 'cap' if autocap
+end
+step '最後のメールを表示する' do
+  step '最後から"1"番目のメールを表示する'
+end
+step 'メールを表示する' do
+  step '最後から"1"番目のメールを表示する'
+end
+step 'メールを表示する :last' do |last|
+  step '最後から"'+last+'"番目のメールを表示する'
 end
 
 # --------------------------------------------------------------------
