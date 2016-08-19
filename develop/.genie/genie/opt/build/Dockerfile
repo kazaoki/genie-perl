@@ -157,7 +157,9 @@ ADD sendlog/sendsave.pl /sendlog/sendsave.pl
 ADD sendlog/index.php /sendlog/index.php
 RUN chmod 0777 /sendlog \
     && chmod 0755 /sendlog/sendsave.pl \
-    && ln -sf /sendlog/sendsave.pl /usr/sbin/sendmail
+    && ln -sf /sendlog/sendsave.pl /usr/sbin/sendmail \
+    && mkdir /sendlog/emls \
+    && chmod 0777 /sendlog/emls
 
 # Add files
 # ---------
