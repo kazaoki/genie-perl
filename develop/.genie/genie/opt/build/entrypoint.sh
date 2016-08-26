@@ -168,6 +168,12 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
   if [ -e $tarfile ]; then
     tar xf $tarfile -C /php/versions
   fi
+  # -- php5/7 module
+  if expr $GENIE_PHP_VERSION : "^7" > /dev/null; then
+    libphp="libphp7.so"
+  else
+    libphp="libphp5.so"
+  fi
   # -- install
   install_path="/php/versions/$GENIE_PHP_VERSION/"
   link_to="/root/.anyenv/envs/phpenv/versions/$GENIE_PHP_VERSION"
@@ -178,7 +184,7 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     fi
     /root/.anyenv/envs/phpenv/plugins/php-build/bin/php-build $GENIE_PHP_VERSION ${install_path}
     ln -s ${install_path} ${link_to}
-    \cp -f /etc/httpd/modules/libphp5.so ${link_to}/
+    \cp -f /etc/httpd/modules/${libphp} ${link_to}/
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
     echo '[Date]' >> /php/versions/$GENIE_PHP_VERSION/etc/php.ini
@@ -188,9 +194,13 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
   else
     # -- php relink
     ln -s ${install_path} ${link_to}
-    \cp -f ${link_to}/libphp5.so /etc/httpd/modules/
+    \cp -f ${link_to}/${libphp} /etc/httpd/modules/
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv global $GENIE_PHP_VERSION
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
+  fi
+  # -- php7 config
+  if expr $GENIE_PHP_VERSION : "^7" > /dev/null; then
+    sed -i "s/LoadModule\ php5_module\ modules\/libphp5.so/LoadModule\ php7_module\ modules\/libphp7.so/" /etc/httpd/conf.modules.d/10-php.conf
   fi
   echo 'PHP setup done.' >> /var/log/entrypoint.log
 fi
