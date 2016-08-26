@@ -205,7 +205,7 @@ if($config{DOCKER}->{HOST_IP_FORCE}){
 		chomp $ip;
 		$config{GENERAL}->{host_ip} = $ip;
 	} else {
-		$config{GENERAL}->{host_ip} = '127.0.0.1';
+		$config{GENERAL}->{host_ip} = 'localhost';
 	}
 }
 

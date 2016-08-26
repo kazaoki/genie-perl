@@ -59,8 +59,8 @@ return {
 	# PHP設定
 	# --------
 	PHP => {
-		VERSION => '5.3.3', # `genie php` でリストアップされるバージョン文字列を指定
-		CONFIGURE => '--with-apxs2=/usr/bin/apxs', # `うまくいかないときは '--with-apxs2=/usr/bin/apxs --disable-fpm' など
+		# VERSION => '5.3.3', # `genie php` でリストアップされるバージョン文字列を指定
+		# CONFIGURE => '--with-apxs2=/usr/bin/apxs', # `うまくいかないときは '--with-apxs2=/usr/bin/apxs --disable-fpm' など
 	},
 
 	# Ruby設定
