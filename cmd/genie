@@ -795,6 +795,18 @@ sub init {
 		`attrib +h $config_dir_name`;
 	}
 
+	# -- .gitingoreファイルの作成（ダンロードで落ちてこないため）
+	my $gitignore = <<'DATA';
+genie/opt/*/*.tar
+spec/report.*
+spec/captures/*
+zap/report.*
+DATA
+	open my $fh, '>', "$config{GENERAL}->{config_dir}/.gitignore" or die $!;
+	binmode $fh;
+	print $fh $gitignore;
+	close $fh;
+
 	print "\n";
 	message(success=>"設定ファイルを作成しました。\n".$config{GENERAL_U}->{config_dir}, 1);
 
