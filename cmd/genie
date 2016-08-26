@@ -2423,7 +2423,7 @@ sub zap {
 	my $nosend_cmd = 'touch /var/run/genie_nosend &&' if $config{ZAP}->{NO_SENDMAIL};
 
 	# -- ZAP実行
-	my $cmd = qq|docker run -u zap | . join(' ', map{ "--add-host=$_" } @{$config{DOCKER}->{HOSTS}}) . qq| --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "$nosend_cmd /zap/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
+	my $cmd = qq|docker run | . join(' ', map{ "--add-host=$_" } @{$config{DOCKER}->{HOSTS}}) . qq| --link ZAP-$config{DOCKER}->{NAME}:$config{DOCKER}->{NAME} --name $zap_container_name owasp/zap2docker-stable sh -c "$nosend_cmd /zap/zap.sh -daemon -quickurl $target -quickout /tmp/report.xml -quickprogress" $hide_err|;
 
 	# -- コンテナ実行
 	my $pid = fork;
