@@ -2450,7 +2450,9 @@ sub zap {
 		&_report_xml2html($report_xml, $report_html);
 		print "\n";
 		say('セキュリティチェックが完了しましたので、レポートを出力しました。');
-		message(success=>"セキュリティレポートを書き出しました。\n$report_html", 1);
+		my $report_html_view = $report_html;
+		if($is_win){ $report_html_view = &sjis2utf8($report_html_view) } # Windowsの場合、パスに日本語が入っている可能性があるので、SJISにする必要がある。
+		message(success=>"セキュリティレポートを書き出しました。\n$report_html_view", 1);
 
 		# -- レポートを開く
 		my $cmd = "$open_cmd $report_html $open_cmd_after";
