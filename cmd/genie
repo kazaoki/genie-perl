@@ -264,11 +264,11 @@ if( $ARGV[0] =~ /^(?:$ok_args)$/ ){
 	# -- 経過時間
 	my $elapsed_time = '.';
 	if($start_time) {
-		my $sec = gettimeofday-$start_time;
-		$elapsed_time = sprintf(' in %02d:%02d:%05.2f',
-			int($sec/3600),
-			int(($sec-int($sec/3600))/60),
-			$sec-int(($sec-int($sec/3600))/60),
+		my $sec = gettimeofday - $start_time;
+		$elapsed_time = sprintf(' in %02d:%02d:%02d',
+			($sec/60**2) % 60,
+			($sec/60**1) % 60,
+			($sec/60**0) % 60,
 		);
 	}
 
