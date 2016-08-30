@@ -916,7 +916,7 @@ sub up {
 	my $container_name_base = ($up_type =~ /^(?:spec|zap)$/ ? uc($up_type).'-' : '') . $config{DOCKER}->{NAME};
 
 	# -- 起動時メモの表示
-	if(ref $config{UPMEMO}) {
+	if(ref $config{UPMEMO} && !$up_type) {
 		my @memolist = @{$config{UPMEMO}};
 		while(@memolist){
 			my $key = shift @memolist;
