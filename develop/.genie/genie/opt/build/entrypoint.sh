@@ -189,6 +189,7 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
     source ~/.bashrc && /root/.anyenv/envs/phpenv/bin/phpenv rehash
     echo '[Date]' >> /php/versions/$GENIE_PHP_VERSION/etc/php.ini
     echo 'date.timezone = "Asia/Tokyo"' >> /php/versions/$GENIE_PHP_VERSION/etc/php.ini
+    sed -i "s/^display_errors\ \=\ Off/display_errors\ \=\ On/" /php/versions/$GENIE_PHP_VERSION/etc/php.ini
     cd /php/versions
     tar cf $prefix_mount/genie/opt/php/versions.tar ./
   else
@@ -204,6 +205,8 @@ if [[ $GENIE_PHP_VERSION != '' ]]; then
   fi
   echo 'PHP setup done.' >> /var/log/entrypoint.log
 fi
+# -- Adjust php.ini
+sed -i "s/^display_errors\ \=\ Off/display_errors\ \=\ On/" /etc/php.ini
 
 # --------------------------------------------------------------------
 # ruby setup
