@@ -67,11 +67,14 @@ var line=[];
 
 // WORD: h1
 {
-	line.push({
-		type:   'WORD',
-		value:  document.querySelector('h1').innerText.replace(/\n/g, '\\n'),
-		option: 'h1'
-	});
+	if(document.querySelector('h1'))
+	{
+		line.push({
+			type:   'WORD',
+			value:  document.querySelector('h1').innerText.replace(/\n/g, '\\n'),
+			option: 'h1'
+		});
+	}
 }
 
 // 整形と出力
