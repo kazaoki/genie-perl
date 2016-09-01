@@ -4,7 +4,7 @@ require_once 'Mail/mimeDecode.php';
 $dir = '/sendlog/emls';
 
 // -- クリアモード
-if($_GET['clear']){
+if(@$_GET['clear']){
 	array_map('unlink', glob($dir.'/*.eml'));
 	header('Location: ' . @$_SERVER['PHP_SELF']);
 }
@@ -195,7 +195,7 @@ function h($str) {
 
 	<section>
 
-<?php if($list) { ?>
+<?php if(@$list) { ?>
 
 	<div class="text-right">
 		<a href="./?clear=1" onClick="if(confirm('本当に削除しますか？')){;}else{return false;}">送信ログを全て削除する</a>
@@ -212,37 +212,37 @@ function h($str) {
 			</tr>
 		</thead>
 		<tbody>
-			<?php foreach($list as $mail) { ++$count ?>
+			<?php foreach(@$list as $mail) { ++$count ?>
 			<tr id="last-<?php echo $count ?>">
 				<td class="count"><?php echo $count ?></td>
-				<td class="subject"><a href="/?last=<?php echo $count ?>"><?php echo h($mail['subject']) ?></a></td>
-				<td class="from"><small><?php echo h($mail['from']) ?></small></td>
-				<td class="to"><small><?php echo h($mail['to']) ?></small></td>
-				<td class="date"><small><?php echo h($mail['date']) ?></small></td>
+				<td class="subject"><a href="/?last=<?php echo $count ?>"><?php echo h(@$mail['subject']) ?></a></td>
+				<td class="from"><small><?php echo h(@$mail['from']) ?></small></td>
+				<td class="to"><small><?php echo h(@$mail['to']) ?></small></td>
+				<td class="date"><small><?php echo h(@$mail['date']) ?></small></td>
 			</tr>
 			<?php } ?>
 		</tbody>
 	</table>
 
-<?php } else if ($detail) { ?>
+<?php } else if (@$detail) { ?>
 
 	<h2>detail</h2>
 	<div class="panel panel-default">
 		<div class="panel-heading">
 			<p class="pull-right">
 				<span id="date" class="btn btn-default disabled" style="cursor:default">
-					<?php echo $detail['date'] ?>
+					<?php echo @$detail['date'] ?>
 				</span>
 			</p>
-			<h4 id="subject"><?php echo h($detail['subject']) ?></h4>
+			<h4 id="subject"><?php echo h(@$detail['subject']) ?></h4>
 		</div>
 		<div class="panel-body">
 			<div class="text-center">
-				<span id="from"><?php echo h($detail['from']) ?></span>
+				<span id="from"><?php echo h(@$detail['from']) ?></span>
 				&nbsp;
 				<i class="fa fa-arrow-right fa-2x text-info" aria-hidden="true" style="vertical-align:middle"></i>
 				&nbsp;
-				<span id="to"><?php echo h($detail['to']) ?></span>
+				<span id="to"><?php echo h(@$detail['to']) ?></span>
 			</div>
 		</div>
 		<table class="table" id="attach">
@@ -251,31 +251,37 @@ function h($str) {
 					<td>
 						<dl class="dl-horizontal">
 							<dt>SUBJECT</dt>
-							<dd id="SUBJECT"><?php echo h($detail['subject']) ?></dd>
+							<dd id="SUBJECT"><?php echo h(@$detail['subject']) ?></dd>
 							<dt>FROM</dt>
-							<dd id="FROM"><?php echo h($detail['from']) ?></dd>
+							<dd id="FROM"><?php echo h(@$detail['from']) ?></dd>
 							<dt>TO</dt>
-							<dd id="TO"><?php echo h($detail['to']) ?></dd>
+							<dd id="TO"><?php echo h(@$detail['to']) ?></dd>
 							<dt>DATE</dt>
-							<dd id="DATE"><?php echo h($detail['date']) ?></dd>
+							<dd id="DATE"><?php echo h(@$detail['date']) ?></dd>
 							<dt>BODY</dt>
-							<dd id="BODY"><pre style="white-space: pre-wrap;"><?php echo $detail['body'] ?></pre></dd>
-							<?php if($detail['html']!='') { ?>
+							<dd id="BODY">
+								<?php if(@$detail['body']){ ?>
+									<pre style="white-space: pre-wrap;"><?php echo @$detail['body'] ?></pre>
+								<?php } else { ?>
+									<span class="text-muted">(undef)</span>
+								<?php } ?>
+							</dd>
+							<?php if(@$detail['html']!='') { ?>
 							<dt>HTML</dt>
-							<dd id="HTML"><pre style="white-space: pre-wrap;"><?php echo h($detail['html']) ?></pre></dd>
+							<dd id="HTML"><pre style="white-space: pre-wrap;"><?php echo h(@$detail['html']) ?></pre></dd>
 							<?php } ?>
 							<dt>HEADER</dt>
-							<dd id="HEADER"><pre style="white-space: pre-wrap;"><?php echo h($detail['headers']) ?></pre></dd>
-							<?php if($detail['attach']!='') { ?>
+							<dd id="HEADER"><pre style="white-space: pre-wrap;"><?php echo h(@$detail['headers']) ?></pre></dd>
+							<?php if(@$detail['attach']!='') { ?>
 							<dt>ATTACH</dt>
 							<dd id="ATTACH">
 								<ul>
-								<?php foreach($detail['attach'] as $attach) { ?>
+								<?php foreach(@$detail['attach'] as $attach) { ?>
 									<li>
-										<a href="<?php echo $attach['base64'] ?>" download="<?php echo $attach['filename'] ?>">
-											<?php echo $attach['filename'] ?>
-											<small>(<?php echo $attach['kb'] ?>kb)</small>
-											<?php if($attach['is_image']) { ?><img src="<?php echo $attach['base64'] ?>" class="img-thumbnail" style="max-width:100px;max-height:100px;"><?php } ?>
+										<a href="<?php echo @$attach['base64'] ?>" download="<?php echo @$attach['filename'] ?>">
+											<?php echo @$attach['filename'] ?>
+											<small>(<?php echo @$attach['kb'] ?>kb)</small>
+											<?php if(@$attach['is_image']) { ?><img src="<?php echo @$attach['base64'] ?>" class="img-thumbnail" style="max-width:100px;max-height:100px;"><?php } ?>
 										</a>
 									</li>
 								<?php } ?>
