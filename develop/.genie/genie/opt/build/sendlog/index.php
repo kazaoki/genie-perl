@@ -6,7 +6,7 @@ $dir = '/sendlog/emls';
 // -- クリアモード
 if($_GET['clear']){
 	array_map('unlink', glob($dir.'/*.eml'));
-	header('Location: ' . $_SERVER['PHP_SELF']);
+	header('Location: ' . @$_SERVER['PHP_SELF']);
 }
 
 // -- developモードでしか機能しないよう
@@ -18,7 +18,7 @@ foreach(scandir($dir, SCANDIR_SORT_DESCENDING ) as $file){
 	if(preg_match('/\.eml$/', $file)){
 		$mail = parseMail("$dir/".$file);
 		# ちゃんと「@」入ってる宛先なら表示対象にする（cronの結果メールとかは`root`だけだったりするので無視）
-		if(mb_strpos($mail[to], '@')!==false) array_push($files, $file);
+		if(mb_strpos($mail['to'], '@')!==false) array_push($files, $file);
 	}
 }
 
