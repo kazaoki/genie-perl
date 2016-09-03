@@ -38,6 +38,7 @@ my $ok_args = join('|', qw/
 	php
 	perl
 	ruby
+	node
 	ngrok
 	mysql
 	psql
@@ -1311,6 +1312,16 @@ sub up {
 				});
 			}
 
+			# -- entrypoint.sh：Node.js
+			if($config{NODE}->{VERSION}){
+				wait_container ({
+					container_name => $container_name_base,
+					log_file       => '/var/log/entrypoint.log',
+					stop_word      => 'Node.js setup done.',
+					label          => "Node.js setup (version $config{NODE}->{VERSION})",
+				});
+			}
+
 			# -- entrypoint.sh：Apache
 			if($config{APACHE}->{ENABLED}) {
 				wait_container ({
@@ -1779,6 +1790,18 @@ sub ruby {
 	if(&is_up()){
 		print "\n---\n\n";
 		print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && rbenv versions"`;
+	}
+	print "\n";
+}
+
+# --------------------------------------------------------------------
+# genie node                                               Node.js情報
+# --------------------------------------------------------------------
+sub node {
+	print `docker run --rm --entrypoint=bash kazaoki/genie -c "/root/.anyenv/envs/ndenv/plugins/node-build/bin/node-build  --definitions"`;
+	if(&is_up()){
+		print "\n---\n\n";
+		print `docker exec $config{DOCKER}->{NAME} bash -c ". /root/.bashrc && ndenv versions"`;
 	}
 	print "\n";
 }
