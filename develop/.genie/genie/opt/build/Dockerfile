@@ -10,7 +10,6 @@ RUN cp /etc/localtime /etc/localtime.org \
 # Add packages
 # ------------
 RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
-    && rpm -Uvh https://rpm.nodesource.com/pub_6.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm \
     && yum update -y \
     && yum install epel-release -y \
     && yum install -y \
@@ -40,7 +39,6 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         ibus-kkc vlgothic-* \
         xorg-x11-server-Xvfb firefox \
         rpm-build libtool gcc-c++ mod_fcgid \
-        nodejs \
     && yum clean all
 
 # Set locale
@@ -58,6 +56,7 @@ RUN git clone https://github.com/riywo/anyenv ~/.anyenv \
     && anyenv install rbenv \
     && anyenv install plenv \
     && anyenv install phpenv \
+    && anyenv install ndenv \
     && . ~/.bashrc
 
 # Install PhantomJS

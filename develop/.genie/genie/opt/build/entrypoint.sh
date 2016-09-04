@@ -240,6 +240,37 @@ if [[ $GENIE_RUBY_VERSION != '' ]]; then
 fi
 
 # --------------------------------------------------------------------
+# Node.js setup
+# --------------------------------------------------------------------
+if [[ $GENIE_NODE_VERSION != '' ]]; then
+  mkdir -p $prefix_mount/genie/opt/node
+  # -- tar restore
+  mkdir -p /node/versions
+  tarfile="/genie/opt/node/versions.tar"
+  if [ -e $tarfile ]; then
+    tar xf $tarfile -C /node/versions
+  fi
+  # -- install
+  install_path="/node/versions/$GENIE_NODE_VERSION/"
+  link_to="/root/.anyenv/envs/ndenv/versions/$GENIE_NODE_VERSION"
+  if [[ ! -e ${install_path} ]]; then
+    # -- node install
+    /root/.anyenv/envs/ndenv/plugins/node-build/bin/node-build $GENIE_NODE_VERSION ${install_path}
+    ln -s ${install_path} ${link_to}
+    source ~/.bashrc && /root/.anyenv/envs/ndenv/bin/ndenv global $GENIE_NODE_VERSION
+    source ~/.bashrc && /root/.anyenv/envs/ndenv/bin/ndenv rehash
+    cd /node/versions
+    tar cf $prefix_mount/genie/opt/node/versions.tar ./
+  else
+    # -- node relink
+    ln -s ${install_path} ${link_to}
+    source ~/.bashrc && /root/.anyenv/envs/ndenv/bin/ndenv global $GENIE_NODE_VERSION
+    source ~/.bashrc && /root/.anyenv/envs/ndenv/bin/ndenv rehash
+  fi
+  echo 'Node.js setup done.' >> /var/log/entrypoint.log
+fi
+
+# --------------------------------------------------------------------
 # Apache
 # --------------------------------------------------------------------
 if [[ $GENIE_APACHE_ENABLED ]]; then

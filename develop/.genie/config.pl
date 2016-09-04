@@ -69,6 +69,12 @@ return {
 		# VERSION => '2.3.0', # `genie ruby` でリストアップされるバージョン文字列を指定
 	},
 
+	# Node.js設定
+	# --------
+	NODE => {
+		# VERSION => '6.5.0', # `genie node` でリストアップされるバージョン文字列を指定
+	},
+
 	# Apache設定
 	# ----------
 	APACHE => {
