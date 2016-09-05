@@ -164,6 +164,11 @@ RUN chmod 0777 /sendlog \
     && mkdir /sendlog/emls \
     && chmod 0777 /sendlog/emls
 
+# Node.js config
+# --------------
+RUN echo '{ "allow_root": true }' > /root/.bowerrc \
+    && npm install bower -g
+
 # Add files
 # ---------
 ADD loop.sh /loop.sh
