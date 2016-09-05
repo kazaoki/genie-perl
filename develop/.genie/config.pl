@@ -18,7 +18,7 @@ return {
 		],
 		# HOST_IP_FORCE => '192.168.99.100',
 		VOLUMES => [ # ホスト側(左側)を/以外で始めるとホームパスからの指定になります。
-			# 'app:/app',
+			'./:/mnt/host/',
 			# 'home-data:/home/xxx/',
 			# 'emls:/sendlog/emls',
 		],
