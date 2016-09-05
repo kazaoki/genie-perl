@@ -1187,12 +1187,16 @@ sub up {
 
 		# -- VOLUMES
 		my $volumes;
+		my @volume_list = (
+			'./:/mnt/host/', # 標準でホスト側のディレクトリをマウントする為
+		);
 		if(ref $config{DOCKER}->{VOLUMES} && @{$config{DOCKER}->{VOLUMES}}){
-			foreach my $volume (@{$config{DOCKER}->{VOLUMES}}) {
-				if($volume !~ /^\//){
-					$volume = $config{GENERAL}->{home_dir} . '/' . $volume;
-					$volumes .= " -v $volume";
-				}
+			push(@volume_list, @{$config{DOCKER}->{VOLUMES}});
+		}
+		foreach my $volume (@volume_list) {
+			if($volume !~ /^\//){
+				$volume = $config{GENERAL}->{home_dir} . '/' . $volume;
+				$volumes .= " -v $volume";
 			}
 		}
 
@@ -1477,7 +1481,11 @@ sub cli {
 		$cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' ' . join(' ', @ARGV[1..$#ARGV]);
 	} else {
 		# -- 引数が`cli`のみであれば bash に入る
-		$cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . ' /bin/bash';
+		my $home_path = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{home_dir});
+		my $now_path = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $now_path);
+		$now_path =~ /^$home_path(.*)$/; # 相対パスを取得
+		my $login_path = "/mnt/host$1";
+		$cmd = 'docker exec -it ' . $config{DOCKER}->{NAME} . " /bin/bash -c \"cd $login_path && /bin/bash\"";
 	}
 	system($cmd);
 	echo "\n";
