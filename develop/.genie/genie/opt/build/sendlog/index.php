@@ -212,7 +212,7 @@ function h($str) {
 			</tr>
 		</thead>
 		<tbody>
-			<?php foreach(@$list as $mail) { ++$count ?>
+			<?php $count=0; foreach(@$list as $mail) { ++$count ?>
 			<tr id="last-<?php echo $count ?>">
 				<td class="count"><?php echo $count ?></td>
 				<td class="subject"><a href="/?last=<?php echo $count ?>"><?php echo h(@$mail['subject']) ?></a></td>

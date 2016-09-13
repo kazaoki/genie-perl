@@ -128,7 +128,7 @@
 			{
 				LABEL       => 'main',
 				REPOSITORY  => 'mysql:5.7',
-				# HOST        => 'db1.xxx.com',
+				# HOST        => 'db1.xxx.com', # localhostの場合は記述せずにこの行はコメントアウトして下さい。
 				NAME        => 'db1',
 				USER        => 'user1',
 				PASS        => '123456789',
