@@ -261,7 +261,8 @@ function h($str) {
 							<dt>BODY</dt>
 							<dd id="BODY">
 								<?php if(@$detail['body']){ ?>
-									<pre style="white-space: pre-wrap;"><?php echo @$detail['body'] ?></pre>
+									<pre style="white-space: pre-wrap;">
+<?php echo @$detail['body'] ?></pre>
 								<?php } else { ?>
 									<span class="text-muted">(undef)</span>
 								<?php } ?>
