@@ -49,20 +49,17 @@ function parseMail($file){
 		'crlf'           => "\r\n", // 行末を指定する。
 	));
 
-	// file_put_contents("$file.txt", print_r($mail, true));
-	// error_log(($mail->headers['subject'])."\n", 3, '/sendlog/log.log');
-
 	# -- 解析結果用の入れ物
 	$info = array();
 
-	$info['subject'] = mb_decode_mimeheader($mail->headers['subject']);
-	$info['from']    = mb_decode_mimeheader($mail->headers['from']);
-	$info['to']      = mb_decode_mimeheader($mail->headers['to']);
-	$info['date']    = $mail->headers['date'];
+	$info['subject'] = mb_decode_mimeheader(@$mail->headers['subject']);
+	$info['from']    = mb_decode_mimeheader(@$mail->headers['from']);
+	$info['to']      = mb_decode_mimeheader(@$mail->headers['to']);
+	$info['date']    = @$mail->headers['date'];
 	$keys = array_keys($mail->headers);
 	sort($keys);
 	foreach($keys as $key) {
-		$line = sprintf("%s: %s\n", $key, mb_decode_mimeheader($mail->headers[$key]));
+		$line = sprintf("%s: %s\n", $key, mb_decode_mimeheader(@$mail->headers[$key]));
 		if(in_array($key, array('to', 'from', 'subject'))){
 			$info[$key] = preg_replace('/(?<! )</', ' <', $info[$key]);
 			$line = preg_replace('/(?<! )</', ' <', $line);
