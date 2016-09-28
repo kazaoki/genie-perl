@@ -231,7 +231,7 @@ return {
 	# dlsync設定
 	# -----------
 	DLSYNC => {
-		REMOTE_HOST  => '',
+		REMOTE_HOST  => '', # ポート指定したい場合は `(ホスト):(ポート)` のように指定可能です。
 		REMOTE_USER  => '',
 		REMOTE_PASS  => '',
 		REMOTE_DIR   => '/public_html',
