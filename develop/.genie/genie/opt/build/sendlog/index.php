@@ -143,7 +143,7 @@ function h($str) {
 <div class="container">
 	<h1><a href="/">Sendlog <small>sendmail sent logs <i>[<?php echo getenv('GENIE_DOCKER_NAME') ?>]</i></small></a></h1>
 
-<?php if(!@$_GET['last']) { ?>
+<?php if((!@$_GET['last']) && (!getenv('GENIE_SENDLOG_HIDE_DESC'))) { ?>
 
 	<div class="panel panel-default">
 		<div class="panel-body">
