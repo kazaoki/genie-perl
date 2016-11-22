@@ -75,6 +75,18 @@ return {
 		# VERSION => '6.5.0', # `genie node` でリストアップされるバージョン文字列を指定
 	},
 
+	# sshd設定
+	# ----------
+	SSHD => {
+		ENABLED => 1,
+		LOGIN_USER => 'genie',
+		LOGIN_PASS => '123456789',
+		LOGIN_PATH => '/mnt/host',
+		BIND_PORTS => [
+			'22:22',
+		]
+	},
+
 	# Apache設定
 	# ----------
 	APACHE => {

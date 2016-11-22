@@ -41,6 +41,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         xorg-x11-server-Xvfb firefox \
         rpm-build libtool gcc-c++ mod_fcgid \
         nodejs \
+        openssh-server \
     && yum clean all
 
 # Set locale
@@ -64,7 +65,7 @@ RUN git clone https://github.com/riywo/anyenv ~/.anyenv \
 # Install PhantomJS
 # -----------------
 RUN cd /root/ \
-    && wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 \
+    && curl -L -O https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 \
     && tar jxvf phantomjs-2.1.1-linux-x86_64.tar.bz2 \
     && mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin \
     && rm -fr phantomjs-2.1.1-linux-x86_64* \
@@ -135,7 +136,7 @@ RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g'
 # -------------
 RUN mkdir /tmp/ngrok/ \
     && cd /tmp/ngrok/ \
-    && wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip \
+    && curl -L -O https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip \
     && unzip ngrok-stable-linux-amd64.zip \
     && mv ngrok /usr/local/bin \
     && rm -fr /tmp/ngrok/ \

@@ -1145,6 +1145,17 @@ sub up {
 			$envs .= sprintf('-e %s="%s"', $key, $envs{$key});
 		}
 
+		# -- sshd
+		my $sshd_option;
+		if($config{SSHD}->{ENABLED}) {
+			# $sshd_option .= " -v $config{GENERAL}->{home_dir}/$config{APACHE}->{PUBLIC_PATH}:/var/www/html";
+			if(ref $config{SSHD}->{BIND_PORTS}){
+				foreach(@{$config{SSHD}->{BIND_PORTS}}){
+					$sshd_option .= " -p $_";
+				}
+			}
+		}
+
 		# -- Apache
 		my $apache_option;
 		if($config{APACHE}->{ENABLED}) {
@@ -1213,6 +1224,7 @@ sub up {
 			(-d "$config{GENERAL}->{config_dir}/spec" ? " -v $config{GENERAL}->{config_dir}/spec/confs:/turnip/spec" : '').
 			$mysql_option.
 			$postgresql_option.
+			$sshd_option.
 			$apache_option.
 			$nginx_option.
 			$sendlog_option.
