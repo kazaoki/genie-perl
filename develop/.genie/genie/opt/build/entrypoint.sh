@@ -103,12 +103,11 @@ echo 'entrypoint.sh setup start.' >> /var/log/entrypoint.log
 # --------------------------------------------------------------------
 # sshd setup
 # --------------------------------------------------------------------
-if [[ $GENIE_APACHE_ENABLGENIE_SSHD_ENABLEDED ]]; then
-  GENIE_SSHD_USER_PASS=123456
-  genie_pass=`echo $GENIE_SSHD_USER_PASS | openssl passwd -1 -stdin`
-  useradd $GENIE_SSHD_LOGIN_USER -d $GENIE_SSHD_USER_PATH -Ml -R / -p $genie_pass
+if [[ $GENIE_APACHE_ENABLED ]]; then
+  genie_pass=`echo $GENIE_SSHD_LOGIN_PASS | openssl passwd -1 -stdin`
+  useradd $GENIE_SSHD_LOGIN_USER -d $GENIE_SSHD_LOGIN_PATH -M -l -R / -p $genie_pass
   ssh-keygen -A
-  /usr/sbin/sshd -D -f /etc/ssh/sshd_config
+  /usr/sbin/sshd -D -f /etc/ssh/sshd_config &
 fi
 
 # --------------------------------------------------------------------

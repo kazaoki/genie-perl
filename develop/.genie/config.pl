@@ -12,7 +12,7 @@ return {
 		IMAGE         => 'kazaoki/genie',
 		# MACHINE       => 'sandbox',
 		NAME          => 'genie-test',
-		OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
+#		OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
 		HOSTS         => [
 			'genie-test.com:127.0.0.1',
 		],
@@ -83,7 +83,7 @@ return {
 		LOGIN_PASS => '123456789',
 		LOGIN_PATH => '/mnt/host',
 		BIND_PORTS => [
-			'22:22',
+			'22',
 		]
 	},
 
