@@ -75,6 +75,18 @@
 		# VERSION => '6.5.0', # `genie node` でリストアップされるバージョン文字列を指定
 	},
 
+	# sshd設定
+	# ----------
+	SSHD => {
+		# ENABLED => 1,
+		LOGIN_USER => 'genie',
+		LOGIN_PASS => '123456789',
+		LOGIN_PATH => '/mnt/host',
+		BIND_PORTS => [
+			'22',
+		]
+	},
+
 	# Apache設定
 	# ----------
 	APACHE => {
@@ -115,6 +127,7 @@
 	# -----------
 	SENDLOG => {
 		ENABLED => 1, # ENABLEでも本番モードなら送信ログの保存すらしません。
+		# HIDE_DESC => 1, # 一覧ページ上部の説明文を表示する(1)か否か
 		BIND_PORTS   => [
 			'9981:9981',
 		]
@@ -206,7 +219,7 @@
 	# dlsync設定
 	# -----------
 	DLSYNC => {
-		REMOTE_HOST  => '',
+		REMOTE_HOST  => '', # ポート指定したい場合は `(ホスト):(ポート)` のように指定可能です。
 		REMOTE_USER  => '',
 		REMOTE_PASS  => '',
 		REMOTE_DIR   => '/public_html',
@@ -223,7 +236,7 @@
 		DEFAULT_CAPTURE_WIDTH => 1280,
 		DEFAULT_USER_AGENT    => '',
 		JS_ERRORS             => 0,
-		SILENT_FAST           => 0,  # 1にするとfastモード時に実行するか否か聞いてこないように
+		SILENT_FAST           => 1,  # 1にするとfastモード時に実行するか否か聞いてこないように
 		NO_SENDMAIL           => 1,  # 1にするとSPEC中はメール送信を行いません。（但し、/sendlogには記録されます）
 	},
 

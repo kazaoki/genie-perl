@@ -78,7 +78,7 @@ return {
 	# sshd設定
 	# ----------
 	SSHD => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		LOGIN_USER => 'genie',
 		LOGIN_PASS => '123456789',
 		LOGIN_PATH => '/mnt/host',
