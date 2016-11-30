@@ -609,7 +609,7 @@ sub say {
 sub get_data_volume_name {
 	my $container_name = shift;
 	my @volumes;
-	my @lines = `docker inspect --format='{{.Mounts}}' $container_name $hide_err` =~ /\{\s*([^\{\}]+)\s*\}/g;
+	my @lines = `docker inspect --format={{.Mounts}} $container_name $hide_err` =~ /\{\s*([^\{\}]+)\s*\}/g;
 	foreach(@lines){
 		if( $_=~/^(.+?) / && $1!~/\// ) {
 			push @volumes, $1;
@@ -622,7 +622,7 @@ sub get_data_volume_name {
 # --------------------------
 sub get_container_ip {
 	my $container_name = shift;
-	my $ip = `docker inspect --format='{{.NetworkSettings.IPAddress}}' $container_name $hide_err`;
+	my $ip = `docker inspect --format={{.NetworkSettings.IPAddress}} $container_name $hide_err`;
 	chomp $ip;
 	return $ip;
 }
