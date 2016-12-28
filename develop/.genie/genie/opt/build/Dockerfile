@@ -116,6 +116,8 @@ RUN mkdir ~/src \
 # ------------
 RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g' /etc/httpd/conf/httpd.conf \
     && sed -i 's/AddDefaultCharset\ UTF\-8/AddDefaultCharset\ Off/g' /etc/httpd/conf/httpd.conf \
+    && sed -i 's/^User apache$/User docker/' /etc/httpd/conf/httpd.conf \
+    && sed -i 's/^Group apache$/Group docker/' /etc/httpd/conf/httpd.conf \
     && echo '<Directory /var/www/html>' >> /etc/httpd/conf/httpd.conf \
     && echo '  Options FollowSymLinks ExecCGI' >> /etc/httpd/conf/httpd.conf \
     && echo '  AllowOverride All' >> /etc/httpd/conf/httpd.conf \
@@ -174,6 +176,11 @@ RUN echo '{ "allow_root": true }' > /root/.bowerrc \
 ADD loop.sh /loop.sh
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod +x /*.sh
+
+# Add docker user
+# ---------------
+RUN groupadd -g 1000 docker && \
+    useradd -g docker -m -s /bin/bash docker
 
 # Entry point
 # -----------
