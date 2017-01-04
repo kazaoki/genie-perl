@@ -16,6 +16,7 @@ use XML::Simple; # cpan install XML::Simple
 use Tie::IxHash; # cpan install Tie::IxHash
 use YAML::Tiny; # cpan install YAML::Tiny
 use Time::HiRes qw( gettimeofday );
+use Hash::Merge qw( merge );
 $| = 1;
 
 # -- 処理開始時間
@@ -158,25 +159,26 @@ $config{GENERAL}->{runmode} ||= $ENV{GENIE_RUNMODE} || 'develop'; # 引数・環
 message('disabled', 'runmode = '.$config{GENERAL}->{runmode});
 
 # -- 設定ファイルの決定
-if(!$config{GENERAL}->{config_file}){ # 未指定の場合 `.genie/config-(ランモード).pl` または `.genie/config.pl` のどちらかを読み込みます。
-	if(-e "$config{GENERAL}->{config_dir}/config-".$config{GENERAL}->{runmode}.".pl"){
-		$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/config-".$config{GENERAL}->{runmode}.".pl";
-	} else {
-		$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/config.pl";
-	}
-}
-# echo "  Run `$config{GENERAL}->{runmode}` mode by `$config{GENERAL}->{config_file}`\n\n";
+$config{GENERAL}->{config_file} ||= "$config{GENERAL}->{config_dir}/config.pl";
+$config{GENERAL}->{config_file_by_mode} = "$config{GENERAL}->{config_dir}/config-".$config{GENERAL}->{runmode}.".pl";
+if(! -f $config{GENERAL}->{config_file_by_mode}) { undef $config{GENERAL}->{config_file_by_mode}; }
 
 # -- 表示用にUTF8フラグ付きも用意しておく
-$config{GENERAL_U}->{home_dir}    = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{home_dir});
-$config{GENERAL_U}->{config_dir}  = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{config_dir});
-$config{GENERAL_U}->{config_file} = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{config_file});
+$config{GENERAL_U}->{home_dir}            = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{home_dir});
+$config{GENERAL_U}->{config_dir}          = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{config_dir});
+$config{GENERAL_U}->{config_file}         = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{config_file});
+$config{GENERAL_U}->{config_file_by_mode} = Encode::decode(($is_win ? 'cp932' : 'utf-8'), $config{GENERAL}->{config_file_by_mode});
 
 # -- 設定ファイルをロード
 if( -d $config{GENERAL}->{config_dir} ){
 	if(-f $config{GENERAL}->{config_file}) {
 		my $r = require $config{GENERAL}->{config_file};
-		%config = (%config, %$r);
+		%config = %{ merge($r, \%config) };
+		# -- config-product.plのようにランモード名が入るファイルがあれば"追加"で読み込む
+		if(-f $config{GENERAL}->{config_file_by_mode}) {
+			my $r = require $config{GENERAL}->{config_file_by_mode};
+			%config = %{ merge($r, \%config) };
+		}
 	} else {
 		throw("設定ディレクトリ（$config{GENERAL_U}->{config_dir}）はあるのに設定ファイル（$config{GENERAL_U}->{config_file}）が見つかりません。");
 	}
