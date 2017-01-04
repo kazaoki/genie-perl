@@ -1019,6 +1019,11 @@ sub up {
 				$mysql_option .= ' --add-host='.$db->{HOST}.':'.get_container_ip($label);
 			}
 
+			# -- 追加オプションセット
+			if($db->{OPTIONS}) {
+				$mysql_option .= ' '.$db->{OPTIONS};
+			}
+
 		}
 	}
 
@@ -1104,6 +1109,11 @@ sub up {
 			# -- HOST情報をセット
 			if($db->{HOST}) {
 				$postgresql_option .= ' --add-host='.$db->{HOST}.':'.get_container_ip($label);
+			}
+
+			# -- 追加オプションセット
+			if($db->{OPTIONS}) {
+				$mysql_option .= ' '.$db->{OPTIONS};
 			}
 
 		}
