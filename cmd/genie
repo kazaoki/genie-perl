@@ -959,6 +959,7 @@ sub up {
 				" -e MYSQL_CHARSET=$db->{CHARSET}".
 				" -e TERM=xterm".
 				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
+				(ref $db->{OPTIONS} ? ' '.$db->{OPTIONS} : '' ).
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/mysql/opt/before-entrypoint.sh".
 				' --restart=always'.
@@ -1019,11 +1020,6 @@ sub up {
 				$mysql_option .= ' --add-host='.$db->{HOST}.':'.get_container_ip($label);
 			}
 
-			# -- 追加オプションセット
-			if($db->{OPTIONS}) {
-				$mysql_option .= ' '.$db->{OPTIONS};
-			}
-
 		}
 	}
 
@@ -1052,6 +1048,7 @@ sub up {
 				" -e POSTGERS_ENCODING=$db->{ENCODING}".
 				" -e POSTGERS_LOCALE=$db->{LOCALE}".
 				" -e TERM=xterm".
+				(ref $db->{OPTIONS} ? ' '.$db->{OPTIONS} : '' ).
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/postgresql/opt/before-entrypoint.sh".
 				' --restart=always'.
@@ -1109,11 +1106,6 @@ sub up {
 			# -- HOST情報をセット
 			if($db->{HOST}) {
 				$postgresql_option .= ' --add-host='.$db->{HOST}.':'.get_container_ip($label);
-			}
-
-			# -- 追加オプションセット
-			if($db->{OPTIONS}) {
-				$mysql_option .= ' '.$db->{OPTIONS};
 			}
 
 		}
