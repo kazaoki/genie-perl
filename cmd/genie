@@ -959,7 +959,7 @@ sub up {
 				" -e MYSQL_CHARSET=$db->{CHARSET}".
 				" -e TERM=xterm".
 				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
-				(ref $db->{OPTIONS} ? ' '.$db->{OPTIONS} : '' ).
+				($db->{OPTIONS} ? ' '.$db->{OPTIONS} : '' ).
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/mysql/opt/before-entrypoint.sh".
 				' --restart=always'.
@@ -1048,7 +1048,7 @@ sub up {
 				" -e POSTGERS_ENCODING=$db->{ENCODING}".
 				" -e POSTGERS_LOCALE=$db->{LOCALE}".
 				" -e TERM=xterm".
-				(ref $db->{OPTIONS} ? ' '.$db->{OPTIONS} : '' ).
+				($db->{OPTIONS} ? ' '.$db->{OPTIONS} : '' ).
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/postgresql/opt/before-entrypoint.sh".
 				' --restart=always'.
