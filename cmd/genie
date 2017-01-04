@@ -154,7 +154,7 @@ $config{GENERAL}->{home_dir}   ||= $now_path;
 $config{GENERAL}->{config_dir} ||= "$now_path/$config_dir_name";
 
 # -- ランモード設定・表示
-$config{GENERAL}->{runmode} ||= $ENV{DOCKER_RUNMODE} || 'develop'; # 引数・環境変数が未指定の場合 `develop` として動作します。または、compose実行の場合は強制的にproductになります。（引数＞環境変数）
+$config{GENERAL}->{runmode} ||= $ENV{GENIE_RUNMODE} || 'develop'; # 引数・環境変数が未指定の場合 `develop` として動作します。または、compose実行の場合は強制的にproductになります。（引数＞環境変数）
 message('disabled', 'runmode = '.$config{GENERAL}->{runmode});
 
 # -- 設定ファイルの決定
