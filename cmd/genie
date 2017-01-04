@@ -188,14 +188,6 @@ if( -d $config{GENERAL}->{config_dir} ){
 	}
 }
 
-# -- データベース設定でLABELが重複していないか確認
-foreach my $db_type (qw|MYSQL POSTGRESQL|) {
-	my @err;
-	my %book;
-	map { if($book{$_->{LABEL}}++){push @err, $_->{LABEL};} } @{$config{$db_type}->{DATABASES}};
-	throw("${db_type}の設定で、重複するラベルがあります。", join("\n", @err)) if @err;
-}
-
 # --------------------------------------------------------------------
 # Dockerマシーン環境用意
 # ※設定がされていたら。
@@ -950,7 +942,10 @@ sub up {
 		# -- スクリプトパーミッション設定
 		chmod 0755, "$config{GENERAL}->{config_dir}/mysql/opt/before-entrypoint.sh";
 		# -- コンテナ起動
-		foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
+		# foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
+		foreach (keys %{$config{MYSQL}->{DATABASES}}) {
+			my $db = $config{MYSQL}->{DATABASES}->{$_};
+			$db->{LABEL} = $_;
 			my $label = $container_name_base . "-mysql-" . $db->{LABEL};
 			$mysql_last_label = $label;
 			my $cmd =
@@ -1443,8 +1438,10 @@ sub down {
 
 	# -- MySQL
 	if(ref $config{MYSQL}->{DATABASES}) {
-		foreach(@{$config{MYSQL}->{DATABASES}}){
-			my $label = $container_name_base . "-mysql-" . $_->{LABEL};
+		# foreach(@{$config{MYSQL}->{DATABASES}}){
+		foreach(keys %{$config{MYSQL}->{DATABASES}}){
+			# my $label = $container_name_base . "-mysql-" . $_->{LABEL};
+			my $label = $container_name_base . "-mysql-" . $_;
 			if(is_exist($label)){
 				push @exist_containers, $label;
 				push @volumes, &get_data_volume_name($label);
@@ -1454,8 +1451,10 @@ sub down {
 
 	# -- PostgreSQL
 	if(ref $config{POSTGRESQL}->{DATABASES}) {
-		foreach(@{$config{POSTGRESQL}->{DATABASES}}){
-			my $label = $container_name_base . "-postgresql-" . $_->{LABEL};
+		# foreach(@{$config{POSTGRESQL}->{DATABASES}}){
+		foreach(keys %{$config{POSTGRESQL}->{DATABASES}}){
+			# my $label = $container_name_base . "-postgresql-" . $_->{LABEL};
+			my $label = $container_name_base . "-postgresql-" . $_;
 			if(is_exist($label)){
 				push @exist_containers, $label;
 				push @volumes, &get_data_volume_name($label);
@@ -1859,15 +1858,15 @@ sub ngrok {
 # --------------------------------------------------------------------
 sub mysql {
 	return unless require_up(); # 起動必須
-	my @dbs = @{$config{MYSQL}->{DATABASES}} if ref $config{MYSQL}->{DATABASES};
+	my %dbs = %{$config{MYSQL}->{DATABASES}} if ref $config{MYSQL}->{DATABASES};
 
-	# -- 引数未指定または数字
-	if($ARGV[1] eq '' || $ARGV[1] =~ /^\d+$/ ) {
-		my $db_number = $ARGV[1] =~ /^\d+$/ ? $ARGV[1] : 1;
-		unless($db_number>0 && $db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
-		my $db = $config{MYSQL}->{DATABASES}[$db_number-1];
+	# -- 引数未指定または@から始まるDBラベル
+	if($ARGV[1] eq '' || $ARGV[1] =~ /^\@\w.+$/ ) {
+		my $db_label = $ARGV[1] =~ /^\@\w+$/ ? $ARGV[1] : 1;
+		unless($dbs{$db_label}) { throw('指定されたDBラベルに対応するMySQL設定が見つかりません。'); }
+		my $db = $config{MYSQL}->{DATABASES}->{$db_label};
 		my $cmd =
-			qq|docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{LABEL}|.
+			qq|docker exec -it $config{DOCKER}->{NAME}-mysql-$db_label|.
 			qq| mysql $db->{NAME}|.
 			qq| -u$db->{USER}|.
 			qq| -p$db->{PASS}|
@@ -1877,16 +1876,17 @@ sub mysql {
 	# -- ls
 	elsif($ARGV[1] eq 'ls' ) {
 		my $count = 1;
-		message(info=>join("\n", map { ($count++) . ': ' . $_->{LABEL} } @dbs));
+		message(info=>join("\n", map { ($count++) . ': ' . $_ } keys %dbs));
 	}
-	# -- dump (db num) : 対象番号のDBをdump
+	# -- dump (db num) : 対象ラベルのDBをdump
 	elsif($ARGV[1] eq 'dump') {
-		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
-		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
-		`docker exec $config{DOCKER}->{NAME}-mysql-$dbs[0]->{LABEL} mkdir -p /mysql/opt/dumps/ $hide_all`;
-		my $count = 1;
-		foreach my $db (@dbs){
-			if($db_number && $db_number!=$count++) { next; }
+		my $db_label = $ARGV[2] =~ /^\@\w+$/ ? $ARGV[2] : undef;
+		if($db_label && !$dbs{$db_label}) { throw('指定されたDBラベルに対応するMySQL設定が見つかりません。'); }
+		`docker exec $config{DOCKER}->{NAME}-mysql-$db_label mkdir -p /mysql/opt/dumps/ $hide_all` if $db_label;
+		foreach (keys %dbs){
+			my $db = $dbs{$_};
+			$db->{LABEL} = $_;
+			if($db_label && $db_label ne $db->{LABEL}) { next; }
 			my $label = "$config{DOCKER}->{NAME}-mysql-$db->{LABEL}";
 
 			# -- ダンプファイルの世代処理
@@ -1915,11 +1915,12 @@ sub mysql {
 	}
 	# -- restore (db num) : 対象番号のDBダンプを復元 ※番号未指定なら全てのDBを復元
 	elsif($ARGV[1] eq 'restore') {
-		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
-		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
-		my $count = 1;
-		foreach my $db (@dbs){
-			if($db_number && $db_number!=$count++) { next; }
+		my $db_label = $ARGV[2] =~ /^\@\w+$/ ? $ARGV[2] : undef;
+		if($db_label && !$dbs{$db_label}) { throw('指定されたDBラベルに対応するMySQL設定が見つかりません。'); }
+		foreach (keys %dbs){
+			my $db = $dbs{$_};
+			$db->{LABEL} = $_;
+			if($db_label && $db_label ne $db->{LABEL}) { next; }
 			my $dumpfile = "$config{GENERAL}->{config_dir}/mysql/opt/dumps/$db->{LABEL}.sql";
 			if(!-e $dumpfile) { next; }
 			my $label = "$config{DOCKER}->{NAME}-mysql-$db->{LABEL}";
@@ -1965,12 +1966,13 @@ sub mysql {
 			}
 		}
 	}
-	# -- cli (db num) : 対象番号のDBコンテナに入る ※番号未指定なら1
+	# -- cli (db num) : 対象ラベルのDBコンテナに入る ※複数あるのにラベル未指定ならエラー。単一ラベルならそれ。
 	elsif($ARGV[1] eq 'cli') {
-		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : 1;
-		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するMySQL設定が見つかりません。'); }
-		my $db = $config{MYSQL}->{DATABASES}[$db_number-1];
-		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-mysql-$db->{LABEL} bash";
+		my @db_labels = keys %dbs;
+		my $db_label = $ARGV[2] =~ /^\@\w+$/ ? $ARGV[2] : (scalar(@db_labels)==1 ? $db_labels[0] : undef);
+		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するMySQL設定が見つかりません。'); }
+		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-mysql-$db_label bash";
 		system $cmd;
 	}
 	# -- 引数ミス
