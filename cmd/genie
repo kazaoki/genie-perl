@@ -153,9 +153,18 @@ while(@dirs){
 $config{GENERAL}->{home_dir}   ||= $now_path;
 $config{GENERAL}->{config_dir} ||= "$now_path/$config_dir_name";
 
-# -- ランモード、設定ファイルの決定
-$config{GENERAL}->{runmode} ||= 'develop';    # 未指定の場合 `develop` として動作します。または、compose実行の場合はproductになります。
-$config{GENERAL}->{config_file} ||= "$config{GENERAL}->{config_dir}/config.pl"; # 未指定の場合 `.genie/config.pl` を読み込みます。
+# -- ランモード設定・表示
+$config{GENERAL}->{runmode} ||= $ENV{DOCKER_RUNMODE} || 'develop'; # 引数・環境変数が未指定の場合 `develop` として動作します。または、compose実行の場合は強制的にproductになります。（引数＞環境変数）
+message('disabled', 'runmode = '.$config{GENERAL}->{runmode});
+
+# -- 設定ファイルの決定
+if(!$config{GENERAL}->{config_file}){ # 未指定の場合 `.genie/config-(ランモード).pl` または `.genie/config.pl` のどちらかを読み込みます。
+	if(-e "$config{GENERAL}->{config_dir}/config-".$config{GENERAL}->{runmode}.".pl"){
+		$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/config-".$config{GENERAL}->{runmode}.".pl";
+	} else {
+		$config{GENERAL}->{config_file} = "$config{GENERAL}->{config_dir}/config.pl";
+	}
+}
 # echo "  Run `$config{GENERAL}->{runmode}` mode by `$config{GENERAL}->{config_file}`\n\n";
 
 # -- 表示用にUTF8フラグ付きも用意しておく
