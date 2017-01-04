@@ -1176,6 +1176,8 @@ sub up {
 					$apache_option .= " -p $_";
 				}
 			}
+			if($config{APACHE}->{HTTP_PORT}) { $apache_option .= ' --expose '.$config{APACHE}->{HTTP_PORT}; }
+			if($config{APACHE}->{HTTPS_PORT}) { $apache_option .= ' --expose '.$config{APACHE}->{HTTPS_PORT}; }
 		}
 
 		# -- Nginx
@@ -2107,7 +2109,10 @@ sub psql {
 # --------------------------------------------------------------------
 sub open {
 	# -- コンテナの情報からブラウザを起動
-	if(`docker port $config{DOCKER}->{NAME} $config{BROWSER}->{OPEN_IN_PORT}` =~ /(\d+)$/) {
+	my $cmd = "docker port $config{DOCKER}->{NAME} $config{BROWSER}->{OPEN_IN_PORT}";
+	my $res = `$cmd $hide_err`;
+	if($?){ return; }
+	if($res =~ /(\d+)$/) {
 		my $port_str = ":$1";
 		if($config{BROWSER}->{OPEN_SCHEMA} eq 'http' && $port_str eq ':80') { $port_str = ''; }
 		elsif($config{BROWSER}->{OPEN_SCHEMA} eq 'https' && $port_str eq ':443') { $port_str = ''; }
@@ -2115,7 +2120,7 @@ sub open {
 		if($config{BROWSER}->{OPEN_PATH}){
 			$url =~ s/\/$//;
 			$url .= $config{BROWSER}->{OPEN_PATH};
-		}		
+		}
 		message(success=>$url);
 		if($open_cmd){
 			`$open_cmd $url $open_cmd_after`;
