@@ -135,9 +135,8 @@ return {
 	# ---------
 	MYSQL => {
 		# ENABLED => 1,
-		DATABASES => [
-			{
-				LABEL      => 'db1',
+		DATABASES => {
+			db1 => {
 				REPOSITORY => 'mysql:5.5',
 				HOST       => 'db1.kazaoki.jp',
 				NAME       => 'genie_db1',
@@ -150,8 +149,7 @@ return {
 					'3306'
 				],
 			},
-			# {
-			# 	LABEL      => 'db2',
+			# db2 => {
 			# 	REPOSITORY => 'mysql:5.6',
 			# 	HOST       => 'db2.kazaoki.jp',
 			# 	NAME       => 'genie_db2',
@@ -164,8 +162,7 @@ return {
 			# 		'3306'
 			# 	],
 			# },
-			# {
-			# 	LABEL      => 'db3',
+			# db3 => {
 			# 	REPOSITORY => 'mysql:5.7',
 			# 	HOST       => 'db3.kazaoki.jp',
 			# 	NAME       => 'genie_db3',
@@ -178,8 +175,7 @@ return {
 			# 		'3306'
 			# 	],
 			# },
-			{
-				LABEL       => 'wp',
+			wp => {
 				REPOSITORY  => 'mysql:5.7',
 				HOST        => 'db-wp.kazaoki.jp',
 				NAME        => 'wp',
@@ -192,17 +188,16 @@ return {
 					'3306:3306'
 				],
 			},
-		],
+		},
 	},
 
 	# PostgreSQL設定
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		# ENABLED => 1,
-		DATABASES => [
-			{
-				LABEL       => 'db1',
+		ENABLED => 1,
+		DATABASES => {
+			db1 => {
 				REPOSITORY  => 'postgres:9.4',
 				HOST        => 'db1.com',
 				NAME        => 'genie_db1',
@@ -210,13 +205,12 @@ return {
 				PASS        => '123456789',
 				LOCALE      => 'ja_JP.UTF-8',
 				DUMP_GENEL  => 3,
-				DATA_VOLUME_LOCK => 1,
+				# DATA_VOLUME_LOCK => 1,
 				BIND_PORTS  => [
 					'5432:5432'
 				],
 			},
-			{
-				LABEL      => 'test-db',
+			test_db => {
 				REPOSITORY => 'postgres:9.3',
 				# HOST       => 'localhost',
 				NAME       => 'genie_db2',
@@ -224,11 +218,12 @@ return {
 				PASS       => '123456789',
 				LOCALE     => 'ja_JP.UTF-8',
 				DUMP_GENEL => 1,
+				# DATA_VOLUME_LOCK => 1,
 				BIND_PORTS => [
 					'5432'
 				],
 			},
-		],
+		},
 	},
 
 	# ngrok設定

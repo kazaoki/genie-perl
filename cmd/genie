@@ -942,7 +942,6 @@ sub up {
 		# -- スクリプトパーミッション設定
 		chmod 0755, "$config{GENERAL}->{config_dir}/mysql/opt/before-entrypoint.sh";
 		# -- コンテナ起動
-		# foreach my $db (@{$config{MYSQL}->{DATABASES}}) {
 		foreach (keys %{$config{MYSQL}->{DATABASES}}) {
 			my $db = $config{MYSQL}->{DATABASES}->{$_};
 			$db->{LABEL} = $_;
@@ -1030,7 +1029,9 @@ sub up {
 		# -- スクリプトパーミッション設定
 		chmod 0755, "$config{GENERAL}->{config_dir}/postgresql/opt/before-entrypoint.sh";
 		# -- コンテナ起動
-		foreach my $db (@{$config{POSTGRESQL}->{DATABASES}}) {
+		foreach (keys %{$config{POSTGRESQL}->{DATABASES}}) {
+			my $db = $config{POSTGRESQL}->{DATABASES}->{$_};
+			$db->{LABEL} = $_;
 			my $label = $container_name_base . "-postgresql-" . $db->{LABEL};
 			$postgresql_last_label = $label;
 			my $cmd =
@@ -1865,7 +1866,7 @@ sub mysql {
 	if($ARGV[1] eq '' || $ARGV[1] =~ /^\@\w.+$/ ) {
 		my $db_label = $ARGV[1] =~ /^\@(\w+)$/ ? $1 : (scalar(@db_labels)==1 ? $db_labels[0] : undef); # 未指定なら自動で選択。但し複数設定ある場合はエラーに。
 		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
-		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するMySQL設定が見つかりません。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するDB設定が見つかりません。'); }
 		my $db = $config{MYSQL}->{DATABASES}->{$db_label};
 		my $cmd =
 			qq|docker exec -it $config{DOCKER}->{NAME}-mysql-$db_label|.
@@ -1883,7 +1884,7 @@ sub mysql {
 	elsif($ARGV[1] eq 'dump') {
 		my $db_label = $ARGV[2] =~ /^\@(\w+)$/ ? $1 : (scalar(@db_labels)==1 ? $db_labels[0] : undef); # 未指定なら自動で選択。但し複数設定ある場合はエラーに。
 		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
-		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するMySQL設定が見つかりません。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するDB設定が見つかりません。'); }
 		`docker exec $config{DOCKER}->{NAME}-mysql-$db_label mkdir -p /mysql/opt/dumps/ $hide_all` if $db_label;
 		foreach (keys %dbs){
 			my $db = $dbs{$_};
@@ -1919,7 +1920,7 @@ sub mysql {
 	elsif($ARGV[1] eq 'restore') {
 		my $db_label = $ARGV[2] =~ /^\@(\w+)$/ ? $1 : (scalar(@db_labels)==1 ? $db_labels[0] : undef); # 未指定なら自動で選択。但し複数設定ある場合はエラーに。
 		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
-		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するMySQL設定が見つかりません。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するDB設定が見つかりません。'); }
 		foreach (keys %dbs){
 			my $db = $dbs{$_};
 			$db->{LABEL} = $_;
@@ -1973,7 +1974,7 @@ sub mysql {
 	elsif($ARGV[1] eq 'cli') {
 		my $db_label = $ARGV[2] =~ /^\@(\w+)$/ ? $1 : (scalar(@db_labels)==1 ? $db_labels[0] : undef);
 		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
-		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するMySQL設定が見つかりません。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するDB設定が見つかりません。'); }
 		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-mysql-$db_label bash";
 		system $cmd;
 	}
@@ -1988,32 +1989,35 @@ sub mysql {
 # --------------------------------------------------------------------
 sub psql {
 	return unless require_up(); # 起動必須
-	my @dbs = @{$config{POSTGRESQL}->{DATABASES}} if ref $config{POSTGRESQL}->{DATABASES};
+	my %dbs = %{$config{POSTGRESQL}->{DATABASES}} if ref $config{POSTGRESQL}->{DATABASES};
+	my @db_labels = keys %dbs;
 
-	# -- 引数未指定または数字
-	if($ARGV[1] eq '' || $ARGV[1] =~ /^\d+$/ ) {
-		my $db_number = $ARGV[1] =~ /^\d+$/ ? $ARGV[1] : 1;
-		unless($db_number>0 && $db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
-		my $db = $dbs[$db_number-1];
+	# -- 引数未指定または@から始まるDBラベル
+	if($ARGV[1] eq '' || $ARGV[1] =~ /^\@\w+$/ ) {
+		my $db_label = $ARGV[1] =~ /^\@(\w+)$/ ? $1 : (scalar(@db_labels)==1 ? $db_labels[0] : undef); # 未指定なら自動で選択。但し複数設定ある場合はエラーに。
+		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するDB設定が見つかりません。'); }
+		my $db = $dbs{$db_label};
 		my $cmd =
-			qq|docker exec -it $config{DOCKER}->{NAME}-postgresql-$db->{LABEL}|.
+			qq|docker exec -it $config{DOCKER}->{NAME}-postgresql-$db_label|.
 			qq| psql $db->{NAME} -U $db->{USER}|
 		;
 		system $cmd;
 	}
 	# -- ls
 	elsif($ARGV[1] eq 'ls' ) {
-		my $count = 1;
-		message(info=>join("\n", map { ($count++) . ': ' . $_->{LABEL} } @dbs));
+		message(info=>join("\n", @db_labels));
 	}
-	# -- dump (db num) : 対象番号のDBをdump
+	# -- dump (db label) : 対象ラベルのDBをdump
 	elsif($ARGV[1] eq 'dump') {
-		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
-		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
-		`docker exec $config{DOCKER}->{NAME}-postgresql-$dbs[0]->{LABEL} mkdir -p /postgresql/opt/dumps/ $hide_all`;
-		my $count = 1;
-		foreach my $db (@dbs){
-			if($db_number && $db_number!=$count++) { next; }
+		my $db_label = $ARGV[2] =~ /^\@(\w+)$/ ? $1 : (scalar(@db_labels)==1 ? $db_labels[0] : undef); # 未指定なら自動で選択。但し複数設定ある場合はエラーに。
+		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するDB設定が見つかりません。'); }
+		`docker exec $config{DOCKER}->{NAME}-postgresql-$db_label mkdir -p /postgresql/opt/dumps/ $hide_all` if $db_label;
+		foreach (keys %dbs){
+			my $db = $dbs{$_};
+			$db->{LABEL} = $_;
+			if($db_label && $db_label ne $db->{LABEL}) { next; }
 			my $label = "$config{DOCKER}->{NAME}-postgresql-$db->{LABEL}";
 
 			# -- ダンプファイルの世代処理
@@ -2042,13 +2046,15 @@ sub psql {
 			}
 		}
 	}
-	# -- restore (db num) : 対象番号のDBをtarからストレージに復元 ※番号未指定なら全てのDBを復元
+	# -- restore (db label) : 対象ラベルのDBをtarからストレージに復元
 	elsif($ARGV[1] eq 'restore') {
-		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : undef;
-		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
-		my $count = 1;
-		foreach my $db (@dbs){
-			if($db_number && $db_number!=$count++) { next; }
+		my $db_label = $ARGV[2] =~ /^\@(\w+)$/ ? $1 : (scalar(@db_labels)==1 ? $db_labels[0] : undef); # 未指定なら自動で選択。但し複数設定ある場合はエラーに。
+		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するDB設定が見つかりません。'); }
+		foreach (keys %dbs){
+			my $db = $dbs{$_};
+			$db->{LABEL} = $_;
+			if($db_label && $db_label ne $db->{LABEL}) { next; }
 			my $dumpfile = "$config{GENERAL}->{config_dir}/postgresql/opt/dumps/$db->{LABEL}.sql";
 			if(!-e $dumpfile) { next; }
 			my $label = "$config{DOCKER}->{NAME}-postgresql-$db->{LABEL}";
@@ -2094,12 +2100,12 @@ sub psql {
 			}
 		}
 	}
-	# -- cli (db num) : 対象番号のDBコンテナに入る ※番号未指定なら1
+	# -- cli (db label) : 対象ラベルのDBコンテナに入る
 	elsif($ARGV[1] eq 'cli') {
-		my $db_number = $ARGV[2] =~ /^\d+$/ ? $ARGV[2] : 1;
-		unless($db_number<=scalar(@dbs)) { throw('指定されたDB番号に対応するPostgreSQL設定が見つかりません。'); }
-		my $db = $config{POSTGRESQL}->{DATABASES}[$db_number-1];
-		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-postgresql-$db->{LABEL} bash";
+		my $db_label = $ARGV[2] =~ /^\@(\w+)$/ ? $1 : (scalar(@db_labels)==1 ? $db_labels[0] : undef);
+		if(!$db_label) { throw('DB設定が複数ありますので、ラベルを指定してください。'); }
+		if(!$dbs{$db_label}) { throw('指定されたDBラベルに対応するDB設定が見つかりません。'); }
+		my $cmd = "docker exec -it $config{DOCKER}->{NAME}-postgresql-$db_label bash";
 		system $cmd;
 	}
 	# -- 引数ミス
