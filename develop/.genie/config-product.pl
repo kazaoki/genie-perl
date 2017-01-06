@@ -9,9 +9,23 @@ return {
 	# Docker設定
 	# ----------
 	DOCKER => {
-		NAME  => 'genie-test2',
-		HOSTS => [
-			'genie-test2.com:127.0.0.1',
-		],
+		# NETWORK => 'my_docker_nw',
+	},
+
+	# Apache設定
+	# ----------
+	APACHE => {
+		BIND_PORTS => undef,
+	},
+
+	# MySQL設定
+	# ---------
+	MYSQL => {
+		DATABASES => {
+			main => {
+				DATA_VOLUME_LOCK => 1,
+				BIND_PORTS  => undef,
+			},
+		},
 	},
 };
