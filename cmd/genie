@@ -412,7 +412,7 @@ sub message {
 	my @messages = split(/[\r\n]+/, $message);
 	my %style;
 	my %clear = (color=>'clear', bgcolor=>'clear', weight=>'clear', decoratiinfo=>'clear');
-	
+
 	   if($type eq 'default' ) { %style = (color=>'dark_white'); }
 	elsif($type eq 'primary' ) { %style = (color=>'blue'); }
 	elsif($type eq 'success' ) { %style = (color=>'green'); }
@@ -534,7 +534,7 @@ sub input {
 	# -- 末尾だと崩れるので少し行送りしてカーソルを戻る
 	print "\n" x 4;
 	print "\e[4A";
-	
+
 	# -- 描画開始
 	style(color=>'white', bgcolor=>'blue');
 	echo ' ' x $len . "\n";
@@ -625,7 +625,12 @@ sub get_data_volume_name {
 # --------------------------
 sub get_container_ip {
 	my $container_name = shift;
-	my $ip = `docker inspect --format={{.NetworkSettings.IPAddress}} $container_name $hide_err`;
+	my $cmd =
+		$config{DOCKER}->{NETWORK}
+			? "docker inspect --format={{.NetworkSettings.Networks.".$config{DOCKER}->{NETWORK}.".IPAddress}} $container_name $hide_err"
+			: "docker inspect --format={{.NetworkSettings.IPAddress}} $container_name $hide_err"
+	;
+	my $ip = `$cmd`;
 	chomp $ip;
 	return $ip;
 }
@@ -688,7 +693,7 @@ sub wait_container {
 		# -- 標準出力をチェックするコマンド
 		$cmd = qq|docker logs $param->{container_name} 2>&1|;
 	}
-		
+
 	do {
 		# -- 生存確認
 		if(is_up($param->{container_name})){
@@ -844,7 +849,7 @@ sub update {
 
 	# -- 一時コンテナを起動してそっちで設定ファイルコピーしてくる
 	if($input =~ /^[cy]$/i ) {
-	
+
 		# -- 設定ディレクトリの存在確認
 		if(!-d $config{GENERAL}->{config_dir}) {
 			message(danger=>"$config{GENERAL_U}->{config_dir} ディレクトリがありません。先に init を実行してください。");
@@ -958,7 +963,7 @@ sub up {
 				" -e MYSQL_PASSWORD=$db->{PASS}".
 				" -e MYSQL_CHARSET=$db->{CHARSET}".
 				" -e TERM=xterm".
-				($db->{HOST} ? " --add-host=$db->{HOST}:127.0.0.1" : '' ).
+				($config{DOCKER}->{NETWORK} ? ' --net='.$config{DOCKER}->{NETWORK} : '' ).
 				($db->{OPTIONS} ? ' '.$db->{OPTIONS} : '' ).
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/mysql/opt/before-entrypoint.sh".
@@ -1048,6 +1053,7 @@ sub up {
 				" -e POSTGERS_ENCODING=$db->{ENCODING}".
 				" -e POSTGERS_LOCALE=$db->{LOCALE}".
 				" -e TERM=xterm".
+				($config{DOCKER}->{NETWORK} ? ' --net='.$config{DOCKER}->{NETWORK} : '' ).
 				($db->{OPTIONS} ? ' '.$db->{OPTIONS} : '' ).
 				(ref $db->{BIND_PORTS} ? join('', map { " -p $_" } @{$db->{BIND_PORTS}}) : '' ).
 				" --entrypoint=/postgresql/opt/before-entrypoint.sh".
@@ -1243,6 +1249,7 @@ sub up {
 			$volumes.
 			" --name=$container_name_base".
 			" $envs".
+			($config{DOCKER}->{NETWORK} ? ' --net='.$config{DOCKER}->{NETWORK} : '' ).
 			($config{DOCKER}->{OPTIONS} ? " $config{DOCKER}->{OPTIONS}" : '').
 			' --restart=always'.
 			" $config{DOCKER}->{IMAGE}"
