@@ -1448,7 +1448,6 @@ sub down {
 
 	# -- MySQL
 	if(ref $config{MYSQL}->{DATABASES}) {
-		# foreach(@{$config{MYSQL}->{DATABASES}}){
 		foreach(keys %{$config{MYSQL}->{DATABASES}}){
 			# my $label = $container_name_base . "-mysql-" . $_->{LABEL};
 			my $label = $container_name_base . "-mysql-" . $_;
@@ -1461,7 +1460,6 @@ sub down {
 
 	# -- PostgreSQL
 	if(ref $config{POSTGRESQL}->{DATABASES}) {
-		# foreach(@{$config{POSTGRESQL}->{DATABASES}}){
 		foreach(keys %{$config{POSTGRESQL}->{DATABASES}}){
 			# my $label = $container_name_base . "-postgresql-" . $_->{LABEL};
 			my $label = $container_name_base . "-postgresql-" . $_;
