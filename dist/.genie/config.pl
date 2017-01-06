@@ -136,51 +136,35 @@
 	# MySQL設定
 	# ---------
 	MYSQL => {
-		ENABLED => 1,
-		DATABASES => [
-			{
-				LABEL       => 'main',
-				REPOSITORY  => 'mysql:5.7',
-				# HOST        => 'db1.xxx.com', # localhostの場合は記述せずにこの行はコメントアウトして下さい。
-				NAME        => 'db1',
-				USER        => 'user1',
-				PASS        => '123456789',
-				CHARSET     => 'utf8',
-				DUMP_GENEL  => 3,
+		# ENABLED => 1,
+		DATABASES => {
+			main => {
+				REPOSITORY => 'mysql:5.5',
+				HOST       => 'db.sample',
+				NAME       => 'sample_db',
+				USER       => 'sample_user',
+				PASS       => '123456789',
+				CHARSET    => 'utf8',
+				DUMP_GENEL => 3,
 				# DATA_VOLUME_LOCK => 1,
-				BIND_PORTS  => [
-					'3306:3306'
+				BIND_PORTS => [
+					'3306'
 				],
 			},
-			# {
-			# 	LABEL       => 'sub',
-			# 	REPOSITORY  => 'mysql:5.6',
-			# 	# HOST        => 'db2.xxx.com',
-			# 	NAME        => 'db2',
-			# 	USER        => 'user2',
-			# 	PASS        => '123456789',
-			# 	CHARSET     => 'utf8',
-			# 	DUMP_GENEL  => 2,
-			# 	# DATA_VOLUME_LOCK => 1,
-			# 	BIND_PORTS  => [
-			# 		'3306'
-			# 	],
-			# },
-		],
+		},
 	},
 
 	# PostgreSQL設定
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		# ENABLED => 1,
-		DATABASES => [
-			{
-				LABEL       => 'main',
+		ENABLED => 1,
+		DATABASES => {
+			main => {
 				REPOSITORY  => 'postgres:9.4',
-				HOST        => 'pg1.yyy.com',
-				NAME        => 'pg1',
-				USER        => 'user1',
+				HOST        => 'db.sample',
+				NAME        => 'sample_db',
+				USER        => 'sample_user',
 				PASS        => '123456789',
 				LOCALE      => 'ja_JP.UTF-8',
 				DUMP_GENEL  => 3,
@@ -189,21 +173,7 @@
 					'5432:5432'
 				],
 			},
-			# {
-			# 	LABEL       => 'sub',
-			# 	REPOSITORY  => 'postgres:9.4',
-			# 	HOST        => 'pg2.yyy.com',
-			# 	NAME        => 'pg2',
-			# 	USER        => 'user2',
-			# 	PASS        => '123456789',
-			# 	LOCALE      => 'ja_JP.UTF-8',
-			# 	DUMP_GENEL  => 3,
-			# 	# DATA_VOLUME_LOCK => 1,
-			# 	BIND_PORTS  => [
-			# 		'5432'
-			# 	],
-			# },
-		],
+		},
 	},
 
 	# ngrok設定
