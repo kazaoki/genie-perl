@@ -136,56 +136,17 @@ return {
 	MYSQL => {
 		# ENABLED => 1,
 		DATABASES => {
-			db1 => {
+			main => {
 				REPOSITORY => 'mysql:5.5',
-				HOST       => 'db1.kazaoki.jp',
-				NAME       => 'genie_db1',
-				USER       => 'genie_user1',
+				HOST       => 'db1.sample',
+				NAME       => 'sample_db',
+				USER       => 'sample_user',
 				PASS       => '123456789',
 				CHARSET    => 'utf8',
 				DUMP_GENEL => 3,
 				# DATA_VOLUME_LOCK => 1,
 				BIND_PORTS => [
 					'3306'
-				],
-			},
-			# db2 => {
-			# 	REPOSITORY => 'mysql:5.6',
-			# 	HOST       => 'db2.kazaoki.jp',
-			# 	NAME       => 'genie_db2',
-			# 	USER       => 'genie_user2',
-			# 	PASS       => '123456789',
-			# 	CHARSET    => 'utf8',
-			# 	DUMP_GENEL => 1,
-			# 	# DATA_VOLUME_LOCK => 1,
-			# 	BIND_PORTS => [
-			# 		'3306'
-			# 	],
-			# },
-			# db3 => {
-			# 	REPOSITORY => 'mysql:5.7',
-			# 	HOST       => 'db3.kazaoki.jp',
-			# 	NAME       => 'genie_db3',
-			# 	USER       => 'genie_user3',
-			# 	PASS       => '123456789',
-			# 	CHARSET    => 'utf8',
-			# 	DUMP_GENEL => 1,
-			# 	# DATA_VOLUME_LOCK => 1,
-			# 	BIND_PORTS => [
-			# 		'3306'
-			# 	],
-			# },
-			wp => {
-				REPOSITORY  => 'mysql:5.7',
-				HOST        => 'db-wp.kazaoki.jp',
-				NAME        => 'wp',
-				USER        => 'wp',
-				PASS        => '123456',
-				CHARSET     => 'utf8',
-				DUMP_GENEL  => 2,
-				# DATA_VOLUME_LOCK => 1,
-				BIND_PORTS  => [
-					'3306:3306'
 				],
 			},
 		},
@@ -197,30 +158,17 @@ return {
 	POSTGRESQL => {
 		ENABLED => 1,
 		DATABASES => {
-			db1 => {
+			main => {
 				REPOSITORY  => 'postgres:9.4',
-				HOST        => 'db1.com',
-				NAME        => 'genie_db1',
-				USER        => 'genie_user1',
+				HOST        => 'db1sample',
+				NAME        => 'sample_db',
+				USER        => 'sample_user',
 				PASS        => '123456789',
 				LOCALE      => 'ja_JP.UTF-8',
 				DUMP_GENEL  => 3,
 				# DATA_VOLUME_LOCK => 1,
 				BIND_PORTS  => [
 					'5432:5432'
-				],
-			},
-			test_db => {
-				REPOSITORY => 'postgres:9.3',
-				# HOST       => 'localhost',
-				NAME       => 'genie_db2',
-				USER       => 'genie_user2',
-				PASS       => '123456789',
-				LOCALE     => 'ja_JP.UTF-8',
-				DUMP_GENEL => 1,
-				# DATA_VOLUME_LOCK => 1,
-				BIND_PORTS => [
-					'5432'
 				],
 			},
 		},

@@ -47,7 +47,8 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
 # Set locale
 # ----------
 RUN echo 'LANG="ja_JP.utf8"' > /etc/locale.conf \
-    && source /etc/locale.conf
+    && source /etc/locale.conf \
+    && localedef -f UTF-8 -i ja_JP ja_JP.UTF-8
 
 # Install anyenv
 # --------------
