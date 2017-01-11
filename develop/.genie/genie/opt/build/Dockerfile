@@ -180,8 +180,9 @@ RUN chmod +x /*.sh
 
 # Add docker user
 # ---------------
-RUN groupadd -g 1000 docker && \
-    useradd -g docker -m -s /bin/bash docker
+RUN groupadd -g 1000 docker \
+    && useradd -g docker -m -s /bin/bash docker \
+    && usermod -aG apache,nginx docker
 
 # Entry point
 # -----------
