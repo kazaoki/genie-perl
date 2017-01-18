@@ -23,7 +23,7 @@ cp /postgresql/opt/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
 
 # Copy dump file
 # --------------
-cp /postgresql/opt/dumps/$POSTGRES_LABEL.sql /docker-entrypoint-initdb.d
+cp /postgresql/opt/dumps/$POSTGRES_LABEL.* /docker-entrypoint-initdb.d
 
 # Copy directories other than /opt/
 # ---------------------------------

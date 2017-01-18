@@ -21,9 +21,7 @@ cp /mysql/opt/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
 
 # Copy dump file
 # --------------
-if [ -f /mysql/opt/dumps/$MYSQL_LABEL.sql ]; then
-  cp /mysql/opt/dumps/$MYSQL_LABEL.sql /docker-entrypoint-initdb.d
-fi
+cp /mysql/opt/dumps/$MYSQL_LABEL.* /docker-entrypoint-initdb.d
 
 # Copy directories other than /opt/
 # ---------------------------------
