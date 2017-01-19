@@ -365,6 +365,13 @@ if [[ $GENIE_SENDLOG_ENABLED ]]; then
 fi
 
 # --------------------------------------------------------------------
+# Fluentd
+# --------------------------------------------------------------------
+if [[ $GENIE_FLUENTD_ENABLED ]]; then
+  td-agent --config=$GENIE_FLUENTD_CONFIG_FILE &
+fi
+
+# --------------------------------------------------------------------
 # Copy directories other than /opt/
 # --------------------------------------------------------------------
 rsync -rltD --exclude /opt /genie/* /

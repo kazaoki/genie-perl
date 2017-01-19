@@ -1205,6 +1205,12 @@ sub up {
 			}
 		}
 
+		# -- Fluentd
+		my $fluentd_option;
+		if($config{FLUENTD}->{ENABLED}) {
+			$fluentd_option .= " -v $config{GENERAL}->{config_dir}/td-agent:/etc/td-agent";
+		}
+
 		# -- add hosts
 		my $add_host;
 		if(ref $config{DOCKER}->{HOSTS}) {
@@ -1245,6 +1251,7 @@ sub up {
 			$apache_option.
 			$nginx_option.
 			$sendlog_option.
+			$fluentd_option.
 			$add_host.
 			$volumes.
 			" --name=$container_name_base".

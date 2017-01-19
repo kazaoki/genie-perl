@@ -184,6 +184,11 @@ RUN groupadd -g 1000 docker \
     && useradd -g docker -m -s /bin/bash docker \
     && usermod -aG apache,nginx docker
 
+# Install Fluentd
+# ---------------
+RUN curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | sh \
+    && /opt/td-agent/embedded/bin/fluent-gem install fluent-plugin-elasticsearch
+
 # Entry point
 # -----------
 ENTRYPOINT /entrypoint.sh
