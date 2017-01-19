@@ -1,4 +1,4 @@
-return {
+﻿return {
 
 	# 起動時メモ
 	# ----------
@@ -16,6 +16,12 @@ return {
 	# ----------
 	APACHE => {
 		BIND_PORTS => undef,
+	},
+
+	# Fluentd設定
+	# -----------
+	FLUENTD => {
+		CONFIG_FILE => '/etc/td-agent/td-agent-product.conf',
 	},
 
 	# MySQL設定

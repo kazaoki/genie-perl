@@ -133,6 +133,13 @@
 		]
 	},
 
+	# Fluentd設定
+	# -----------
+	FLUENTD => {
+		# ENABLED => 1,
+		CONFIG_FILE => '/etc/td-agent/td-agent.conf',
+	},
+
 	# MySQL設定
 	# ---------
 	MYSQL => {
