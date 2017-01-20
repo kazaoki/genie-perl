@@ -326,6 +326,9 @@ if [[ $GENIE_APACHE_ENABLED ]]; then
     sed -i "s/CustomLog\ \"logs\/access_log\"\ combined/CustomLog\ \"logs\/access_log\"\ combined\ env\=\!nolog/" /etc/httpd/conf/httpd.conf
     echo "SetEnvIfNoCase Request_URI \"$GENIE_APACHE_NO_LOG_REGEX\" nolog" >> /etc/httpd/conf/httpd.conf
   fi
+  if [[ $GENIE_APACHE_REAL_IP_LOG_ENABLED ]]; then
+    sed -i "s/\%h /\%\{X-Forwarded-For\}i /g" /etc/httpd/conf/httpd.conf
+  fi
   /usr/sbin/httpd
   echo 'Apache setup done.' >> /var/log/entrypoint.log
 fi
