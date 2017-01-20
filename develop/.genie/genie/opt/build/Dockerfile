@@ -42,6 +42,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         rpm-build libtool gcc-c++ mod_fcgid \
         nodejs \
         openssh-server \
+        lsof \
     && yum clean all
 
 # Set locale
