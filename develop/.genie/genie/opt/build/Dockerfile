@@ -135,6 +135,7 @@ RUN sed -i 's/\#AddHandler\ cgi\-script\ \.cgi/AddHandler\ cgi\-script\ \.cgi/g'
     && echo '  # </__NO_CACHE__>' >> /etc/httpd/conf/httpd.conf \
     && echo '</Directory>' >> /etc/httpd/conf/httpd.conf \
     && sed -i 's/\#ServerName www\.example\.com\:80/ServerName genie/g' /etc/httpd/conf/httpd.conf
+    && sed -i 's/ScriptAlias \/cgi-bin\/ \"\/var\/www\/cgi-bin\/\"/\#ScriptAlias \/cgi-bin\/ \"\/var\/www\/cgi-bin\/\"/' /etc/httpd/conf/httpd.conf
 
 # Install ngrok
 # -------------
