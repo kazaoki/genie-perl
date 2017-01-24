@@ -28,6 +28,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         perl-libwww-perl perl-Crypt-SSLeay \
         perl-String-CRC32 gnutls \
         perl-DBD-MySQL perl-DBD-Pg \
+        perl-GD \
         ImageMagick ImageMagick-perl \
         postfix \
         libffi-devel \
