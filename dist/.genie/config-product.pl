@@ -16,6 +16,7 @@
 	# ----------
 	APACHE => {
 		BIND_PORTS => undef,
+		REAL_IP_LOG_ENABLED => 1,
 	},
 
 	# Fluentd設定
