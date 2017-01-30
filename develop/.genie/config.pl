@@ -150,7 +150,8 @@ return {
 				NAME       => 'sample_db',
 				USER       => 'sample_user',
 				PASS       => '123456789',
-				CHARSET    => 'utf8',
+				CHARSET    => 'utf8mb4',
+				COLLATION  => 'utf8mb4_unicode_ci',
 				DUMP_GENEL => 3,
 				# DATA_VOLUME_LOCK => 1,
 				BIND_PORTS => [
@@ -164,7 +165,7 @@ return {
 	# --------------
 	# ※LOCALEには ja_JP.UTF-8 | ja_JP.EUC-JP が指定可能で、ENCODINGはこれにより自動的に設定されます。
 	POSTGRESQL => {
-		ENABLED => 1,
+		# ENABLED => 1,
 		DATABASES => {
 			main => {
 				REPOSITORY  => 'postgres:9.4',

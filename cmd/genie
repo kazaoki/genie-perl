@@ -969,7 +969,9 @@ sub up {
 				" --entrypoint=/mysql/opt/before-entrypoint.sh".
 				' --restart=always'.
 				" $db->{REPOSITORY}".
-				" mysqld"
+				" mysqld".
+				($db->{CHARSET} ? " --character-set-server=$db->{CHARSET}" : '').
+				($db->{COLLATION} ? " --collation-server=$db->{COLLATION}" : '')
 			;
 
 			if($up_type eq 'compose'){
