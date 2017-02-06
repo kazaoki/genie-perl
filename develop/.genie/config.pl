@@ -168,7 +168,7 @@ return {
 		# ENABLED => 1,
 		DATABASES => {
 			main => {
-				REPOSITORY  => 'postgres:9.4',
+				REPOSITORY  => 'postgres:9.4-alpine',
 				HOST        => 'db1sample',
 				NAME        => 'sample_db',
 				USER        => 'sample_user',
