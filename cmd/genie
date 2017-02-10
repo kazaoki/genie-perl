@@ -1232,8 +1232,8 @@ sub up {
 		foreach my $volume (@volume_list) {
 			if($volume !~ /^\//){
 				$volume = $config{GENERAL}->{home_dir} . '/' . $volume;
-				$volumes .= " -v $volume";
 			}
+			$volumes .= " -v $volume";
 		}
 
 		# -- runコマンドの作成
