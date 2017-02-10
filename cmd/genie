@@ -318,8 +318,7 @@ sub help {
 				'ls'              => 'docker情報を一挙に表示',
 				'reject'          => 'genie管理外のdockerコンテナも全て強制削除した後、clean実行',
 				'clean'           => '終了済みコンテナ、<none>イメージ、未参照のDataVolumeの削除',
-				'clean locked'    => '`locked`から始まるDataVolumeも削除',
-				'clean product'   => '`product`から始まるDataVolumeも削除',
+				'clean locked'    => '`locked`を含むDataVolumeも削除',
 				'php'             => 'PHPの指定可能なバージョンリストと現在のphpenv選択バージョンの表示',
 				'perl'            => 'Perlの指定可能なバージョンリストと現在のperlenv選択バージョンの表示',
 				'ruby'            => 'Rubyの指定可能なバージョンリストと現在のrubyenv選択バージョンの表示',
@@ -1662,16 +1661,10 @@ sub clean {
 			echo "  Deleting data volumes\n";
 			foreach my $id (@list) {
 				echo "  | - $id ";
-				# -- lockedから始まるVolume名は削除しない。ただし「genie clean locked」で完全削除可能。
-				if( $id =~ /^locked/i && $ARGV[1] ne 'locked' ){
+				# -- lockedを含むVolume名は削除しない。ただし「genie clean locked」で完全削除可能。
+				if( $id =~ /(?:\b|_|-)locked(?:\b|_|-)/i && $ARGV[1] ne 'locked' ){
 					$undeleted ++;
 					style(color=>'yellow'); echo "is locked.\n"; style(color=>'clear');
-					next;
-				}
-				# -- productから始まるVolume名は削除しない。ただし「genie clean product」で完全削除可能。
-				if( $id =~ /^product/i && $ARGV[1] ne 'product' ){
-					$undeleted ++;
-					style(color=>'yellow'); echo "is product.\n"; style(color=>'clear');
 					next;
 				}
 				`docker volume rm $id $hide_all`;
@@ -1690,7 +1683,7 @@ sub clean {
 					message(success=>"${deleted}個のデータボリュームを削除しました。");
 				}
 				if($undeleted) {
-					message(warning=>"${undeleted}個のデータボリュームが削除できない名前になっています。（`locked`または`product`から始まる）\n但し、`genie clean <locked|product>` で強制削除できます。");
+					message(warning=>"${undeleted}個のデータボリュームが削除できない名前になっています。（`locked`を含んでいる）\n但し、`genie clean locked` で強制削除できます。");
 				}
 			}
 		} else {
@@ -2082,7 +2075,7 @@ sub psql {
 			# -- 参照ボリューム名取得
 			my @volumes = &get_data_volume_name($label);
 
-			# -- コンテナ削除とボリューム削除（DataVolume名が<locked|product>から始まるものだろうと削除します）
+			# -- コンテナ削除とボリューム削除（DataVolume名がlockedを含むものだろうと削除します）
 			style(color=>'black', bgcolor=>'dark_black');
 			echo "  Delete PostgreSQL container: $label";
 			`docker rm -f $label $hide_all`;
