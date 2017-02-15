@@ -15,8 +15,8 @@ use LWP::Simple;
 use XML::Simple; # cpan install XML::Simple
 use Tie::IxHash; # cpan install Tie::IxHash
 use YAML::Tiny; # cpan install YAML::Tiny
-use Time::HiRes qw( gettimeofday );
-use Hash::Merge qw( merge );
+use Time::HiRes qw/gettimeofday/;
+use Hash::Merge::Simple qw/merge/;
 $| = 1;
 
 # -- 処理開始時間
