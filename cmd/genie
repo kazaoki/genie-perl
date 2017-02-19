@@ -173,11 +173,11 @@ $config{GENERAL_U}->{config_file_by_mode} = Encode::decode(($is_win ? 'cp932' : 
 if( -d $config{GENERAL}->{config_dir} ){
 	if(-f $config{GENERAL}->{config_file}) {
 		my $r = require $config{GENERAL}->{config_file};
-		%config = %{ merge($r, \%config) };
+		%config = %{ merge(\%config, $r) };
 		# -- config-product.plのようにランモード名が入るファイルがあれば"追加"で読み込む
 		if(-f $config{GENERAL}->{config_file_by_mode}) {
 			my $r = require $config{GENERAL}->{config_file_by_mode};
-			%config = %{ merge($r, \%config) };
+			%config = %{ merge(\%config, $r) };
 		}
 	} else {
 		throw("設定ディレクトリ（$config{GENERAL_U}->{config_dir}）はあるのに設定ファイル（$config{GENERAL_U}->{config_file}）が見つかりません。");
