@@ -948,6 +948,7 @@ sub up {
 		# -- コンテナ起動
 		foreach (keys %{$config{MYSQL}->{DATABASES}}) {
 			my $db = $config{MYSQL}->{DATABASES}->{$_};
+			next unless $db;
 			$db->{LABEL} = $_;
 			my $label = $container_name_base . "-mysql-" . $db->{LABEL};
 			$mysql_last_label = $label;
@@ -1038,6 +1039,7 @@ sub up {
 		# -- コンテナ起動
 		foreach (keys %{$config{POSTGRESQL}->{DATABASES}}) {
 			my $db = $config{POSTGRESQL}->{DATABASES}->{$_};
+			next unless $db;
 			$db->{LABEL} = $_;
 			my $label = $container_name_base . "-postgresql-" . $db->{LABEL};
 			$postgresql_last_label = $label;
