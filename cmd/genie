@@ -1871,7 +1871,7 @@ sub ngrok {
 sub mysql {
 	return unless require_up(); # 起動必須
 	my %dbs = %{$config{MYSQL}->{DATABASES}} if ref $config{MYSQL}->{DATABASES};
-	my @db_labels = keys %dbs;
+	my @db_labels = grep { $dbs{$_} } keys %dbs;
 
 	# -- 引数未指定または@から始まるDBラベル
 	if($ARGV[1] eq '' || $ARGV[1] =~ /^\@\w.+$/ ) {
@@ -2001,7 +2001,7 @@ sub mysql {
 sub psql {
 	return unless require_up(); # 起動必須
 	my %dbs = %{$config{POSTGRESQL}->{DATABASES}} if ref $config{POSTGRESQL}->{DATABASES};
-	my @db_labels = keys %dbs;
+	my @db_labels = grep { $dbs{$_} } keys %dbs;
 
 	# -- 引数未指定または@から始まるDBラベル
 	if($ARGV[1] eq '' || $ARGV[1] =~ /^\@\w+$/ ) {
