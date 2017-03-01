@@ -15,7 +15,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
     && yum install epel-release -y \
     && yum install -y \
         gcc make perl perl-core openssl openssl-libs openssl-devel htop \
-        git bzip2 tar patch wget which cronie \
+        git tig bzip2 tar patch wget which cronie \
         readline readline-devel \
         libevent-devel zlib zlib-devel unzip \
         curl curl-devel psmisc \
