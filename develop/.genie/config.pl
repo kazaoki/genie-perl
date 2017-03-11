@@ -12,7 +12,12 @@ return {
 		IMAGE         => 'kazaoki/genie',
 		# MACHINE       => 'sandbox',
 		NAME          => 'genie-test',
-#		OPTIONS       => '--cpuset-cpus=0-1', # `docker run` 時に渡す追加引数
+		OPTIONS       =>
+			'--cap-drop=all '.
+			'--cap-add=dac_override '.
+			'--cap-add=setgid '.
+			'--cap-add=setuid '.
+			'--cap-add=net_bind_service',
 		HOSTS         => [
 			'genie-test.com:127.0.0.1',
 		],
