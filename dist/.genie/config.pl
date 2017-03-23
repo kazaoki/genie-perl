@@ -94,7 +94,7 @@
 		PUBLIC_PATH  => 'public_html',
 		# NO_CACHE     => 1,
 		# BANDWIDTH    => 10000,
-		NO_LOG_REGEX => '\.(gif|jpe?g|png|ico)$',
+		NO_LOG_REGEX => '\.(gif|jpg|jpeg|jpe|png|css|js|ico)$',
 		REAL_IP_LOG_ENABLED => undef,
 		HTTP_PORT    => 80,
 		HTTPS_PORT   => 443,
