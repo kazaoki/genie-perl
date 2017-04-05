@@ -181,6 +181,10 @@ RUN curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | s
 RUN echo '{ "allow_root": true }' > /root/.bowerrc \
     && npm install bower -g
 
+# logrotate adjust
+# ----------------
+RUN sed -i 's/\/bin\/systemctl reload httpd\.service/\/usr\/sbin\/httpd \-k graceful/g' /etc/logrotate.d/httpd
+
 # Add files
 # ---------
 ADD loop.sh /loop.sh
