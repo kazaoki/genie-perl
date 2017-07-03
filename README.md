@@ -41,6 +41,18 @@ Windows, Mac, Linux どれでもOK。
 Windowsなら [Strawberry Perl for Windows](http://strawberryperl.com/) をおすすめします。
 
 
+Ubuntuの場合、
+```
+sudo apt-get install libwww-perl
+sudo apt-get install libxml-simple-perl
+sudo apt-get install libtie-ixhash-perl
+sudo apt-get install libyaml-tiny-perl
+sudo apt-get install libhash-merge-simple-perl
+```
+
+
+
+
 ## genieコマンドをインストールする
 
 本体のインストールは一度でOKです。
