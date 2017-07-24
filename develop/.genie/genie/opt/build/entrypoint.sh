@@ -348,6 +348,7 @@ fi
 # Postfix
 # --------------------------------------------------------------------
 if [[ $GENIE_POSTFIX_ENABLED ]]; then
+  sed -i 's/inet_protocols \= all/inet_protocols \= ipv4/g' /etc/postfix/main.cf
   if [[ $GENIE_POSTFIX_FORCE_ENVELOPE != '' ]]; then
     echo "canonical_classes = envelope_sender, envelope_recipient" >> /etc/postfix/main.cf
     echo "canonical_maps = regexp:/etc/postfix/canonical.regexp" >> /etc/postfix/main.cf
