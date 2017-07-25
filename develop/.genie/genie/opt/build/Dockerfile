@@ -12,6 +12,8 @@ RUN cp /etc/localtime /etc/localtime.org \
 RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
     && rpm -Uvh https://rpm.nodesource.com/pub_6.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm \
     && yum update -y \
+    && yum install http://rpms.famillecollet.com/enterprise/remi-release-7.rpm -y \
+    && yum install -y --enablerepo=remi --enablerepo=remi-php56 php php-opcache php-develphp-mcrypt php-mysqlnd php-phpunit-PHPUnit php-pecl-xdebug php-pecl-xhprof php-pdo php-mysql php-pgsql php-gd php-xml php-soap php-Smarty php-pear-Mail-mimeDecode \
     && yum install epel-release -y \
     && yum install -y \
         gcc make perl perl-core openssl openssl-libs openssl-devel htop \
@@ -21,10 +23,8 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         curl curl-devel psmisc \
         bison bison-devel re2c libxml2-devel autoconf automake \
         libjpeg-devel libpng-devel readline-devel libtidy-devel \
-        libxslt-devel libmcrypt libmcrypt-devel php-mcrypt \
-        php php-mbstring php-pdo php-mysql php-pgsql php-gd php-xml \
-        php-soap php-Smarty re2c libxml2-devel bison bison-devel \
-        php-pear-Mail-mimeDecode \
+        libxslt-devel libmcrypt libmcrypt-devel \
+        re2c libxml2-devel bison bison-devel \
         perl-libwww-perl perl-Crypt-SSLeay \
         perl-String-CRC32 gnutls \
         perl-DBD-MySQL perl-DBD-Pg \
