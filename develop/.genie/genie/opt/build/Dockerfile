@@ -186,6 +186,14 @@ RUN echo '{ "allow_root": true }' > /root/.bowerrc \
 # ----------------
 RUN sed -i 's/\/bin\/systemctl reload httpd\.service/\/usr\/sbin\/httpd \-k graceful/g' /etc/logrotate.d/httpd
 
+# Install box
+# -----------
+RUN cd /tmp \
+    curl -LSs https://box-project.github.io/box2/installer.php | php \
+    mv box.phar /usr/bin/box \
+    chmod +x /usr/bin/box \
+    sed -i "s/;phar.readonly = On/phar.readonly = Off/" /etc/php.ini
+
 # Add files
 # ---------
 ADD loop.sh /loop.sh
