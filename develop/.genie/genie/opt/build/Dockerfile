@@ -46,6 +46,7 @@ RUN rpm -Uvh http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm \
         lsof \
         logrotate \
         compat-libtidy \
+        bzip2-devel libicu-devel \
     && yum clean all
 
 # Set locale
