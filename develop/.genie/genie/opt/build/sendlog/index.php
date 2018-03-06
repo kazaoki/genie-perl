@@ -101,7 +101,8 @@ function analyzePart($part, $info){
 					// （機種依存文字をJISで無理やり表示しようとするとWindowsMailで☒になる）
 					if(preg_match('/^ISO-2022-JP$/i', $encode)) {
 						if(mb_convert_encoding($part->body, 'UTF-8', 'ISO-2022-JP') !== mb_convert_encoding($part->body, 'UTF-8', 'ISO-2022-JP-MS')) {
-							$info['jis_warning'] = '機種依存文字をJIS（ISO-2022-JP）で表示しようとしています。（WindowsMail等、一部メーラーで文字化けが発生する可能性があります）';
+							$info['jis_warning'] = true;
+							$info['jis_body'] = mb_convert_encoding($part->body, 'UTF-8', 'ISO-2022-JP');
 						}
 					}
 				}
@@ -266,15 +267,23 @@ function h($str) {
 							<dt>BODY</dt>
 							<dd id="BODY">
 								<?php if(@$detail['body']){ ?>
-									<pre style="white-space: pre-wrap;">
+									<?php if(@$detail['jis_warning']) { ?>
+									<p class="bg-danger text-danger" style="padding:5px 10px">
+										機種依存文字をJIS（ISO-2022-JP）で表示しようとしています。（WindowsMail等、一部メーラーで文字化けが発生する可能性があります）
+										<button type="button" onclick="$('#jis-body').toggle()">表示切り替え</button>
+									</p>
+									<?php } ?>
+									<div class="wrap" style="position:relative">
+										<?php if(@$detail['jis_warning']) { ?>
+											<pre style="position: absolute; top:0; left:0; width:100%; white-space:pre-wrap; display:none" id="jis-body">
+<?php echo @$detail['jis_body'] ?><span style="position: absolute;right: 0;top: 0;display: inline-block;padding: 6px 5px 5px 4px;background: #ccc;color: #333;">（完全JISモード）</span></pre>
+										<?php }?>
+										<pre style="white-space:pre-wrap;">
 <?php echo @$detail['body'] ?></pre>
-								<?php if(@$detail['jis_warning']) { ?>
-								<div class="bg-danger text-danger" style="padding:5px 10px"><?= h($detail['jis_warning']) ?></div>
-								<div class="text-danger"></div>
-								<?php }?>
-								<?php } else { ?>
-									<span class="text-muted">(undef)</span>
-								<?php } ?>
+									<?php } else { ?>
+										<span class="text-muted">(undef)</span>
+									<?php } ?>
+									</div>
 							</dd>
 							<?php if(@$detail['html']!='') { ?>
 							<dt>HTML</dt>
