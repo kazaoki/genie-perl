@@ -95,8 +95,15 @@ function analyzePart($part, $info){
 							static $count = 0;
 							return "<a href=\"$matches[0]\" class=\"link-url-".(++$count)."\">$matches[0]</a>";
 						},
-						h(mb_convert_encoding($info['body'], 'UTF-8', $encode))
+						h(mb_convert_encoding($info['body'], 'UTF-8', (preg_match('/^ISO-2022-JP$/i', $encode) ? 'ISO-2022-JP-MS' : $encode)))
 					);
+					// JISだった場合、ISO-2022-JP と ISO-2022-JP-MSとで違いがある場合は、一部メーラーで文字化けする可能性があるということになります。
+					// （機種依存文字をJISで無理やり表示しようとするとWindowsMailで☒になる）
+					if(preg_match('/^ISO-2022-JP$/i', $encode)) {
+						if(mb_convert_encoding($part->body, 'UTF-8', 'ISO-2022-JP') !== mb_convert_encoding($part->body, 'UTF-8', 'ISO-2022-JP-MS')) {
+							$info['jis_warning'] = '機種依存文字をJIS（ISO-2022-JP）で表示しようとしています。（WindowsMail等、一部メーラーで文字化けが発生する可能性があります）';
+						}
+					}
 				}
 			} else if($part->ctype_secondary=='html') {
 				$info['html'] = $part->body;
@@ -117,6 +124,7 @@ function analyzePart($part, $info){
 			);
 			break;
 	}
+
 	return $info;
 }
 
@@ -260,6 +268,10 @@ function h($str) {
 								<?php if(@$detail['body']){ ?>
 									<pre style="white-space: pre-wrap;">
 <?php echo @$detail['body'] ?></pre>
+								<?php if(@$detail['jis_warning']) { ?>
+								<div class="bg-danger text-danger" style="padding:5px 10px"><?= h($detail['jis_warning']) ?></div>
+								<div class="text-danger"></div>
+								<?php }?>
 								<?php } else { ?>
 									<span class="text-muted">(undef)</span>
 								<?php } ?>
